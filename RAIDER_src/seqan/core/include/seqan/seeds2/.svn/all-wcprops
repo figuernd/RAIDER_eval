@@ -1,0 +1,131 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2
+END
+align_chain_banded.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/align_chain_banded.h
+END
+seeds_seed_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_base.h
+END
+seeds_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_base.h
+END
+seeds_extension.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_extension.h
+END
+seeds_seed_diagonal.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_diagonal.h
+END
+align_dynprog_banded_affine.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/align_dynprog_banded_affine.h
+END
+align_dynprog_affine.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/align_dynprog_affine.h
+END
+seeds_global_chaining_gusfield.h
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_global_chaining_gusfield.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/INFO
+END
+seeds_seed_set_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_set_base.h
+END
+seeds_seed_simple.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_simple.h
+END
+seeds_seed_set_scored.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_set_scored.h
+END
+seeds_global_chaining_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_global_chaining_base.h
+END
+seeds_seed_chained.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_chained.h
+END
+seeds_global_chaining.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_global_chaining.h
+END
+align_dynprog_banded_linear.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/align_dynprog_banded_linear.h
+END
+seeds_seed_set_unordered.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_set_unordered.h
+END
+basic_iter_indirect.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/basic_iter_indirect.h
+END
+seeds_combination.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_combination.h
+END
+align_dynprog_linear.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/align_dynprog_linear.h
+END
+seeds_seed_set_non_scored.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/seeds2/seeds_seed_set_non_scored.h
+END
