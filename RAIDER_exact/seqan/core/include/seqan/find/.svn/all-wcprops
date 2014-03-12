@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find
+END
+find_simple.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_simple.h
+END
+find_hamming_simple.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_hamming_simple.h
+END
+find_myers_ukkonen.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_myers_ukkonen.h
+END
+find_multi.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_multi.h
+END
+find_pex.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_pex.h
+END
+find_shiftand.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_shiftand.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/INFO
+END
+find_horspool.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_horspool.h
+END
+find_pattern_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_pattern_base.h
+END
+find_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_base.h
+END
+find_multiple_shiftand.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_multiple_shiftand.h
+END
+find_score.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_score.h
+END
+find_bom.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_bom.h
+END
+find_shiftor.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_shiftor.h
+END
+find_wild_shiftand.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_wild_shiftand.h
+END
+find_multiple_bfam.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_multiple_bfam.h
+END
+find_bndm.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_bndm.h
+END
+find_set_horspool.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_set_horspool.h
+END
+find_wumanber.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_wumanber.h
+END
+find_abndm.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_abndm.h
+END
+find_begin.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_begin.h
+END
+find_ahocorasick.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/find/find_ahocorasick.h
+END

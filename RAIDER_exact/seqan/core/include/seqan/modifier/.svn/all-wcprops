@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier
+END
+modifier_reverse.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_reverse.h
+END
+modifier_shortcuts.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_shortcuts.h
+END
+modifier_alphabet.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_alphabet.h
+END
+modifier_functors.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_functors.h
+END
+modifier_alphabet_expansion.h
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_alphabet_expansion.h
+END
+modifier_string.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_string.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/INFO
+END
+modifier_iterator.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_iterator.h
+END
+modifier_view.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/modifier/modifier_view.h
+END

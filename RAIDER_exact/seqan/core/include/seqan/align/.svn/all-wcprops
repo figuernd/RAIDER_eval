@@ -1,0 +1,227 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align
+END
+local_alignment_enumeration_banded.h
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_enumeration_banded.h
+END
+gaps_iterator_anchor.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_iterator_anchor.h
+END
+align_iterator_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_iterator_base.h
+END
+local_alignment_enumeration.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_enumeration.h
+END
+global_alignment_myers_hirschberg_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_myers_hirschberg_impl.h
+END
+local_alignment_enumeration_unbanded.h
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_enumeration_unbanded.h
+END
+local_alignment_banded_waterman_eggert_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_banded_waterman_eggert_impl.h
+END
+gaps_iterator_array.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_iterator_array.h
+END
+alignment_algorithm_interface.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/alignment_algorithm_interface.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/INFO
+END
+align_cols.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_cols.h
+END
+local_alignment_smith_waterman_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_smith_waterman_impl.h
+END
+global_alignment_gotoh_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_gotoh_impl.h
+END
+alignment_operations.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/alignment_operations.h
+END
+gaps_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_base.h
+END
+local_alignment_banded.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_banded.h
+END
+local_alignment_unbanded.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_unbanded.h
+END
+gaps_array.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_array.h
+END
+align_metafunctions.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_metafunctions.h
+END
+align_traceback.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_traceback.h
+END
+global_alignment_banded.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_banded.h
+END
+gapped_value_type.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gapped_value_type.h
+END
+gaps_iterator_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_iterator_base.h
+END
+global_alignment_unbanded.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_unbanded.h
+END
+global_alignment_myers_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_myers_impl.h
+END
+matrix_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/matrix_base.h
+END
+gap_anchor.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gap_anchor.h
+END
+alignment_algorithm_tags.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/alignment_algorithm_tags.h
+END
+local_alignment_waterman_eggert_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/local_alignment_waterman_eggert_impl.h
+END
+global_alignment_specialized.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_specialized.h
+END
+global_alignment_banded_needleman_wunsch_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_banded_needleman_wunsch_impl.h
+END
+global_alignment_banded_gotoh_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_banded_gotoh_impl.h
+END
+global_alignment_needleman_wunsch_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_needleman_wunsch_impl.h
+END
+align_config.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_config.h
+END
+global_alignment_hirschberg_impl.h
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/global_alignment_hirschberg_impl.h
+END
+align_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/align_base.h
+END
+gaps_anchor.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/align/gaps_anchor.h
+END

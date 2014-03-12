@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store
+END
+store_align_intervals.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_align_intervals.h
+END
+store_contig.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_contig.h
+END
+store_io_ucsc.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_io_ucsc.h
+END
+store_io_bam.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_io_bam.h
+END
+store_io_gff.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_io_gff.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/INFO
+END
+store_align.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_align.h
+END
+store_matepair.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_matepair.h
+END
+store_library.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_library.h
+END
+store_intervaltree.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_intervaltree.h
+END
+store_io_sam.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_io_sam.h
+END
+store_io.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_io.h
+END
+store_all.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_all.h
+END
+store_base.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_base.h
+END
+store_annotation.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_annotation.h
+END
+store_read.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/store/store_read.h
+END

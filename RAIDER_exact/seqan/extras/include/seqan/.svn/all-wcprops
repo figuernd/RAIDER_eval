@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan
+END
+index_fm.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/index_fm.h
+END
+math.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/math.h
+END
+statistics.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/statistics.h
+END
+LICENSE
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/LICENSE
+END
+find_motif.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/find_motif.h
+END
+journaled_set.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/journaled_set.h
+END
+alignment_free.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/alignment_free.h
+END
+parse_lm.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/parse_lm.h
+END
+blast.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/blast.h
+END
+synopsis.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/extras/include/seqan/synopsis.h
+END

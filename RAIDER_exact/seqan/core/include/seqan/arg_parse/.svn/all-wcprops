@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse
+END
+arg_parse_ctd_support.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_ctd_support.h
+END
+arg_parse_option.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_option.h
+END
+xml_support.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/xml_support.h
+END
+arg_parse_parse.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_parse.h
+END
+argument_parser.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/argument_parser.h
+END
+arg_parse_type_support.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_type_support.h
+END
+tool_doc.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/tool_doc.h
+END
+arg_parse_exceptions.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_exceptions.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/INFO
+END
+arg_parse_argument.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_argument.h
+END
+arg_parse_doc.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/arg_parse/arg_parse_doc.h
+END

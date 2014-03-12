@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser
+END
+cmdparser_parse.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/cmdparser_parse.h
+END
+cmdoption.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/cmdoption.h
+END
+cmdparser_type_support.h
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/cmdparser_type_support.h
+END
+cmdparser.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/cmdparser.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/INFO
+END
+cmdparser_ctd_support.h
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/misc/cmdparser/cmdparser_ctd_support.h
+END

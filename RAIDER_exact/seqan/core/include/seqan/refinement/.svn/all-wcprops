@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement
+END
+graph_algorithm_refine_align.h
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_align.h
+END
+graph_algorithm_refine_annotation.h
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_annotation.h
+END
+graph_algorithm_refine_inexact.h
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_inexact.h
+END
+graph_algorithm_refine_aligngraph.h
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_aligngraph.h
+END
+graph_impl_align.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_impl_align.h
+END
+graph_algorithm_refine_exact_iterative.h
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_exact_iterative.h
+END
+graph_algorithm_refine_fragment.h
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_fragment.h
+END
+graph_algorithm_refine_exact.h
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_exact.h
+END
+graph_algorithm_refine_scoring.h
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_algorithm_refine_scoring.h
+END
+INFO
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/INFO
+END
+graph_impl_align_adapt.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/karroje/!svn/ver/2285/ruffley/RAIDER_src/seqan/core/include/seqan/refinement/graph_impl_align_adapt.h
+END
