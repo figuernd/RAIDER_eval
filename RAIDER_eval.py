@@ -4,7 +4,7 @@ import subprocess
 import os.path
 import os.path
 import argparse
-
+import redhawk
 
 
 def parse_params(args):
@@ -20,5 +20,7 @@ def parse_params(args):
 if __name__:
     args = parse_params(sys.argv[1:])
     if not os.path.exists('./%s' % (args.output_dir)):
-        print("HERE")
         os.makedirs('./%s' % (args.output_dir))
+
+
+        
