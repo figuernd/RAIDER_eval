@@ -5,6 +5,10 @@
 
 using namespace std;
 
+#ifndef uint
+typedef unsigned int uint;
+#endif
+
 class Family;
 
 class LmerVector {

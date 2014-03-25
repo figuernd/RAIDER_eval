@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate Simulated Sequence")
     parser.add_argument(\
-        '--seq',action='store',required=False,type = str,default = "test.fa",
+        '-s', '--seq',action='store',required=False,type = str,default = "test.fa",
         help="sequence fasta file")
     parser.add_argument(\
         '-k',action='store',dest='k',type=int,default=5,

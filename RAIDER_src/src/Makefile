@@ -1,6 +1,6 @@
 # Nathan Figueroa
 
-CC = g++ -std=c++0x
+CC = g++ -std=c++11
 
 CXXFLAGS+=-Wall -W -O3 -DNDEBUG
 
@@ -13,7 +13,8 @@ CPPINCL+=-I../seqan/extras/include
 all: main
 
 main: Family.h LmerVector.h SeedChain.h main.cpp
-	@echo compiling RAIDER; $(CC) $(CPPINCL) $(CXXFLAGS) $^ -o ../raider
+	@echo compiling RAIDER; 
+	$(CC) $(CPPINCL) $(CXXFLAGS) $^ -o ../../raider
 
 ############################################################
 # GOOGLE TEST SETUP
