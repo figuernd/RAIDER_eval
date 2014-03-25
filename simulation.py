@@ -6,8 +6,8 @@
 # Date: Aug. 21, 2013
 # Email: wangj29@miamioh.edu
 
-import random
 import argparse
+import random
 import unittest
 import sys
 from Bio import SeqIO
