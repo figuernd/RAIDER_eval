@@ -1,7 +1,7 @@
 import argparse
 import simulation
-import re
 import Bio
+import re
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
