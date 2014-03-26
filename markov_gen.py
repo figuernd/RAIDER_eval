@@ -6,11 +6,15 @@
 # Date: March, 2014
 # Email: karroje@miamiOH.edu
 
-import random
+import re
+import sys
 import argparse
+import random
 import unittest
 import sys
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
 
 fn={
     'A':0, 'a':0,
@@ -99,8 +103,11 @@ def Markov(k,inSeq): # inSeq as parameter?
     return Klist       
 
 
-def generate_sequence(seq, k, l = None):
+
+
+def generate_sequence(seq, k, l = None, rng_seed = None):
     """Generate a random sequence of length l using a k-order Markov chain modeled on sequence seq"""
+    random.seed(rng_seed)
     seq_len = l if l else len(seq)
 
     ## Generate order Markov chains
@@ -125,3 +132,22 @@ def generate_sequence(seq, k, l = None):
     return "".join(seq)
     
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Generate simulated sequence using a k-order Markov chain")
+    parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
+    parser.add_argument('-l', type = int, help = "Sequence length", default = None)
+    parser.add_argument('-r', '--rng_seed', type = int, help = "rng seed", default = None)
+    parser.add_argument('-o', '--output', help = "Output file (stdout by default -- fasta format if file name ends in .fa or .fasta)", default = "-")
+    parser.add_argument('seq_file', help = "Model sequence file (fasta format)")
+    args = parser.parse_args()
+
+    s = "".join([str(r) for r in SeqIO.read(args.seq_file, 'fasta')])
+    s2 = generate_sequence(s, args.k, args.l, args.rng_seed)
+    if args.output == '-':
+        sys.stdout.write(s2)
+    elif re.search(".fa(asta)?$", args.output):
+        SeqIO.write(SeqRecord(seq = Seq(s2), id = args.seq_file, description = "simulation"), args.output, "fasta")
+    else:
+        open(args.output, "w").write(s2)
+
+                
