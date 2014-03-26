@@ -24,9 +24,9 @@ fn={
     'N':-1, 'n':-1
 }
 
-bases = "ACGT"
+bases = "acgtACGT"
 baseSet = set(bases)
-base2index = {x:y for x,y in zip(bases + 'N', [0,1,2,3,-1])}
+base2index = {x:y for x,y in zip("acgtnACGTN", [0,1,2,3,-1,0,1,2,3,-1])}
 
 def ProbTuple(Mark,kmo):
     total = 0
@@ -53,7 +53,7 @@ def pickFromProbTuple(probTuple):
 def NextIndex(i,k,seq): # Should be having inSeq as a parameter
     """Return the smallest j >= i such that inSeq[j:j+k] contains only bases"""
     j = i
-    while seq[j] not in baseSet and j + k < len(seq):
+    while j + k < len(seq) and seq[j] not in baseSet:
         j += 1
     if k == 0:
         return j
@@ -89,7 +89,7 @@ def Markov(k,inSeq): # inSeq as parameter?
                  break
              t=0
              for j in range(k+1):
-                 t=(t<<2) | base2index[inSeq[i+j]]
+                 t = (t<<2) | base2index[inSeq[i+j]]
              i += k+1 
         else:
              t = ((t<<2) | base2index[inSeq[i]]) & mask     
