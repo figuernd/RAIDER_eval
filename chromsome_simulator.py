@@ -10,6 +10,7 @@ import re
 
 def parse_params(args):
     parser = argparse.ArgumentParser(description = "Generate simulated chromsome")
+    parser.add_argument('-c', '--cutoff', type = int, help = "Limit model to first c non-N bases")
     parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
     parser.add_argument('-s', '--seed', type = int, help = "RNG seed", default = None)
     parser.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
@@ -33,14 +34,26 @@ def nextRepeat(rpt_file, use_negative, S):
                 yield chr, start, finish, strand, family
 
 
-def generate_chromosome(seq_file, rpt_file, k, output, length = None, negative_strand = False, family_file = None, seed = None):
+def generate_chromosome(seq_file, rpt_file, k, output, length = None, negative_strand = False, family_file = None, seed = None, cutoff = None):
 
     original_sequence = "".join([str(r) for r in SeqIO.read(seq_file, 'fasta')])
+    if cutoff:
+        i = 0
+        while i < len(original_sequence) and original_sequence[i] not in "ACGTacgt":
+            i += 1
+        j = i + 1;
+        count = 1;
+        while j < len(original_sequence) and count < cutoff:
+            if original_sequence[j] in "ACGTacgt":
+                count += 1
+            j += 1
+        original_sequence = original_sequence[i:j]
+            
+    
     if not length:
         length = len(original_sequence)
 
     simulated_sequence = markov_gen.generate_sequence(original_sequence, k, length, seed)
-    simulated_sequence = "T"*len(simulated_sequence)
 
     S = {x.rstrip() for x in open(family_file)} if family_file else {}
     for chr, start, finish, strand, family in nextRepeat(rpt_file, negative_strand, S):
@@ -53,4 +66,4 @@ def generate_chromosome(seq_file, rpt_file, k, output, length = None, negative_s
 
 if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
-    generate_chromosome(args.chromsome, args.repeat_file, args.k, args.output, args.length, args.negative_strand, args.family_file, args.seed)
+    generate_chromosome(args.chromsome, args.repeat_file, args.k, args.output, args.length, args.negative_strand, args.family_file, args.seed, args.cutoff)
