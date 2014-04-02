@@ -97,6 +97,7 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV) {
 	for (uint i = 0; i < oldLength; i++) {
 		LmerVector *u = lmers->at(i);
 		if (u == v) {
+			assert(i != 0);
 			offset = i;
 		}
 		if ((!keepV && i >= offset) || i > offset) {
@@ -108,6 +109,11 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV) {
 
 	fam->setLast(fam->getSuffix());
 	fam->setExpectedEnd(fam->getSuffix()->back() + 1);
+
+	if (!keepV) {
+		newFam->setLast(v);
+		newFam->setExpectedEnd(v->back() + newFam->repeatLength(1));
+	}
 
 	return newFam;
 }
