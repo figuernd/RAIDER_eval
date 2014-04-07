@@ -1,6 +1,0 @@
-#!/bin/bash -l
-#PBS -N /home/schaefce/karro/RAIDER_eval/tmpccmqp_/tmpfcd295.fa.batch
-#PBS -l nodes=1:ppn=1
-#PBS -l walltime=40:00:00
-cd $PBS_O_WORKDIR
-./chromsome_simulator.py -s None -o /home/schaefce/karro/RAIDER_eval/tmpccmqp_/tmpfcd295.fa --chromsome data/hg19.chr22.fa --repeat_file chr22.fa.out
