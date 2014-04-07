@@ -84,7 +84,7 @@ class pbsJobHandler:
         self.file_delay = file_delay
         self.status = "unstarted"
         self.epilogue = os.getcwd() + "/" + epilogue_file
-
+        print(self.epilogue)
         f = open(self.batch_file_name, 'w')
 
         f.write("#!/bin/bash -l\n")
@@ -151,7 +151,7 @@ class pbsJobHandler:
         f.close()
         self.jobid=0
         self.split = False   # Set to true when the .o file gets split
-
+        
         open(self.epilogue, "w").write(epilogue_str % (self.epilogue))
         subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
 
