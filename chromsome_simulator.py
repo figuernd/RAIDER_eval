@@ -14,7 +14,7 @@ def parse_params(args):
     parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
     parser.add_argument('-s', '--seed', type = int, help = "RNG seed", default = None)
     parser.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
-    parser.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = True)
+    parser.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
     parser.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser.add_argument('-o', '--output', help = "Output file (Default: replace chomosome file \".fa\" with \".sim.fa\")")
     parser.add_argument("chromsome", help = "Chromosome file")
