@@ -183,7 +183,6 @@ class pbsJobHandler:
         while (trial < retry): 
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # Sleep to ensure the prh file is created before termination
             (output, error) = [x.decode() for x in p.communicate()]
-            print(output, error)
             if p.returncode == 0:
                 break
             trial = trial + 1
@@ -196,7 +195,6 @@ class pbsJobHandler:
                 
         t=re.split('\.',output)
         self.jobid=t[0]
-        print("HERE")
         self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
         self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
         #self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
