@@ -83,8 +83,8 @@ class pbsJobHandler:
         self.file_limit = file_limit
         self.file_delay = file_delay
         self.status = "unstarted"
-        self.epilogue = os.getcwd() + "/" + epilogue_file
-        print(self.epilogue)
+        #self.epilogue = os.getcwd() + "/" + epilogue_file
+        #print(self.epilogue)
         f = open(self.batch_file_name, 'w')
 
         f.write("#!/bin/bash -l\n")
@@ -152,8 +152,8 @@ class pbsJobHandler:
         self.jobid=0
         self.split = False   # Set to true when the .o file gets split
         
-        open(self.epilogue, "w").write(epilogue_str % (self.epilogue))
-        subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
+        #open(self.epilogue, "w").write(epilogue_str % (self.epilogue))
+        #subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
 
 
 
@@ -174,7 +174,7 @@ class pbsJobHandler:
         if job_limit > 0:
             limit_jobs(limit=job_limit, delay=delay, user=user)
 
-        optionalFlag='-l epilogue=' + self.epilogue
+        optionalFlag= '' #'-l epilogue=' + self.epilogue
         retry=600
         sleepTimeBetweenRetry=10
         trial=1;
@@ -183,6 +183,7 @@ class pbsJobHandler:
         while (trial < retry): 
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # Sleep to ensure the prh file is created before termination
             (output, error) = [x.decode() for x in p.communicate()]
+            print(output, error)
             if p.returncode == 0:
                 break
             trial = trial + 1
@@ -195,9 +196,10 @@ class pbsJobHandler:
                 
         t=re.split('\.',output)
         self.jobid=t[0]
+        print("HERE")
         self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
         self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
-        self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
+        #self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
             print('qsub jobid', self.jobid)
@@ -265,6 +267,7 @@ class pbsJobHandler:
 
     def rfile_name(self):
         """Get the name of the file containing the rfile output."""
+        assert False, "rfile functions disables"
         return self.rfile
 
     def timing_name(self):
@@ -289,7 +292,7 @@ class pbsJobHandler:
             tries = tries+1
         
         if os.path.isfile(self.ofile_name()):
-            self.split_ofile()
+            #self.split_ofile()
             return open(self.ofile_name(), "r")
 
         raise NameError("redhawk: unfound ofile")
@@ -311,7 +314,7 @@ class pbsJobHandler:
 
     def rfile_handle(self):
         """Return a handle to the file containing the resource description."""
-        self.split_ofile()
+        #self.split_ofile()
         return open(self.rfile)
 
     def ofile_string(self):
@@ -384,6 +387,7 @@ class pbsJobHandler:
 	
 
     def getResources(self, cleanup=True):
+        assert False, "redhawk getResources method currently not working"
         fp = self.rfile_handle()
 
         for line in fp:
@@ -406,6 +410,7 @@ class pbsJobHandler:
 
     def split_ofile(self):
         """Split the .o<id> file into a .o<id> and .r<id> file"""
+        assert False, "Split ofile currently not working"
         if not self.split:
             self.wait()
             self.split = True 
