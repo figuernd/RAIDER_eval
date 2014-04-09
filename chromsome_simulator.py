@@ -60,7 +60,7 @@ def generate_chromosome(seq_file, rpt_file, k, output, length = None, negative_s
         if finish < length:
             simulated_sequence = simulated_sequence[:start] + original_sequence[start:finish] + simulated_sequence[finish:]
 
-    output_file = ouput if output else re.sub(".fa$", ".sim.fa", seq_file)
+    output_file = output if output else re.sub(".fa$", ".sim.fa", seq_file)
     SeqIO.write([SeqRecord(seq = Seq(simulated_sequence), id = re.sub(".fa", "", seq_file), description = "%d-order Markov chain simulation" % (k))], output_file, 'fasta')
 
 
