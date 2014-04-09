@@ -12,6 +12,7 @@ import subprocess
 import getopt
 import time
 import os
+import os.path
 import pickle
 from argparse import *
 import pwd
@@ -26,19 +27,17 @@ redhawkInQueueRe = re.compile("\s+[R|Q]\s+[^\s]+\s*$")
 log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
 
 epilogue_str = """#!/bin/sh
-echo "---------------\nRedhawk Epilogue Args:"
-echo "Job ID: $1"
-echo "User ID: $2"
-echo "Group ID: $3"
-echo "Job Name: $4"
-echo "Session ID: $5"
-echo "Resource List: $6"
-echo "Resources Used: $7"
-echo "Queue Name: $8"
-echo "Account String: $9"
-echo ""
-rm -f %s
-
+echo "Redhawk Epilogue Args:" >&2
+echo "Job ID: $1" >&2
+echo "User ID: $2" >&2
+echo "Group ID: $3" >&2
+echo "Job Name: $4" >&2
+echo "Session ID: $5" >&2
+echo "Resource List: $6" >&2
+echo "Resources Used: $7" >&2
+echo "Queue Name: $8" >&2
+echo "Account String: $9" >&2
+echo "" >&2
 exit 0
 """
 
@@ -51,7 +50,7 @@ class RedhawkError(Exception):
 class pbsJobHandler:
     """A pbsJobHandler corresponds to a job launched (or to be launched) on redhawk.  Once the object is created (and provided with a command-line execution command),
        the user can extract various inforamtion about the job (current status, output, etc...) and cleanup files."""
-    def __init__(self, batch_file, executable, use_pid = True, job_name = None, nodes = 1, ppn = 1, mem = False, walltime = "40:00:00", address = None, join = False, env = None, queue = None, mail = None, output_location = None, chdir = None, RHmodules = None, file_limit = 6, file_delay = 5, timing = False, epilogue_file = "redhawk_epilogue.py"): 
+    def __init__(self, batch_file, executable, use_pid = True, job_name = None, nodes = 1, ppn = 1, mem = False, walltime = "40:00:00", address = None, join = False, env = None, queue = None, mail = None, output_location = None, chdir = None, RHmodules = None, file_limit = 6, file_delay = 5, epilogue_file = None): 
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk name.  Default = the batch file name.
@@ -68,10 +67,9 @@ class pbsJobHandler:
            * queue: redhawk queue to run on.  Default: redhawk chooses.
            * output_location: Directory to place output files.  Default: current directory.
            * RHmodules: A list of redhawk modules to be loaded before run (e.g. ['Blast+']).  Default: none.
-           * Timing: Will track the time.  If command is a sequence, only works on the first command (up to the first semi-colon).
-           * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.
+           * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.  By default: <batch_file>.epilogue.py"
         """
-        if not epilogue_file or "/" in epilogue_file:
+        if epilogue_file and "/" in epilogue_file:
             raise RedhawkError("Bad epilogue file name: " + epilogue_file)
         
         self.batch_file_name = batch_file
@@ -82,9 +80,9 @@ class pbsJobHandler:
         self.join = 'n'
         self.file_limit = file_limit
         self.file_delay = file_delay
+        self.resources = None
         self.status = "unstarted"
-        #self.epilogue = os.getcwd() + "/" + epilogue_file
-        #print(self.epilogue)
+        self.epilogue = os.getcwd() + "/" + "redhawk_epilogue.py"
         f = open(self.batch_file_name, 'w')
 
         f.write("#!/bin/bash -l\n")
@@ -137,11 +135,11 @@ class pbsJobHandler:
             s="cd $PBS_O_WORKDIR\n";
             f.write(s);
 
-        if timing:
-            self.timing = self.output_location + "/" + self.batch_file_name + ".timing"
-            self.executable_name = "/usr/bin/time -o " + self.timing + " -f \"%U\" " + self.executable_name
-        else:
-            self.timing = None
+        #if timing:
+        #    self.timing = self.output_location + "/" + self.batch_file_name + ".timing"
+        #    self.executable_name = "/usr/bin/time -o " + self.timing + " -f \"%U\" " + self.executable_name
+        #else:
+        #    self.timing = None
 
         if self.modules != None:
             self.executable_name = "; ".join(["module load " + x for x in self.modules]) + "; " + self.executable_name
@@ -150,10 +148,12 @@ class pbsJobHandler:
 
         f.close()
         self.jobid=0
-        self.split = False   # Set to true when the .o file gets split
+        self.split = False   # Set to true when the .e file gets split
         
-        #open(self.epilogue, "w").write(epilogue_str % (self.epilogue))
-        #subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
+        if os.path.isfile(self.epilogue):
+            os.remove(self.epilogue)
+        open(self.epilogue, "w").write(epilogue_str)
+        subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
 
 
 
@@ -174,7 +174,7 @@ class pbsJobHandler:
         if job_limit > 0:
             limit_jobs(limit=job_limit, delay=delay, user=user)
 
-        optionalFlag= '' #'-l epilogue=' + self.epilogue
+        optionalFlag= '-l epilogue=' + self.epilogue
         retry=600
         sleepTimeBetweenRetry=10
         trial=1;
@@ -197,7 +197,7 @@ class pbsJobHandler:
         self.jobid=t[0]
         self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
         self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
-        #self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
+        self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
             print('qsub jobid', self.jobid)
@@ -265,12 +265,11 @@ class pbsJobHandler:
 
     def rfile_name(self):
         """Get the name of the file containing the rfile output."""
-        assert False, "rfile functions disables"
         return self.rfile
 
-    def timing_name(self):
-        """Get the name of the timing file."""
-        return self.timing
+    #def timing_name(self):
+    #    """Get the name of the timing file."""
+    #    return self.timing
 
     def ofile_exists(self):
         """Does the file contiining the job stdout output exist?"""
@@ -290,7 +289,6 @@ class pbsJobHandler:
             tries = tries+1
         
         if os.path.isfile(self.ofile_name()):
-            #self.split_ofile()
             return open(self.ofile_name(), "r")
 
         raise NameError("redhawk: unfound ofile")
@@ -312,7 +310,7 @@ class pbsJobHandler:
 
     def rfile_handle(self):
         """Return a handle to the file containing the resource description."""
-        #self.split_ofile()
+        self.split_efile()
         return open(self.rfile)
 
     def ofile_string(self):
@@ -329,23 +327,23 @@ class pbsJobHandler:
             return "\n".join([line.rstrip() for line in fp]) + '\n'
         return None
 
-    def get_timing(self, delete_timing = True):
-        """Get the time-generated user runtime and delete the timing file.
-        (Assumed to be the last line of the timing file.)
-        By default, erases the timing file."""
-        if not self.timing:
-            return None
-        else:
-            try:
-                with open(self.timing) as fp:
-                    lines = fp.readlines()
-                if delete_timing:
-                    os.remove(self.timing)
-                return float(lines[-1])
-            except:
-                sys.stderr.write("Redhawk.runtime: invalid runtime (%s)\n" % (self.timing))
-                sys.exit(1)
-                return None
+    # def get_timing(self, delete_timing = True):
+    #     """Get the time-generated user runtime and delete the timing file.
+    #     (Assumed to be the last line of the timing file.)
+    #     By default, erases the timing file."""
+    #     if not self.timing:
+    #         return None
+    #     else:
+    #         try:
+    #             with open(self.timing) as fp:
+    #                 lines = fp.readlines()
+    #             if delete_timing:
+    #                 os.remove(self.timing)
+    #             return float(lines[-1])
+    #         except:
+    #             sys.stderr.write("Redhawk.runtime: invalid runtime (%s)\n" % (self.timing))
+    #             sys.exit(1)
+    #             return None
                                 
     def erase_files(self):
         """Erase the stdio and stderr files."""
@@ -366,16 +364,18 @@ class pbsJobHandler:
 
         return None
     
-    def get_results(self, cleanup=True):
-        """Retrieve strings and cleanup.  Return truple will include runtime
-        if it was recorded and not suppressed."""
+    def get_results(self, resources = False, cleanup=True):
+        """Retrieve strings and cleanup."""
         self.wait()
+        self.split_efile()
         stdout_str = self.ofile_string()
         stderr_str = self.efile_string()
+        if resources:
+            T = self.getResources()
         if cleanup:
             self.erase_files()
                 
-        return stdout_str, stderr_str
+        return (stdout_str, stderr_str, T) if resources else (stdout_str, stderr_str)
 
 
 
@@ -383,39 +383,56 @@ class pbsJobHandler:
         """Legacy"""
         return self.get_results(cleanup)
 	
+    def loadResources(self):
+        if not self.resources:
+            self.wait()
+            fp = self.rfile_handle()
 
-    def getResources(self, cleanup=True):
-        assert False, "redhawk getResources method currently not working"
-        fp = self.rfile_handle()
-
-        for line in fp:
-            if line.startswith("Resources Used:"):
-                r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
-                if not r:
-                    raise RedhawkError("Bad resource line: " + line)
-                cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))
-                wall_time =60*int(r.group(6)) + 3600*int(r.group(7)) + int(r.group(8))
-                memory = 1024*int(r.group(4))
-                vmemory = 1024*int(r.group(5))
+            for line in fp:
+                if line.startswith("Resources Used:"):
+                    r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
+                    if not r:
+                        raise RedhawkError("Bad resource line: " + line)
+                    cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))
+                    wall_time = 60*int(r.group(6)) + 3600*int(r.group(7)) + int(r.group(8))
+                    memory = 1024*int(r.group(4))
+                    vmemory = 1024*int(r.group(5))
+                    self.resources = (cpu_time, wall_time, memory, vmemory);  
+                    break
                 
 
-        os.remove(self.rfile_name())
-        return (cpu_time, wall_time, memory, vmemory)
+
+
+    def getResources(self, cleanup=True):
+        """Return cpu_time, wall_time, memory, and virtual memory used"""
+        self.loadResources()
+        return self.resources
+
+    def cpu_time(self):
+        self.loadResources()
+        return self.resources[0]
+
+    def memory(self):
+        self.loadResources()
+        return self.resources[2]
+
+    def vmemory(self):
+        self.loadResources()
+        return self.resources[3]
 
     def wait_on_job_limit(self, limit=200, delay=10, user=current_user):
         """Depricated: use the stand-along function job_limit."""
         limit_jobs(self, limit, delay, user)
 
-    def split_ofile(self):
-        """Split the .o<id> file into a .o<id> and .r<id> file"""
-        assert False, "Split ofile currently not working"
+    def split_efile(self):
+        """Split the .e<id> file into a .e<id> and .r<id> file"""
         if not self.split:
             self.wait()
             self.split = True 
 
-            with open(self.ofile) as fp: line = "".join([line for line in fp])
-            first, second = re.search("(.*)\s*\-{15}\nRedhawk Epilogue Args:\s*(.+)", line, re.DOTALL).group(1,2)
-            with open(self.ofile, "w") as fp: fp.write(first)
+            with open(self.efile) as fp: line = "".join([line for line in fp])
+            first, second = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL).group(1,2)
+            with open(self.efile, "w") as fp: fp.write(first)
             with open(self.rfile, "w") as fp: fp.write(second)
 
 
@@ -492,7 +509,7 @@ if __name__ == "__main__":
     settings2 = parser.add_argument_group("Less important job-related settings")
     settings2.add_argument('-b', '--batch', action = "store", type = str, dest = "batch", help="Batch file name", default = "redhawk_run")
     settings2.add_argument('-P', '--pid_off', action = "store_false", dest = "pid", help = "Surpress use of pid in file names", default = True)
-    settings2.add_argument('-T', '--time_off', action = "store_false", dest = "timing", help = "Suppress runtime reporting", default = True)
+    #settings2.add_argument('-T', '--time_off', action = "store_false", dest = "timing", help = "Suppress runtime reporting", default = True)
     settings2.add_argument('-R', '--resources_off', action = "store_false", dest = "print_resources", help = "Suppress resource usage reporting", default = True)
     settings2.add_argument('-K', '--keep_files', action = "store_true", dest = "keep", help = "Keep files generated", default = False)
 
@@ -507,7 +524,7 @@ if __name__ == "__main__":
 
 
     
-    p = pbsJobHandler(batch_file = args.batch, executable = " ".join(args.command), use_pid = args.pid, nodes = args.nodes, ppn = args.ppn, mem = args.mem, timing = args.timing,
+    p = pbsJobHandler(batch_file = args.batch, executable = " ".join(args.command), use_pid = args.pid, nodes = args.nodes, ppn = args.ppn, mem = args.mem, 
                       walltime = args.walltime, output_location = args.output_location, chdir = args.target_directory, RHmodules = args.RHmodules)
     if args.create:
         sys.exit(0)
@@ -525,11 +542,11 @@ if __name__ == "__main__":
     ofp.write(out)
     ofp.write(err)
 
-    t = o.get_timing(delete_timing = not args.keep)
-    if args.timing:
-        rfp.write("Time: " + str(t) + "\n")
+    #t = o.get_timing(delete_timing = not args.keep)
+    #if args.timing:
+    #    rfp.write("Time: " + str(t) + "\n")
     if args.print_resources:
-        A = o.getResources(cleanup = args.keep)
+        A = o.getResources()
         rfp.write("CPU Time: %d\n" % (A[0]))
         rfp.write("Wall time: %d\n" % (A[1]))
         rfp.write("Memory: %d\n" % (A[2]))
