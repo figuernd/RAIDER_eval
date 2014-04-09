@@ -17,30 +17,36 @@ def parse_params(args):
     parser.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     parser.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     parser.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
-    parser.add_argument('--seq_files', nargs = "+", help = "Files containing genomic sequence")
-    parser.add_argument('--chromosome', help = "Template chromosome file")
-    parser.add_argument('--repeat', help = "Repeat file")
-    parser.add_argument('-n', '--num_sims', help ="Number of simulations")
-    parser.add_argument('--rng_seed', help ="RNG seed") 
+    subparsers = parser.add_subparsers(dest="subparser_name")
+    parser_seqs = subparsers.add_parser("seq_files")
+    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence")
+    parser_chrom = subparsers.add_parser("chrom_sim")
+    parser_chrom.add_argument('chromosome', help = "Template chromosome file")
+    parser_chrom.add_argument('repeat', help = "Repeat file")
+    parser_chrom.add_argument('num_sims', type = int, help ="Number of simulations")
+    parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
+    parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
+    parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
+    parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
+    parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chomosome file \".fa\" with \".sim.fa\")")
     return parser.parse_args(args)
 
-def simulate_chromosome(chromosome, repeat, rng_seed, output_dir = None):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, output_file):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including new simulated chromosome 
     file) into run_raider"""
-    output_dir = output_dir if output_dir else tempfile.mkdtemp(dir = ".")
-    if not os.path.exists('./%s' % (args.output_dir)):
-        os.makedirs('./%s' % (args.output_dir))
-    
-
-    c_file = tempfile.mkstemp(suffix = ".fa", dir = output_dir)
-    cmd = "./chromsome_simulator.py -s %s -o %s --chromsome %s --repeat_file %s" % (rng_seed, c_file[1], chromosome, repeat)
+    #output_file = output_file if output_file else tempfile.mkstemp(dir = ".")[1]
+    output_file = output_file if output_file else re.sub(".fa$", ".sim.fa", chromosome) 
+    cmd = "./chromsome_simulator.py -s %s -o %s -l %s -n %s -f %s %s %s" % (rng_seed, output_file, length, neg_strand, fam_file, chromosome, repeat)
     print(cmd)
-    p3 = pbsJobHandler(batch_file = "%s.batch" % (c_file[1]), executable = cmd)
-    p3.submit()
-    p3.file = c_file[1]
-    p3.output = output_dir
-    return p3
+    p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
+    p.submit()
+    p.chrom_output = output_file
+    return p
+
+def run_raider_chrom(p, seed, f, output_dir = None):
+    p.wait();
+    return run_raider(seed, f, p.chrom_output, output_dir)
 
 
 def run_raider(seed, f, input_file, output_dir = None):
@@ -77,7 +83,7 @@ if __name__:
     args = parse_params(sys.argv[1:])
     J = []
 
-    if args.seq_files:	
+    if args.subparser_name == "seq_files" and args.seq_files:	
         ### For each listed file (in args.seq_files): invoke RAIDER on the file
         ### and put the resuling pbs object ito the J list.
         for file in args.seq_files:
@@ -96,22 +102,19 @@ if __name__:
         for p in J2:
             p.wait()
 
-    elif args.chromosome and args.repeat and args.num_sims:
+    elif args.subparser_name == "chrom_sim" and args.chromosome and args.repeat and args.num_sims:
         ### Create n simulated chromosomes, invoke RAIDER on each chromosome
         ### and put the resulting pbs object into the J list.
         J3 =[]
         for i in range(int(args.num_sims)):
             J3.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, \
-                     rng_seed = args.rng_seed, output_dir = args.output_dir))
+                     rng_seed = args.rng_seed, length = args.length, neg_strand = args.negative_strand, \
+                     fam_file = args.family_file, output_file= args.output))
         J = []
         for p in J3:
-            p.wait()
-            output = re.sub("((\.fasta))$", ".fa" + (p.output), p.file)
-            J.append(run_raider(seed = args.seed, f = args.f, input_file = p.file, output_dir = p.output))
-        for p1 in J:
-            p1.wait()
+            J.append(run_raider_chrom(p, seed = args.seed, f = args.f, output_dir = args.output_dir))
         J2 = []
-        for p1 in J:
+        for p in J:
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
             J2.append(create_raider_consensus(p, output))
         for p in J2:
