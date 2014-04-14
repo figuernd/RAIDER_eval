@@ -1,4 +1,5 @@
-#!/usr/bin/python2.7
+#!/software/python/3.3.3/bin/python3.3
+
 ############################################################################
 # consensus_seq.py
 # program for generating consensus sequences
@@ -54,7 +55,7 @@ def main(seq,elements,output):
             get_consensus(current_family, R, genome_string, wp)
             R = []
             current_family = int(A[0])
-        R.append((int(A[4]), int(A[5])))
+        R.append((int(A[-2]), int(A[-1])))
 
         
 if __name__ == "__main__":
