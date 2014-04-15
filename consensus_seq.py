@@ -11,8 +11,10 @@ import unittest
 import sys
 import re
 import Bio
-from Bio import Seq
+#from Bio import Seq
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
 from collections import defaultdict
 
 def generate_dictionary():
@@ -31,13 +33,18 @@ def get_consensus(family_num, R, genome_string, wp):
                 C[i]['N'] += 1
 
     consensus = [max([(c,b) for b,c in D.items()])[1] for D in C]
-    wp.write("%d\t%s\n" % (family_num, "".join(consensus)))
+    rep_seq = "".join(consensus)
+    #wp.write("%d\t%s\n" % (family_num, "".join(consensus)))
+    wp.write("%d\t%s\n" % (family_num, rep_seq))
+    #wp.write("%s\n" % ("".join(consensus)))
+    return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num))
 
 def main(seq,elements,output):  
     genomeFile = seq
     genome_string = next(SeqIO.parse(genomeFile, "fasta"))
     
     wp = open(output, "w")
+    records = []
 
     # Opening elements file
     elementFile = elements
@@ -48,15 +55,16 @@ def main(seq,elements,output):
     while True:
         line = f.readline()
         if not line:
-            get_consensus(current_family, R, genome_string, wp)
+            records.append(get_consensus(current_family, R, genome_string, wp))
             break
         A = re.split("\s+", line)
         if int(A[0]) != current_family:
-            get_consensus(current_family, R, genome_string, wp)
+            records.append(get_consensus(current_family, R, genome_string, wp))
             R = []
             current_family = int(A[0])
-        R.append((int(A[-2]), int(A[-1])))
-
+        R.append((int(A[-3]), int(A[-2])))
+    lib_output = re.sub("((\.fa)|(\.fasta))$", ".lib.fa" , output)
+    SeqIO.write(records, lib_output, "fasta")
         
 if __name__ == "__main__":
 
