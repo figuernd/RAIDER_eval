@@ -20,7 +20,11 @@ def parse_params(args):
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using")
-   
+    
+    # STATISTICS ARGUMENTS
+    parser.add_argument('--stats_dir', help = "Statistics output directory", default = None)
+    parser.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
+
     subparsers = parser.add_subparsers(dest="subparser_name")
     parser_seqs = subparsers.add_parser("seq_files")
     parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence")
@@ -28,21 +32,23 @@ def parse_params(args):
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
     parser_chrom.add_argument('num_sims', type = int, help ="Number of simulations")
+    parser_chrom.add_argument('--chrom_dir', help = "Simulated chromosome directory", default = None)
     parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
     parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
-    parser_chrom.add_argument('--chrom_dir', help = "Simulated chromosome output directory", default = None) 
     return parser.parse_args(args)
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, output_file, file_index, chrom_dir):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including new simulated chromosome 
     file) into run_raider"""
-    #output_file = output_file if output_file else tempfile.mkstemp(dir = ".")[1]
-    output_file = output_file if output_file else re.sub(".fa$", "."+str(file_index)+".sim.fa", chromosome) 
-    output_part = "-o %s " % (output_file)
+    if chrom_dir and not os.path.exists('./%s' % (chrom_dir)):
+        os.makedirs('./%s' % (chrom_dir))
+    chrom_dir = chrom_dir if chrom_dir else "."
+    output_file = (output_file if output_file else re.sub(".fa$", "."+str(file_index)+".sim.fa", chromosome)) 
+    output_part = "-o %s " % (chrom_dir + "/%s" %(output_file))
     seed_part = "-s %d " % (rng_seed) if rng_seed else ""
     length_part = "-l %d " % (length) if length else ""
     neg_strand_part = "-n " if neg_strand else ""
@@ -52,7 +58,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     print(cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
-    p.chrom_output = output_file
+    p.chrom_output = chrom_dir + "/" +  output_file
     p.index = file_index
     return p
 
@@ -87,7 +93,7 @@ def create_raider_consensus(p, output):
     p.wait();
     cmd = "./consensus_seq.py -s %s -e %s %s" % (p.file, p.raider_output + "/elements", output)
     print(cmd)
-    p2 = pbsJobHandler(batch_file = "%s.batch" % (output), executable = cmd)
+    p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
     p2.submit()
     p2.seq_file = p.file
     p2.output = output
@@ -105,8 +111,44 @@ def run_repeat_masker(p, num_processors, masker_dir):
     print(cmd)
     p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
     p2.submit()
-    p2.masker_output = masker_dir
+    p2.seq_file = p.seq_file
+    p2.consensus = lib_output
+    p2.masker_dir = masker_dir if masker_dir else "."
+    p2.masker_output = p2.masker_dir + "/" + os.path.basename(p.seq_file) + ".out"
     return p2
+
+def performance_stats(p, true_repeats, stats_dir, print_rpts):
+    p.wait()
+    stats_file = re.sub("((\.fa)|(\.fasta))$", ".stats", os.path.basename(p.seq_file))
+    stats_output = stats_dir + "/" + stats_file
+    print_part = "--print " if print_rpts else "" 
+    cmd = "./perform_stats.py " + print_part +  "%s %s %s %s %s" % (p.seq_file, true_repeats, p.consensus, p.masker_output, stats_output)
+    print(cmd)
+    p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
+    p2.submit()
+    p2.stats_dir = stats_dir
+    p2.stats_output = stats_output
+    return p2
+
+def performance_sum(stats_jobs, stats_dir):
+    tps = 0
+    fps = 0
+    fns = 0
+    for p in stats_jobs:
+        sf = open(p.stats_output, "r")
+        tps += int(re.split("\s+", sf.readline())[1])
+        fps += int(re.split("\s+", sf.readline())[1])
+        fns += int(re.split("\s+", sf.readline())[1])
+        sf.close()
+    smry = open(stats_dir + "/summary.stats", 'w')
+    smry.write("TP: %d\n" % (tps))
+    smry.write("FP: %d\n" % (fps))
+    smry.write("FN: %d\n" % (fns))
+    smry.write("TPR: %f\n" % (tps/float(tps + fns)))
+    smry.write("PPV: %f\n" % (tps/float(tps + fps)))
+    smry.write("FDR: %f\n" % (1 - (tps/float(tps + fps))))
+    smry.close()
+
 
 if __name__:
     args = parse_params(sys.argv[1:])
@@ -139,14 +181,10 @@ if __name__:
         ### and put the resulting pbs object into the J list.
         J =[]
 
-        if args.chrom_dir and not os.path.exists('./%s' % (args.chrom_dir)):
-            os.makedirs('./%s' % (args.chrom_dir))
-
-
         for i in range(int(args.num_sims)):
             J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, \
                      rng_seed = args.rng_seed, length = args.length, neg_strand = args.negative_strand, \
-                     fam_file = args.family_file, output_file= args.output, file_index = i, chrom_dir = args.chrom_dir))
+                     fam_file = args.family_file, chrom_dir = args.chrom_dir, output_file= args.output, file_index = i))
         J2 = []
         for p in J:
             J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, output_dir = args.output_dir))
@@ -157,8 +195,15 @@ if __name__:
         J4 = []
         for p in J3:
             J4.append(run_repeat_masker(p, args.pa, args.masker_dir))
+        J5 = []
+        stats_dir = args.stats_dir if args.stats_dir else "."
+        if args.stats_dir and not os.path.exists('./%s' % (args.stats_dir)):
+            os.makedirs('./%s' % (stats_dir))
         for p in J4:
+            J5.append(performance_stats(p, args.repeat, stats_dir, args.print_reps))
+        for p in J5:
             p.wait()
+        performance_sum(J5, stats_dir)
 
 
 
