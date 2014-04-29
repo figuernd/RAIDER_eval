@@ -34,9 +34,7 @@ def get_consensus(family_num, R, genome_string, wp):
 
     consensus = [max([(c,b) for b,c in D.items()])[1] for D in C]
     rep_seq = "".join(consensus)
-    #wp.write("%d\t%s\n" % (family_num, "".join(consensus)))
     wp.write("%d\t%s\n" % (family_num, rep_seq))
-    #wp.write("%s\n" % ("".join(consensus)))
     return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num))
 
 def main(seq,elements,output):  
