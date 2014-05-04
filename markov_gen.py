@@ -15,6 +15,7 @@ import sys
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
+import pickle
 
 fn={
     'A':0, 'a':0,
@@ -24,7 +25,7 @@ fn={
     'N':-1, 'n':-1
 }
 
-bases = "acgtACGT"
+bases = "ACGTacgt"
 baseSet = set(bases)
 base2index = {x:y for x,y in zip("acgtnACGTN", [0,1,2,3,-1,0,1,2,3,-1])}
 
@@ -68,8 +69,9 @@ def NextIndex(i,k,seq): # Should be having inSeq as a parameter
 
    
 def Markov(k,inSeq): # inSeq as parameter?
-    """Create Markov chain
-    Input: k is the degree of the Markov chain
+    """
+    Create a k-th order Markov chain based on the distribution
+    of inSeq
     """
     Mark= [0]*(4**(k+1))   
     mask=(1<<((k+1)*2))-1
@@ -102,17 +104,17 @@ def Markov(k,inSeq): # inSeq as parameter?
         Klist[KMOne] = ProbTuple(Mark,KMOne)
     return Klist       
 
+def MarkovArray(k, inSeq): 
+    """
+    Create an array such that M[i] is the ith-order for inSeq
+    (0 <= i <= k).
+    """
+    return [Markov(i,inSeq) for i in range(0,k+1)]
 
 
-
-def generate_sequence(seq, k, l = None, rng_seed = None):
-    """Generate a random sequence of length l using a k-order Markov chain modeled on sequence seq"""
-    random.seed(rng_seed)
-    seq_len = l if l else len(seq)
-
-    ## Generate order Markov chains
-    markov_list = [Markov(i, seq) for i in range(k+1)]
-
+def generate_sequence(markov_list, seq_len):
+    """Generate a random sequence of length length using the list of k-order Markov chain modeled on sequence seq"""
+    k = len(markov_list)-1
     mask = (1 << (k*2)) - 1
 
     j = 0
@@ -130,24 +132,29 @@ def generate_sequence(seq, k, l = None, rng_seed = None):
         j = min(j+1,k)
 
     return "".join(seq)
+
+def pickle_markov_list(markov_list, file):
+    pickle.dump(markov_list, open(file, "wb"))
+    
+
+def create_pmck(seqFile, k, output = None):
+    s = "N".join([str(r.seq) for r in SeqIO.parse(seqFile, 'fasta')])
+    M = MarkovArray(k,s)
+    if not ouput:
+        output = re.sub("\.(fa|fasta)$", ".pmc%d" % (k), seqFile)
+    pickle_markov_list(M, output)
+
+def read_pmck(file):
+    return pickle.load(open(file, "rb"))
+
     
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Generate simulated sequence using a k-order Markov chain")
     parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
-    parser.add_argument('-l', type = int, help = "Sequence length", default = None)
-    parser.add_argument('-r', '--rng_seed', type = int, help = "rng seed", default = None)
-    parser.add_argument('-o', '--output', help = "Output file (stdout by default -- fasta format if file name ends in .fa or .fasta)", default = "-")
+    parser.add_argument('-p', '--pickle_file', help = "Name of pickled file (default: <seq file>.pmc<k>)")
     parser.add_argument('seq_file', help = "Model sequence file (fasta format)")
     args = parser.parse_args()
 
-    s = "".join([str(r) for r in SeqIO.read(args.seq_file, 'fasta')])
-    s2 = generate_sequence(s, args.k, args.l, args.rng_seed)
-    if args.output == '-':
-        sys.stdout.write(s2)
-    elif re.search(".fa(asta)?$", args.output):
-        SeqIO.write(SeqRecord(seq = Seq(s2), id = args.seq_file, description = "simulation"), args.output, "fasta")
-    else:
-        open(args.output, "w").write(s2)
-
+    create_pmck(args.seq_file, args.k, args.output)
                 

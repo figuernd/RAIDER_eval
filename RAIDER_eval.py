@@ -46,12 +46,13 @@ def parse_params(args):
     parser_chrom.add_argument('--chrom_dir', help = "Simulated chromosome directory", default = None)
     parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
+    parser_chrom.add_argument('-k', type = int, help = "Order of markov chain", default = 5)  # KARRO: Added this
     parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     return parser.parse_args(args)
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir, k):  # KARRO: Added k value
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -59,15 +60,28 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
         chrom_dir = "%s/%s" % (curr_dir, chrom_dir) if curr_dir else chrom_dir
         if not os.path.exists('./%s' % (chrom_dir)):
             os.makedirs('./%s' % (chrom_dir))
+
+
+    # KARRO: I did a few things in the following:
+    #        1) Modified the construction of cmd to reflect the changed in chromosome_simulator.py.
+    #        2) Added the k_arg
+    #        4) Rearranged the order of the *_arg assignments for readability
+    #        5) Used the str.format() method to construct command -- improves readability, making it east to change later if necessary.
+
     # Output file is either specified or replace .fa with .sim.#.fa
-    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa"%(file_index), chromosome)) 
-    output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
-    output_arg = "-o %s" % (output_path)
-    seed_arg = "-s %d" % (rng_seed) if rng_seed else ""
     length_arg = "-l %d" % (length) if length else ""
+    k_arg = "-k %d" % (k)
+    seed_arg = "-s %d" % (rng_seed) if rng_seed else ""
     neg_arg = "-n" if neg_strand else ""
     fam_arg = "-f %s" % (fam_file) if fam_file else ""
-    cmd = "python3.3 chromsome_simulator.py %s %s %s %s %s %s %s" % (output_arg, seed_arg, length_arg, neg_arg, fam_arg, chromosome, repeat)
+    seq_arg = chromosome
+    repeat_arg = repeat
+
+    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa"%(file_index), chromosome)) 
+    output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
+    output_arg = "%s" % (output_path)
+
+    cmd = "python3.3 chromosome_simulator.py {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
     print(cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
@@ -236,9 +250,13 @@ if __name__:
         ### and put the resulting pbs object into the J list.
         J =[]
         for i in range(int(args.num_sims)):
-            J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, \
-                     rng_seed = args.rng_seed, length = args.length, neg_strand = args.negative_strand, \
-                     fam_file = args.family_file, chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, curr_dir = curr_dir))
+            J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
+                                         rng_seed = args.rng_seed, length = args.length, 
+                                         neg_strand = args.negative_strand, fam_file = args.family_file, 
+                                         chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
+                                         curr_dir = curr_dir, k = args.k))  # KARRO: Added k, reformated for readability.  (FYI: the EOL \ not needed if you 
+                                                                            # are in the middle of a structure (e.g. a parameter list), where the parser can tell the line is not done.
+
         ### Sequentially work through the J list and, when next job is finished,
         ### start raider job running and put resulting pbs job object into J2 list
         J2 = []
