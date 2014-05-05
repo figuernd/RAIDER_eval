@@ -85,7 +85,6 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 
     cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
     print(cmd)
-    exit(1)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
     p.chrom_output = output_path
@@ -110,7 +109,7 @@ def run_raider(seed, f, m, input_file, output_dir, curr_dir):
     else:
         dir_part = curr_dir if curr_dir else "."
         output_dir = output_dir if output_dir else tempfile.mkdtemp(prefix = "raider_output", dir = dir_part)
-    if not os.pat.exists('./%s' % (output_dir)):
+    if not os.path.exists('./%s' % (output_dir)):
         os.makedirs('./%s' % (output_dir))
     min_arg = "-m %d" % (m) if m else ""
     cmd = "./raider -q -c %d %s %s %s %s" % (f, min_arg, seed, input_file, output_dir)
