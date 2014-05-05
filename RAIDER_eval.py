@@ -81,7 +81,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
     output_arg = "%s" % (output_path)
 
-    cmd = "python3.3 chromsome_simulator.py {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
+    cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
     print(cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
