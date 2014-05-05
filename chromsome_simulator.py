@@ -16,7 +16,7 @@ def parse_params(args):
     parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
     parser.add_argument('-s', '--seed', type = int, help = "RNG seed", default = None)
     parser.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
-    parser.add_argument('-f', '--family_file', help = "List of repeat families to use", default = "rpt_list.txt")
+    parser.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser.add_argument('-m', '--mask', action = "store_true", help = "Turn masking on (all repeats printed as lower case).", default = False)
     parser.add_argument('-S', '--suppress_pmck', action = "store_true", help = "Suppress the generation of a .pmc<k> file to store the markov chain for re-use")
     #parser.add_argument('-o', '--output', help = "Output file (Default: replace chomosome file \".fa\" with \".sim.fa\")")
@@ -94,6 +94,7 @@ def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime
     random.seed(args.seed)
     template_seq, markov_list = loadSeqAndChain(args.seq_file, args.k, suppress)
     filter_set = {y.strip() for line in open(filter_file) for y in re.split("\s+", line.rstrip())} if filter_file else {}
+    print(filter_set)
     rpt_gen = nextRepeat(repeat_file, use_3prime, filter_set)
     simulated_sequence = generate_chromosome(template_seq, markov_list, rpt_gen, mask, length)
     SeqIO.write([SeqRecord(seq = Seq(simulated_sequence), id = "seq_file", description = "Simulated sequence from %s using order %d markov chain" % (seq_file, len(markov_list)-1))], output_file, 'fasta')
