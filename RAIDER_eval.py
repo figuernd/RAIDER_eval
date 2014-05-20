@@ -1,7 +1,7 @@
 #!/software/python/3.3.3/bin/python3.3
 import sys
 import subprocess
-import os.path
+import os
 import os.path
 import argparse
 from redhawk import *
@@ -13,7 +13,9 @@ def parse_params(args):
     parser = argparse.ArgumentParser(description = "Evaluate RAIDER against RepeatScout")
     
     # GENERAL ARGUMENTS
-    parser.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
+    parser2 = parser.add_mutually_exclusive_group()
+    parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
+    parser2.add_argument('--named_organize', help = "Organize under a named directory", default = None)
     parser.add_argument('-r', '--raider', action = "store_true", help = "Run raider", default = True)
     
     # RAIDER ARGUMENTS
@@ -81,7 +83,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
     output_arg = "%s" % (output_path)
 
-    cmd = "python3.3 chromosome_simulator.py {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
+    cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
     print(cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
@@ -213,9 +215,15 @@ def performance_sum(stats_jobs, stats_dir, curr_dir):
 
 if __name__:
     args = parse_params(sys.argv[1:])
-    if args.organize:
-        prefix_part = "REV_%d_%d_" % (args.f, len(args.seed))
-        curr_dir = tempfile.mkdtemp(prefix = prefix_part, dir = ".")
+    if args.organize or args.named_organize:
+        if args.organize:
+            prefix_part = "REV_%d_%d_" % (args.f, len(args.seed))
+            curr_dir = tempfile.mkdtemp(prefix = prefix_part, dir = ".")
+        else:
+            curr_dir = args.named_organize
+            if not os.path.exists(curr_dir):
+                os.makedirs(curr_dir)
+
         if not os.path.exists('./%s' % (curr_dir)):
             os.makedirs('./%s' % (curr_dir))
     else:

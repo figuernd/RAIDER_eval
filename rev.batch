@@ -10,5 +10,5 @@ python3.3 RAIDER_eval.py \
     -f $c \
     -s ${seed:0:$cnt} \
     --print_reps \
-    chrom_sim test.fa test.fa.out $reps
+    chrom_sim rt1.fa rt1.fa.out $reps
 
