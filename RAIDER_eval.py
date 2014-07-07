@@ -15,8 +15,7 @@ def parse_params(args):
     # GENERAL ARGUMENTS
     parser2 = parser.add_mutually_exclusive_group()
     parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
-    parser2.add_argument('--named_organize', help = "Organize under a named directory", default = None)
-    parser.add_argument('-r', '--raider', action = "store_true", help = "Run raider", default = True)
+    parser2.add_argument('--no', '--named_organize', dest = "named_organize", help = "Organize under a named directory", default = None)
     
     # RAIDER ARGUMENTS
     parser.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
@@ -25,6 +24,7 @@ def parse_params(args):
     parser.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     parser.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     parser.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
+    #parser.add_argument('-r', '--raider', action = "store_true", help = "Run raider", default = True)
     
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
@@ -38,7 +38,7 @@ def parse_params(args):
     
     # SEQUENCE FILE OPTION ARGUMENTS
     parser_seqs = subparsers.add_parser("seq_files")
-    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence")
+    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence (for running on real data)")
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
