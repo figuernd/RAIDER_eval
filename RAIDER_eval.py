@@ -8,6 +8,11 @@ from redhawk import *
 import tempfile
 import re
 
+#################################################################
+# The following global variables are related to debugging only.
+show_progress = False
+#################################################################
+
 def parse_params(args):
     """Parse command line arguments using the argparse library"""
     parser = argparse.ArgumentParser(description = "Evaluate RAIDER against RepeatScout")
@@ -34,6 +39,11 @@ def parse_params(args):
     parser.add_argument('--stats_dir', help = "Statistics output directory", default = None)
     parser.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
 
+    # DEBUGGING ARGUMENTS
+    debug_group = parser.add_argument_group(title = "debugging")
+    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
+
+
     subparsers = parser.add_subparsers(dest="subparser_name")
     
     # SEQUENCE FILE OPTION ARGUMENTS
@@ -52,7 +62,16 @@ def parse_params(args):
     parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
-    return parser.parse_args(args)
+    
+    
+    args2 =  parser.parse_args(args)
+    
+    #### The following is to set the global debugging variables 
+    global show_progress
+    show_progress = args2.show_progress
+    ###
+
+    return args2
 
 def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir, k):  # KARRO: Added k value
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
@@ -84,7 +103,10 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_arg = "%s" % (output_path)
 
     cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
-    print(cmd)
+    if show_progress:
+        print("Creating simulation: ", cmd)
+
+    #p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
     p.chrom_output = output_path
@@ -113,7 +135,8 @@ def run_raider(seed, f, m, input_file, output_dir, curr_dir):
         os.makedirs('./%s' % (output_dir))
     min_arg = "-m %d" % (m) if m else ""
     cmd = "./raider -q -c %d %s %s %s %s" % (f, min_arg, seed, input_file, output_dir)
-    print(cmd)
+    if show_progress:
+        print("Launching raider: ", cmd)
     p = pbsJobHandler(batch_file = "raider", executable = cmd)
     p.submit()
     p.file = input_file
@@ -127,7 +150,8 @@ def create_raider_consensus(p, output):
     writes the results to the output directory."""
     p.wait();
     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
-    print(cmd)
+    if show_progress:
+        print("Creating consensus sequence: ", cmd)
     p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
     p2.submit()
     p2.curr_dir = p.curr_dir
@@ -152,7 +176,8 @@ def run_repeat_masker(p, num_processors, masker_dir):
     processor_part = "-pa %d " % (num_processors) if num_processors else ""
     output_part = "-dir %s " % (masker_dir) if masker_dir else "-dir %s " % (p.curr_dir) if p.curr_dir else ""
     cmd = "RepeatMasker %s %s %s %s" % (library_part, processor_part, output_part , p.seq_file)
-    print(cmd)
+    if show_progress:
+        print("Launch repeatmasker: ", cmd)
     p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
     p2.submit()
     p2.seq_file = p.seq_file
@@ -172,7 +197,8 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts):
     stats_out = "%s/%s"%(stats_dir, stats_file) if stats_dir else "%s/%s" % (p.curr_dir, stats_file) if p.curr_dir else stats_file
     print_part = "--print " if print_rpts else "" 
     cmd = "python3.3 perform_stats.py %s %s %s %s %s %s" % (print_part, args.chromosome, true_repeats, p.seq_file, p.masker_output, stats_out)
-    print(cmd)
+    if show_progress:
+        print("Launching analysis: ", cmd)
     p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
     p2.submit()
     p2.curr_dir = p.curr_dir
@@ -269,9 +295,11 @@ if __name__:
         ### start raider job running and put resulting pbs job object into J2 list
         J2 = []
         for p in J:
+            print("HERE1")
             J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, m = args.min,  output_dir = args.output_dir))
         ### Sequentially work through the J2 list and, when next job is finished,
         ### start consensus sequence job running and stick new pbs job onto J3 list
+        print("DONE")
         J3 = []
         for p in J2:
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
