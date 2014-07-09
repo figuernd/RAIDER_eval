@@ -170,7 +170,7 @@ class pbsJobHandler:
 
         f.close()
         self.jobid=0
-        self.split = not self.suppress_pbs   # Set to true when the .e file gets split, unless we are not using pbs (in which case it is irrelevant)
+        self.split = self.suppress_pbs   # Set to true when the .e file gets split, unless we are not using pbs (in which case it is irrelevant)
         
         if os.path.isfile(self.epilogue):
             os.remove(self.epilogue)
@@ -195,11 +195,13 @@ class pbsJobHandler:
            """
         if self.suppress_pbs:   # We are not using the pbs job handler -- direct call to Popen
             self.jobid = random.randint(1000000, 9999999)
-
+            self.ffile = self.output_location + "/" + self.jobname + ".f" + str(self.jobid)
+            
             if not re.search("[^2]\>", self.cmd):
                 self.cmd += " > {output_location}/{jobname}.o{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
             if not re.search("2\>", self.cmd):
                 self.cmd += " 2> {output_location}/{jobname}.e{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
+            self.cmd += "; echo \"DONE\" > %s" % (self.ffile)
             self.p = subprocess.Popen(self.cmd, shell=True)
             
 
@@ -255,8 +257,11 @@ class pbsJobHandler:
     def isJobRunning ( self, numTrials = 3, delay = 5 ):
         """Query of the object represented by the job is still running."""
         if self.suppress_pbs:
-            o, e = subprocess.Popen(["ps"], stdout = subprocess.PIPE).communicate()
-            return re.search("\s%s\s" % self.p.pid, o.encode()) 
+            if not os.path.isfile(self.ffile):
+                return True
+            else:
+                self.status = "finished"
+                return False
 
         # If we are using pbs...
         counter = 1
