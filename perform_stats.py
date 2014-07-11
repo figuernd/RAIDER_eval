@@ -44,8 +44,6 @@ def get_stats(real_indices, gen_indices, gen_length):
     statistics regarding the tool's ability to classify bases as part of repeats
     or not part of repeats. Cutoff is a decimal amount indicating how much of 
     a repeat must match for the bases in it to match"""
-    print(str(real_indices))
-    print(str(gen_indices))
     tps, fns, fps = [], [], []
     tp, fn, fp = 0, 0, 0
     while len(real_indices) > 0 and len(gen_indices) > 0:
@@ -81,9 +79,6 @@ def get_stats(real_indices, gen_indices, gen_length):
             fp += e2 - s2
     tn = gen_length - fp - tp - fn
     tpr, tnr, ppv, npv, fpr, fdr = stats(tp, fp, fn, tn)
-    print(str(tps))
-    print(str(fns))
-    print(str(fps))
     return tp, fp, fn, tn, tpr, tnr, ppv, npv, fpr, fdr, tps, fps, fns
 
 def stats(tp, fp, fn, tn):
