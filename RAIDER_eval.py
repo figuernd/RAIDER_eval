@@ -11,6 +11,7 @@ import re
 #################################################################
 # The following global variables are related to debugging only.
 show_progress = False
+simulate_only = False
 #################################################################
 
 def parse_params(args):
@@ -42,7 +43,7 @@ def parse_params(args):
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
-
+    debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
     subparsers = parser.add_subparsers(dest="subparser_name")
     
@@ -64,14 +65,17 @@ def parse_params(args):
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     
     
-    args2 =  parser.parse_args(args)
+    arg_return =  parser.parse_args(args)
     
     #### The following is to set the global debugging variables 
     global show_progress
-    show_progress = args2.show_progress
+    show_progress = arg_return.show_progress
+
+    global simulate_only
+    simulate_only = arg_return.simulate_only
     ###
 
-    return args2
+    return arg_return
 
 def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir, k):  # KARRO: Added k value
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
@@ -289,17 +293,23 @@ if __name__:
                                          neg_strand = args.negative_strand, fam_file = args.family_file, 
                                          chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
                                          curr_dir = curr_dir, k = args.k))  # KARRO: Added k, reformated for readability.  (FYI: the EOL \ not needed if you 
-                                                                            # are in the middle of a structure (e.g. a parameter list), where the parser can tell the line is not done.
+                                                                            # are in the middle of a structure (e.g. a parameter list), where the parser can 
+                                                                            # tell the line is not done.
+
+        if simulate_only:
+            [r.wait() for r in J]
+            [r.erase_files() for r in J]
+            sys.exit(0)
+
 
         ### Sequentially work through the J list and, when next job is finished,
         ### start raider job running and put resulting pbs job object into J2 list
         J2 = []
         for p in J:
-            print("HERE1")
             J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, m = args.min,  output_dir = args.output_dir))
         ### Sequentially work through the J2 list and, when next job is finished,
         ### start consensus sequence job running and stick new pbs job onto J3 list
-        print("DONE")
+
         J3 = []
         for p in J2:
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
