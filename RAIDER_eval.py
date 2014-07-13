@@ -22,34 +22,37 @@ def parse_params(args):
     parser2 = parser.add_mutually_exclusive_group()
     parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
     parser2.add_argument('--no', '--named_organize', dest = "named_organize", help = "Organize under a named directory", default = None)
+
+    # TOOL SELECTION
+    parser_tools = parser.add_argument_group("tool selection (all on by default)")
+    parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    # Will later add: RepeatModeler, RECON, PILER (other?)
+
     
     # RAIDER ARGUMENTS
-    parser.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    parser.add_argument('-m', '--min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
-    parser.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
-    parser.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
-    parser.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
-    parser.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
-    #parser.add_argument('-r', '--raider', action = "store_true", help = "Run raider", default = True)
+    raider_argument = parser.add_argument_group("RAIDER parameters")
+    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
+    raider_argument.add_argument('-m', '--min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
+    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
+    raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
+    raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
+    raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using")
     
-    # STATISTICS ARGUMENTS
-    parser.add_argument('--stats_dir', help = "Statistics output directory", default = None)
-    parser.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
+    # STATISTICS ARGUMENT
+    stats_group = parser.add_argument_group(title = "Statistics argument")
+    stats_group.add_argument('--stats_dir', help = "Statistics output directory", default = None)
+    stats_group.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
-    # TOOL SELECTION
-    parser_tools = subparser.add_parser("tool selection (all on by default)")
-    parser_tools = subparser.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
-    parser_tools = subparser.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
-    # Will later add: RepeatModeler, RECON, PILER (other?)
     
 
     subparsers = parser.add_subparsers(dest="subparser_name")
