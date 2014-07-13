@@ -45,6 +45,13 @@ def parse_params(args):
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
+    # TOOL SELECTION
+    parser_tools = subparser.add_parser("tool selection (all on by default)")
+    parser_tools = subparser.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    parser_tools = subparser.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    # Will later add: RepeatModeler, RECON, PILER (other?)
+    
+
     subparsers = parser.add_subparsers(dest="subparser_name")
     
     # SEQUENCE FILE OPTION ARGUMENTS
@@ -275,6 +282,7 @@ if __name__:
             # string in there if it does exist.
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
             J2.append(create_raider_consensus(p, output))
+
         ### Sequentially work through the J2 list and, when next job has finished,
         ### start repeatmasker job running and stick new pbs job onto J3 list
         J3 = []
