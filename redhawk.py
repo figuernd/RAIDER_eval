@@ -5,8 +5,10 @@
 # Class for submitting / managing redhawk jobs through a python script
 # Written by: John Karro, Jens Muller
 # Date: Nov. 1, 2011
+# Last modified: July 12, 2014
 #
 
+import random
 import re, string, sys
 import subprocess
 import getopt
@@ -17,14 +19,9 @@ import pickle
 from argparse import *
 import pwd
 import datetime
+import pickle
+import tempfile
 
-uid = os.getuid()
-current_user = pwd.getpwuid(uid)[0]  # When run on redhawk with a nohup, os.getlogin() does not work
-
-redhawkStatsRe = re.compile("\s+C\s+[^\s]+\s*$")
-redhawkInQueueRe = re.compile("\s+[R|Q]\s+[^\s]+\s*$")
-
-log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
 
 epilogue_str = """#!/bin/sh
 echo "Redhawk Epilogue Args:" >&2
@@ -41,16 +38,50 @@ echo "" >&2
 exit 0
 """
 
-class RedhawkError(Exception):
+############################################################
+# Library-global variables
+log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
+uid = os.getuid()
+current_user = pwd.getpwuid(uid)[0]  # When run on redhawk with a nohup, os.getlogin() does not work
+try:
+    subprocess.check_call(["qstat"], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+except:
+    pbs_present = False
+else:
+    pbs_present = True
+
+job_list = set()    # Gobal list of all jobs that have been submitted and not yet identified as having quit
+
+job_limit = 200 if pbs_present else 2
+
+redhawkStatsRe = re.compile("\s+C\s+[^\s]+\s*$")
+redhawkInQueueRe = re.compile("\s+[R|Q]\s+[^\s]+\s*$")
+
+# This contains the default parameter values for __init__.  Doing it this way is no longer necessary,
+# but its not worth taking out.
+pbs_defaults = {'use_pid':True, 'job_name':None, 'nodes':1, 'ppn':1, 'mem':False, 'walltime':"40:00:00", 'address':None, 'join':False, 'env':None, 'queue':None, 'mail':None, 'output_location':None, 'chdir':None, 'RHmodules':None, 'file_limit':6, 'file_delay':5, 'epilogue_file':None}
+
+
+
+
+############################################################
+class PBSError(Exception):
+    """Exception class for pbsJobHandler class"""
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
 
+
+############################################################
 class pbsJobHandler:
     """A pbsJobHandler corresponds to a job launched (or to be launched) on redhawk.  Once the object is created (and provided with a command-line execution command),
        the user can extract various inforamtion about the job (current status, output, etc...) and cleanup files."""
-    def __init__(self, batch_file, executable, use_pid = True, job_name = None, nodes = 1, ppn = 1, mem = False, walltime = "40:00:00", address = None, join = False, env = None, queue = None, mail = None, output_location = None, chdir = None, RHmodules = None, file_limit = 6, file_delay = 5, epilogue_file = None): 
+    def __init__(self, batch_file, executable, use_pid = pbs_defaults['use_pid'], job_name = pbs_defaults['job_name'], nodes = pbs_defaults['nodes'], ppn = pbs_defaults['ppn'], 
+                 mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
+                 queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
+                 RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
+                 suppress_pbs = None):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk name.  Default = the batch file name.
@@ -68,20 +99,25 @@ class pbsJobHandler:
            * output_location: Directory to place output files.  Default: current directory.
            * RHmodules: A list of redhawk modules to be loaded before run (e.g. ['Blast+']).  Default: none.
            * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.  By default: <batch_file>.epilogue.py"
+           * suppress_pbs: If true, this will run the job with a standard popen, instead of forking it out to the pbs job manager.  (Included so we can run code
+                           on other machines for testing.) Will still create all files that would have been created -- emulates redhawk execution as much as possible.
+                           Not yes set up to extract resource usage.  If false, will force an attempt to use the pbs job manager.  By default: it will use pbs if
+                           possible (specifically: if qstat can be run on the machine)
         """
         if epilogue_file and "/" in epilogue_file:
-            raise RedhawkError("Bad epilogue file name: " + epilogue_file)
+            raise PBSError("Bad epilogue file name: " + epilogue_file)
         
         self.batch_file_name = batch_file
         if use_pid:
             self.batch_file_name = self.batch_file_name + "." + str(os.getpid())
-        self.executable_name = executable
+        self.cmd = executable
         self.jobname = job_name if job_name else batch_file
         self.join = 'n'
         self.file_limit = file_limit
         self.file_delay = file_delay
         self.resources = None
         self.status = "unstarted"
+        self.suppress_pbs = not pbs_present if suppress_pbs is None else suppress_pbs 
         self.epilogue = os.getcwd() + "/" + "redhawk_epilogue.py"
         f = open(self.batch_file_name, 'w')
 
@@ -137,18 +173,18 @@ class pbsJobHandler:
 
         #if timing:
         #    self.timing = self.output_location + "/" + self.batch_file_name + ".timing"
-        #    self.executable_name = "/usr/bin/time -o " + self.timing + " -f \"%U\" " + self.executable_name
+        #    self.cmd = "/usr/bin/time -o " + self.timing + " -f \"%U\" " + self.cmd
         #else:
         #    self.timing = None
 
         if self.modules != None:
-            self.executable_name = "; ".join(["module load " + x for x in self.modules]) + "; " + self.executable_name
+            self.cmd = "; ".join(["module load " + x for x in self.modules]) + "; " + self.cmd
 
-        f.write(self.executable_name)
+        f.write(self.cmd)
 
         f.close()
         self.jobid=0
-        self.split = False   # Set to true when the .e file gets split
+        self.split = self.suppress_pbs   # Set to true when the .e file gets split, unless we are not using pbs (in which case it is irrelevant)
         
         if os.path.isfile(self.epilogue):
             os.remove(self.epilogue)
@@ -166,47 +202,65 @@ class pbsJobHandler:
 ###   seconds between retry (default is 10 seconds)
 ### return job id if successful
 ### return -1 if not
-    def submit(self, preserve=True, print_qsub = False, job_limit = 200, delay=10, user=current_user ):
+    def submit(self, preserve=True, print_qsub = False, job_limit = job_limit, delay=10, user=current_user ):
         """Submit job to redhawk.  Optional parameters:
            * preserve: if False, delete the batch file.  Default = true.
            * job_limit: If the user currently has this many jobs on the batch, wait until one finishes.
            """
-        if job_limit > 0:
-            limit_jobs(limit=job_limit, delay=delay, user=user)
-
-        optionalFlag= '-l epilogue=' + self.epilogue
-        retry=600
-        sleepTimeBetweenRetry=10
-        trial=1;
-        cmd = "qsub " + optionalFlag + " " + self.batch_file_name
-
-        while (trial < retry): 
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # Sleep to ensure the prh file is created before termination
-            (output, error) = [x.decode() for x in p.communicate()]
-            if p.returncode == 0:
-                break
-            trial = trial + 1
-
-        if trial == retry:
-            return -1
+        if self.suppress_pbs:   # We are not using the pbs job handler -- direct call to Popen
+            self.jobid = random.randint(1000000, 9999999)
+            self.ffile = self.output_location + "/" + self.jobname + ".f" + str(self.jobid)
             
-        if not preserve:
-            os.remove(self.batch_file_name)
-                
-        t=re.split('\.',output)
-        self.jobid=t[0]
+            if not re.search("[^2]\>", self.cmd):
+                self.cmd += " > {output_location}/{jobname}.o{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
+            if not re.search("2\>", self.cmd):
+                self.cmd += " 2> {output_location}/{jobname}.e{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
+            self.cmd += "; echo \"DONE\" > %s" % (self.ffile)
+            self.p = subprocess.Popen(self.cmd, shell=True)
+            
+
+        else:
+            if job_limit > 0:
+                limit_jobs(limit=job_limit, delay=delay, user=user, use_pbs = not self.suppress_pbs)
+
+            optionalFlag= '-l epilogue=' + self.epilogue
+            retry=600
+            sleepTimeBetweenRetry=10
+            trial=1;
+            cmd = "qsub " + optionalFlag + " " + self.batch_file_name
+
+            while (trial < retry): 
+                p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # Sleep to ensure the prh file is created before termination
+                (output, error) = [x.decode() for x in p.communicate()]
+                if p.returncode == 0:
+                    break
+                trial = trial + 1
+
+            if trial == retry:
+                return -1
+
+            if not preserve:
+                os.remove(self.batch_file_name)
+
+            t=re.split('\.',output)
+            self.jobid=t[0]
+
         self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
         self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
         self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
-            print('qsub jobid', self.jobid)
-                
+            if self.surpress_pbs:
+                print("Popen: jobid: {jobid}, process id: {pid}".format(jobid = self.jobid, pid = self.p.pid))
+            else:
+                print("PBS: jobid: {jobid}".format(jobid = self.jobid))
+
         self.status = "running"
 
+        job_list.add(self)
         return self
 
-    def submitjob(self, preserve=False, print_qsub = False, job_limit = 200, delay=10, user=current_user ):
+    def submitjob(self, preserve=False, print_qsub = False, job_limit = job_limit, delay=10, user=current_user ):
         """Depricated: replaced with submit()"""
         return self.submit(preserve, print_qsub, job_limit, delay, user)
 
@@ -217,18 +271,21 @@ class pbsJobHandler:
 ### Prereq is jobid must be a submitted job
     def isJobRunning ( self, numTrials = 3, delay = 5 ):
         """Query of the object represented by the job is still running."""
-        #cmd = "qstat " + str(self.jobid)
-        
-        #magicString='Unknown Job Id'  ### magicString _might_ need to be changed if Torque version changes
-        #(output, error) = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        if self.suppress_pbs:
+            if not os.path.isfile(self.ffile):
+                return True
+            else:
+                self.status = "finished"
+                job_list.remove(self)
+                return False
 
-
-        #for i in range(numTrials):
+        # If we are using pbs...
         counter = 1
         while True:
             file_exists = False
             if self.ofile_exists():  #output.find(magicString) >=0 or redhawkStatsRe.search(output):
                 self.status = "finished"
+                job_list.remove(self)
                 return False
 
             cmd = "qstat " + str(self.jobid)
@@ -242,7 +299,7 @@ class pbsJobHandler:
             #   print ("isJobRunning: %d, %s, %s, %s" % (counter, self.ofile, os.getcwd(), str(os.path.isfile(self.ofile))))
             counter += 1
 
-        raise RedhawkError("RedHawk error: out of queue, no output file.  OFILE: %s" % (self.ofile))
+        raise PBSError("RedHawk error: out of queue, no output file.  OFILE: %s" % (self.ofile))
 
     
     def wait(self, delay=10):
@@ -310,6 +367,8 @@ class pbsJobHandler:
 
     def rfile_handle(self):
         """Return a handle to the file containing the resource description."""
+        if self.suppress_pbs:
+            raise PBSError("Cannot check resource file on a pbs-suppressed job")
         self.split_efile()
         return open(self.rfile)
 
@@ -362,10 +421,17 @@ class pbsJobHandler:
         except:
             pass
 
+        try:
+            os.remove(self.ffile)
+        except:
+            pass
+
         return None
     
     def get_results(self, resources = False, cleanup=True):
         """Retrieve strings and cleanup."""
+        if resources and self.suppress_job:
+            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.wait()
         self.split_efile()
         stdout_str = self.ofile_string()
@@ -383,6 +449,7 @@ class pbsJobHandler:
         """Legacy"""
         return self.get_results(cleanup)
 	
+
     def loadResources(self):
         if not self.resources:
             self.wait()
@@ -392,7 +459,7 @@ class pbsJobHandler:
                 if line.startswith("Resources Used:"):
                     r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
                     if not r:
-                        raise RedhawkError("Bad resource line: " + line)
+                        raise PBSError("Bad resource line: " + line)
                     cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))
                     wall_time = 60*int(r.group(6)) + 3600*int(r.group(7)) + int(r.group(8))
                     memory = 1024*int(r.group(4))
@@ -405,24 +472,33 @@ class pbsJobHandler:
 
     def getResources(self, cleanup=True):
         """Return cpu_time, wall_time, memory, and virtual memory used"""
+        if self.suppress_pbs:
+            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.loadResources()
         return self.resources
 
     def cpu_time(self):
+        if self.suppress_pbs:
+            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.loadResources()
         return self.resources[0]
 
     def memory(self):
+        if self.suppress_pbs:
+            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.loadResources()
         return self.resources[2]
 
     def vmemory(self):
+        if self.suppress_pbs:
+            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.loadResources()
         return self.resources[3]
 
     def wait_on_job_limit(self, limit=200, delay=10, user=current_user):
-        """Depricated: use the stand-along function job_limit."""
-        limit_jobs(self, limit, delay, user)
+        """Depricated: use the stand-alone function job_limit."""
+        sys.stderr.write("pbsJobHandler: wait_on_job_limit method is depricated; please switch to the stand-alone job_limit function.")
+        limit_jobs(self, limit, delay, user = user, use_pbs = not self.suppress_pbs)
 
     def split_efile(self):
         """Split the .e<id> file into a .e<id> and .r<id> file"""
@@ -437,13 +513,13 @@ class pbsJobHandler:
 
 
 ### Hold until the user has < limit jobs in the circulation
-def limit_jobs(limit=200,delay=10,user=current_user):
+def limit_jobs(limit=job_limit, delay=10, use_pbs=pbs_present, user=current_user):
     """Spin until the user has less < limit jobs in circulation.
         limit = 0 signals no limit."""
     if limit == 0:
         return None
     while 1==1:
-        numJobsInQueue = get_number_of_jobs_in_queue(current_user)
+        numJobsInQueue = get_number_of_jobs_in_queue(current_user, use_pbs)
 
         if (numJobsInQueue < limit):
             return None
@@ -451,24 +527,26 @@ def limit_jobs(limit=200,delay=10,user=current_user):
 
 
 ### return the number of jobs in queue, whatever the state is
-def get_number_of_jobs_in_queue(user=current_user):
-    """Get the number of user jobs currently sitting in the queu or running."""
+def get_number_of_jobs_in_queue(user=current_user, using_pbs = pbs_present):
+    """Get the number of user jobs currently sitting in the queue or running.  Not yet designed to work with pbs suppression."""
+    global job_list
+    if not using_pbs:
+        job_list = [j for j in job_list if j.isJobRunning()]            
+        return len(job_list)
+
     cmd = "qstat -u "+user + " 2>/dev/null | grep " + user
-
     output,error = [x.decode() for x in subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()]
-
     return len([True for line in output.split("\n") if line and not redhawkStatsRe.search(line)])
                                                         
          
 
 def storePBS(pbsList, fp):
     """Pickle and save a PBS job to a specified file pointer."""
-    for p in pbsList:
-        cPickle.dump(pbsList, fp)
+    pickle.dump(pbsList, fp)
 
 def loadPBS(fp):
     """Recover a list of pickled jobs from a specified file pointer."""
-    return [obj for obj in cPickle.load(fp)]
+    return pickle.load(fp)
 
 
 def relaunch(args = sys.argv, force = False, walltime = "40:00:00", python = "python"):
@@ -504,7 +582,6 @@ if __name__ == "__main__":
     settings.add_argument('-m', '--modules', action = "store", type = str, nargs = "+", dest = "RHmodules", help = "required redhawk modules", default = None)
     settings.add_argument('-O', '--output_location', action = "store", type = str, dest = "output_location", help = "Output location", default = None)
     settings.add_argument('-d', '--dir', action = "store", type = str, dest = "target_directory", help = "target directory", default = None)
-
 
     settings2 = parser.add_argument_group("Less important job-related settings")
     settings2.add_argument('-b', '--batch', action = "store", type = str, dest = "batch", help="Batch file name", default = "redhawk_run")

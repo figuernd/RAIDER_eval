@@ -8,6 +8,12 @@ from redhawk import *
 import tempfile
 import re
 
+#################################################################
+# The following global variables are related to debugging only.
+show_progress = False
+simulate_only = False
+#################################################################
+
 def parse_params(args):
     """Parse command line arguments using the argparse library"""
     parser = argparse.ArgumentParser(description = "Evaluate RAIDER against RepeatScout")
@@ -15,32 +21,46 @@ def parse_params(args):
     # GENERAL ARGUMENTS
     parser2 = parser.add_mutually_exclusive_group()
     parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
-    parser2.add_argument('--named_organize', help = "Organize under a named directory", default = None)
-    parser.add_argument('-r', '--raider', action = "store_true", help = "Run raider", default = True)
-    parser.add_argument('--scout', action = "store_true", help = "Run scout", default = True)
+    parser2.add_argument('--no', '--named_organize', dest = "named_organize", help = "Organize under a named directory", default = None)
 
+    # TOOL SELECTION
+    parser_tools = parser.add_argument_group("tool selection (all on by default)")
+    parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    # Will later add: RepeatModeler, RECON, PILER (other?)
+
+    
     # RAIDER ARGUMENTS
-    parser.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    parser.add_argument('-m', '--min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
-    parser.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
-    parser.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
-    parser.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
-    parser.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
+    raider_argument = parser.add_argument_group("RAIDER parameters")
+    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
+    raider_argument.add_argument('-m', '--min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
+    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
+    raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
+    raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
+    raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     
 
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using")
     
-    # STATISTICS ARGUMENTS
-    parser.add_argument('--stats_dir', help = "Statistics output directory", default = None)
-    parser.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
+    # STATISTICS ARGUMENT
+    stats_group = parser.add_argument_group(title = "Statistics argument")
+    stats_group.add_argument('--stats_dir', help = "Statistics output directory", default = None)
+    stats_group.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
+
+    # DEBUGGING ARGUMENTS
+    debug_group = parser.add_argument_group(title = "debugging")
+    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
+    debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
+
+    
 
     subparsers = parser.add_subparsers(dest="subparser_name")
     
     # SEQUENCE FILE OPTION ARGUMENTS
     parser_seqs = subparsers.add_parser("seq_files")
-    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence")
+    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence (for running on real data)")
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
@@ -54,7 +74,19 @@ def parse_params(args):
     parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
-    return parser.parse_args(args)
+    
+    
+    arg_return =  parser.parse_args(args)
+    
+    #### The following is to set the global debugging variables 
+    global show_progress
+    show_progress = arg_return.show_progress
+
+    global simulate_only
+    simulate_only = arg_return.simulate_only
+    ###
+
+    return arg_return
 
 def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir, k):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
@@ -74,12 +106,15 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     seq_arg = chromosome
     repeat_arg = repeat
 
-    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa"%(file_index), chromosome)) 
+    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa"%(file_index), os.path.basename(chromosome))) 
     output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
     output_arg = "%s" % (output_path)
 
     cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
-    print(cmd)
+    if show_progress:
+        print("Creating simulation: ", cmd)
+
+    #p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
     p.chrom_output = output_path
@@ -107,7 +142,8 @@ def run_raider(seed, f, m, input_file, output_dir, curr_dir):
         os.makedirs('./%s' % (output_dir))
     min_arg = "-m %d" % (m) if m else ""
     cmd = "./raider -q -c %d %s %s %s %s" % (f, min_arg, seed, input_file, output_dir)
-    print(cmd)
+    if show_progress:
+        print("Launching raider: ", cmd)
     p = pbsJobHandler(batch_file = "raider", executable = cmd)
     p.submit()
     p.seq_file = input_file
@@ -121,7 +157,9 @@ def create_raider_consensus(p, output):
     writes the results to the output directory."""
     p.wait();
     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
-    print(cmd)
+    #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
+    if show_progress:
+        print("Creating consensus sequence: ", cmd)
     p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
     p2.submit()
     p2.curr_dir = p.curr_dir
@@ -145,8 +183,9 @@ def run_repeat_masker(p, num_processors, masker_dir):
     library_part = "-lib %s " % (lib_output)
     processor_part = "-pa %d " % (num_processors) if num_processors else ""
     output_part = "-dir %s " % (masker_dir) if masker_dir else "-dir %s " % (p.curr_dir) if p.curr_dir else ""
-    cmd = "RepeatMasker {lib} {pas} {output} {sequence}".format(lib = library_part, pas = processor_part, output = output_part , sequence = p.seq_file)
-    print(cmd)
+    cmd = "RepeatMasker %s %s %s %s" % (library_part, processor_part, output_part , p.seq_file)
+    if show_progress:
+        print("Launch repeatmasker: ", cmd)
     p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
     p2.submit()
     p2.seq_file = p.seq_file
@@ -204,7 +243,8 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
     stats_out = "%s/%s"%(stats_dir, stats_file) if stats_dir else "%s/%s" % (p.curr_dir, stats_file) if p.curr_dir else stats_file
     print_part = "--print " if print_rpts else "" 
     cmd = "python3.3 perform_stats.py %s %s %s %s %s %s" % (print_part, args.chromosome, true_repeats, p.seq_file, p.masker_output, stats_out)
-    print(cmd)
+    if show_progress:
+        print("Launching analysis: ", cmd)
     p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
     p2.submit()
     p2.curr_dir = p.curr_dir
@@ -279,6 +319,7 @@ if __name__:
             # string in there if it does exist.
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
             J2.append(create_raider_consensus(p, output))
+
         ### Sequentially work through the J2 list and, when next job has finished,
         ### start repeatmasker job running and stick new pbs job onto J3 list
         J3 = []
@@ -298,6 +339,12 @@ if __name__:
                                          chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
                                          curr_dir = curr_dir, k = args.k)) 
 
+        if simulate_only:
+            [r.wait() for r in J]
+            [r.erase_files() for r in J]
+            sys.exit(0)
+
+
         ### Sequentially work through the J list and, when next job is finished,
         ### start raider job running and put resulting pbs job object into J2 list
         J2 = []
@@ -306,6 +353,7 @@ if __name__:
 
         ### Sequentially work through the J2 list and, when next job is finished,
         ### start consensus sequence job running and stick new pbs job onto J3 list
+
         J3 = []
         for p in J2:
             output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)
