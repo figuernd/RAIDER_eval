@@ -29,6 +29,14 @@ def parse_params(args):
     parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
+
+    # I/O ARGUMENTs
+    parser_io = parser.add_argument_group("i/o arguments")
+    parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "RAIDER_EVAL")
+    parser_io.add_argument('--rd', '--radier_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
+    parser_io.add_argument('--rsd', '--rpt_scout_dir', dest = 'rpt_scout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
+
+
     
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
@@ -67,7 +75,7 @@ def parse_params(args):
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
     parser_chrom.add_argument('num_sims', type = int, help ="Number of simulations")
-    parser_chrom.add_argument('--chrom_dir', help = "Simulated chromosome directory", default = None)
+    parser_chrom.add_argument('--sim_dir', help = "Directory containing the resulting simulated chromosome", default = "SIM")
     parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
     parser_chrom.add_argument('-k', type = int, help = "Order of markov chain", default = 5)  # KARRO: Added this
@@ -88,14 +96,14 @@ def parse_params(args):
 
     return arg_return
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, chrom_dir, output_file, file_index, curr_dir, k):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, sim_dir, output_file, file_index, k):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
-    if chrom_dir:
-        chrom_dir = "%s/%s" % (curr_dir, chrom_dir) if curr_dir else chrom_dir
-        if not os.path.exists('./%s' % (chrom_dir)):
-            os.makedirs('./%s' % (chrom_dir))
+
+    print("sim_dir: ", sim_dir)
+    if not os.path.exists(sim_dir):
+        os.makedirs(sim_dir)
 
     # Output file is either specified or replace .fa with .sim.#.fa
     length_arg = "-l %d" % (length) if length else ""
@@ -106,28 +114,26 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     seq_arg = chromosome
     repeat_arg = repeat
 
-    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa"%(file_index), os.path.basename(chromosome))) 
-    output_path = "%s/%s" % (chrom_dir, output_file) if chrom_dir else "%s/%s" % (curr_dir, output_file) if curr_dir else output_file
-    output_arg = "%s" % (output_path)
+    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), os.path.basename(chromosome)))
+    output_path = "%s/%s" % (sim_dir, output_file)
 
-    cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_arg)
+    cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
     if show_progress:
-        print("Creating simulation: ", cmd)
+        print("Creating simulation:\n", cmd)
 
     #p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
-    p.chrom_output = output_path
-    p.curr_dir = curr_dir
+    p.sim_output = output_path
     p.index = file_index
     return p
 
-def run_raider_chrom(p, seed, f, m, output_dir):
-    """Given the pbs object used to start simulated chromosome job as well as 
-    raider parameters, wait until the job is done and then call run_raider 
-    on the newly generated chromosome output file"""
-    p.wait()
-    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
+# def run_raider_chrom(p, seed, f, m, output_dir):
+#    """Given the pbs object used to start simulated chromosome job as well as 
+#    raider parameters, wait until the job is done and then call run_raider 
+#    on the newly generated chromosome output file"""
+#    p.wait()
+#    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
 
 def run_raider(seed, f, m, input_file, output_dir, curr_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
@@ -286,118 +292,159 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
     smry.close()
 
 
-if __name__:
+if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
-    if args.organize or args.named_organize:
-        if args.organize:
-            prefix_part = "REV_%d_%d_" % (args.f, len(args.seed))
-            curr_dir = tempfile.mkdtemp(prefix = prefix_part, dir = ".")
-        else:
-            curr_dir = args.named_organize
-            if not os.path.exists(curr_dir):
-                os.makedirs(curr_dir)
 
-        if not os.path.exists('./%s' % (curr_dir)):
-            os.makedirs('./%s' % (curr_dir))
-    else:
-        curr_dir = None
-    if args.subparser_name == "seq_files" and args.seq_files:
+    # ### Setup directory organization
+    # if args.organize or args.named_organize:
+    #     if args.organize:
+    #         prefix_part = "REV_%d_%d_" % (args.f, len(args.seed))
+    #         curr_dir = tempfile.mkdtemp(prefix = prefix_part, dir = ".")
+    #     else:
+    #         curr_dir = args.named_organize
+    #         if not os.path.exists(curr_dir):
+    #             os.makedirs(curr_dir)
 
-        ### For each listed file (in args.seq_files): invoke RAIDER on the file
-        ### and put the resuling pbs object ito the J list.
-        J = []
-        for file in args.seq_files:
-            assert file.endswith(".fa") or file.endswith('.fasta')
-            J.append(run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, output_dir = args.output_dir, curr_dir = curr_dir))
-        ### Sequentially work the the J list and, when the next job has finished,
-        ### start the conensus sequence job running and stick the new pbs job nto
-        ### the J2 job. 
-        J2 = []
-        for p in J:
-            # The velow line is creating the output name in such a way as to avoid conflict.
-            # It will change X.fa to X.conensus.fa (if args.output_ext == None), stick that output_ext
-            # string in there if it does exist.
-            output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
-            J2.append(create_raider_consensus(p, output))
+    #     if not os.path.exists('./%s' % (curr_dir)):
+    #         os.makedirs('./%s' % (curr_dir))
+    # else:
+    #     curr_dir = None
+    if not os.path.exists(args.results_dir):
+        os.makedirs(args.results_dir)
 
-        ### Sequentially work through the J2 list and, when next job has finished,
-        ### start repeatmasker job running and stick new pbs job onto J3 list
-        J3 = []
-        for p in J2:
-            J3.append(run_repeat_masker(p, args.pa, args.masker_dir))
-        for p in J3:
-            p.wait()
 
-    elif args.subparser_name == "chrom_sim" and args.chromosome and args.repeat and args.num_sims:
-        ### Create n simulated chromosomes, invoke RAIDER on each chromosome
-        ### and put the resulting pbs object into the J list.
-        J =[]
-        for i in range(int(args.num_sims)):
-            J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
-                                         rng_seed = args.rng_seed, length = args.length, 
-                                         neg_strand = args.negative_strand, fam_file = args.family_file, 
-                                         chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
-                                         curr_dir = curr_dir, k = args.k)) 
 
+    ### Generate simulated file(s) and run to completion
+    if args.subparser_name == "chrom_sim":
+        sim_output = args.results_dir + "/" + args.sim_dir
+
+        # Launch the jobs
+        f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
+                                          rng_seed = args.rng_seed, length = args.length, 
+                                          neg_strand = args.negative_strand, fam_file = args.family_file, 
+                                          sim_dir = args.results_dir + "/" + args.sim_dir, output_file = args.output, file_index = i, 
+                                          k = args.k)
+        J = [f(i) for i in range(args.num_sims)]
+
+        # Run jobs to completion
+        [j.wait() for j in J]    # Let all the simulations finish
+
+        # Quit (if done)
         if simulate_only:
-            [r.wait() for r in J]
-            [r.erase_files() for r in J]
+            [j.erase_files() for j in J]
             sys.exit(0)
 
+        # Get the list of simulated file names
+        file_list = [j.sim_output for j in J]
 
-        ### Sequentially work through the J list and, when next job is finished,
-        ### start raider job running and put resulting pbs job object into J2 list
-        J2 = []
-        for p in J:
-            J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, m = args.min,  output_dir = args.output_dir))
+    else:
+        # Get the list of file names
+        file_list = seq_files
 
-        ### Sequentially work through the J2 list and, when next job is finished,
-        ### start consensus sequence job running and stick new pbs job onto J3 list
+    ### Run RAIDER
+    #RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.m, input_file = file, output_dir = args.output_dir, curr_dir = curr_dir) for files in file_list]
+    #CONSENSUS_JOBS = [create_raider_consensus(p, re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)) for p in RAIDER_JOBS]
+    #REPEATMASKER_JOBS = 
 
-        J3 = []
-        for p in J2:
-            output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)
-            J3.append(create_raider_consensus(p, output))
 
-        rm_raider_dir = "RM_raider" #, dir = (curr_dir if curr_dir else "."))
-        ### Sequentially work through the J3 list and, when next job is finished,
-        ### start repeatmasker job running and stick new job onto J4 list
-        J4 = []
-        for p in J3:
-            J4.append(run_repeat_masker(p, args.pa, rm_raider_dir))
-        ### Sequentially work through the J4 list and, when next job is finished,
-        ### start statistics job running and stick new job onto J5 list
-        J5 = []
-        stats_dir = "%s/%s" % (curr_dir, args.stats_dir) if curr_dir and args.stats_dir else args.stats_dir
-        if args.stats_dir and not os.path.exists('./%s' % (stats_dir)):
-            os.makedirs('./%s' % (stats_dir))
-        for p in J4:
-            J5.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "raider"))
-        ### Wait for all statistics jobs to complete. Submit the list of files to the
-        ### performance_sum method to generate the final summary of statistics
-        J6 = []
-        for p in J5:
-            p.wait()
-        performance_sum(J5, stats_dir, curr_dir, "raider")   # J6.append(p.stats_output)
+    # ####################################################################
+    # if args.subparser_name == "seq_files" and args.seq_files:
+
+    #     ### For each listed file (in args.seq_files): invoke RAIDER on the file
+    #     ### and put the resuling pbs object ito the J list.
+    #     J = []
+    #     for file in args.seq_files:
+    #         assert file.endswith(".fa") or file.endswith('.fasta')
+    #         J.append(run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, output_dir = args.output_dir, curr_dir = curr_dir))
+    #     ### Sequentially work the the J list and, when the next job has finished,
+    #     ### start the conensus sequence job running and stick the new pbs job nto
+    #     ### the J2 job. 
+    #     J2 = []
+    #     for p in J:
+    #         # The below line is creating the output name in such a way as to avoid conflict.
+    #         # It will change X.fa to X.conensus.fa (if args.output_ext == None), stick that output_ext
+    #         # string in there if it does exist.
+    #         output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
+    #         J2.append(create_raider_consensus(p, output))
+
+    #     ### Sequentially work through the J2 list and, when next job has finished,
+    #     ### start repeatmasker job running and stick new pbs job onto J3 list
+    #     J3 = []
+    #     for p in J2:
+    #         J3.append(run_repeat_masker(p, args.pa, args.masker_dir))
+    #     for p in J3:
+    #         p.wait()
+
+    # elif args.subparser_name == "chrom_sim" and args.chromosome and args.repeat and args.num_sims:
+    #     ### Create n simulated chromosomes, invoke RAIDER on each chromosome
+    #     ### and put the resulting pbs object into the J list.
+    #     J =[]
+    #     for i in range(int(args.num_sims)):
+    #         J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
+    #                                      rng_seed = args.rng_seed, length = args.length, 
+    #                                      neg_strand = args.negative_strand, fam_file = args.family_file, 
+    #                                      chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
+    #                                      curr_dir = curr_dir, k = args.k)) 
+
+    #     if simulate_only:
+    #         [r.wait() for r in J]
+    #         [r.erase_files() for r in J]
+    #         sys.exit(0)
+
+
+    #     ### Sequentially work through the J list and, when next job is finished,
+    #     ### start raider job running and put resulting pbs job object into J2 list
+    #     J2 = []
+    #     for p in J:
+    #         J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, m = args.min,  output_dir = args.output_dir))
+
+    #     ### Sequentially work through the J2 list and, when next job is finished,
+    #     ### start consensus sequence job running and stick new pbs job onto J3 list
+
+    #     J3 = []
+    #     for p in J2:
+    #         output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)
+    #         J3.append(create_raider_consensus(p, output))
+
+    #     rm_raider_dir = "RM_raider" #, dir = (curr_dir if curr_dir else "."))
+    #     ### Sequentially work through the J3 list and, when next job is finished,
+    #     ### start repeatmasker job running and stick new job onto J4 list
+    #     J4 = []
+    #     for p in J3:
+    #         J4.append(run_repeat_masker(p, args.pa, rm_raider_dir))
+    #     ### Sequentially work through the J4 list and, when next job is finished,
+    #     ### start statistics job running and stick new job onto J5 list
+    #     J5 = []
+    #     stats_dir = "%s/%s" % (curr_dir, args.stats_dir) if curr_dir and args.stats_dir else args.stats_dir
+    #     if args.stats_dir and not os.path.exists('./%s' % (stats_dir)):
+    #         os.makedirs('./%s' % (stats_dir))
+    #     for p in J4:
+    #         J5.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "raider"))
+    #     ### Wait for all statistics jobs to complete. Submit the list of files to the
+    #     ### performance_sum method to generate the final summary of statistics
+    #     J6 = []
+    #     for p in J5:
+    #         p.wait()
+    #     performance_sum(J5, stats_dir, curr_dir, "raider")   # J6.append(p.stats_output)
         
         
-        J7 = []
-        for p in J:
-            J7.append(run_scout_chrom(p, f = args.f, m = len(args.seed)))
+    #     J7 = []
+    #     for p in J:
+    #         J7.append(run_scout_chrom(p, f = args.f, m = len(args.seed)))
 
-        rm_scout_dir = "RM_scout" #, dir = (curr_dir if curr_dir else "."))
-        J8 = []
-        for p in J7:
-            J8.append(run_rm_scout(p, args.pa, rm_scout_dir))
-        J9 = []
-        for p in J8:
-            J9.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "scout"))
-        J10 = []
-        for p in J9:
-            p.wait()
-        performance_sum(J9, stats_dir, curr_dir, "scout")
-        #summary_stats(stats, stats_dir, curr_dir)
-        #summary_job.wait()
-        #performance_sum(J5, stats_dir, curr_dir)
+    #     rm_scout_dir = "RM_scout" #, dir = (curr_dir if curr_dir else "."))
+    #     J8 = []
+    #     for p in J7:
+    #         J8.append(run_rm_scout(p, args.pa, rm_scout_dir))
+    #     J9 = []
+    #     for p in J8:
+    #         J9.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "scout"))
+    #     J10 = []
+    #     for p in J9:
+    #         p.wait()
+    #     performance_sum(J9, stats_dir, curr_dir, "scout")
+    #     #summary_stats(stats, stats_dir, curr_dir)
+    #     #summary_job.wait()
+    #     #performance_sum(J5, stats_dir, curr_dir)
 
 
