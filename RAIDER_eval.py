@@ -147,10 +147,12 @@ def run_raider(seed, f, m, input_file, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd = "./raider -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+    cmd1 = "./raider -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+    cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = output_dir.rstrip(".d") + ".txt")
+
     if show_progress:
-        print("Launching raider:\n", cmd)
-    p = pbsJobHandler(batch_file = "raider", executable = cmd)
+        print("Launching raider:\n", cmd1, "\n", cmd2)
+    p = pbsJobHandler(batch_file = "raider", executable = cmd1 + "; " + cmd2)
     p.submit()
     p.seq_file = input_file
     p.raider_output = output_dir
@@ -345,7 +347,7 @@ if __name__ == "__main__":
 
     ### Run RAIDER
     RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, 
-                              output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + "raider")
+                              output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + ".raider.d")
                    for file in file_list]
     [p.wait() for p in RAIDER_JOBS]
     #CONSENSUS_JOBS = [create_raider_consensus(p, re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)) for p in RAIDER_JOBS]
