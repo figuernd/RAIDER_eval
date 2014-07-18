@@ -35,6 +35,7 @@ def parse_params(args):
     parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "RAIDER_EVAL")
     parser_io.add_argument('--rd', '--radier_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--rsd', '--rpt_scout_dir', dest = 'rpt_scout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
+    parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
 
 
     
@@ -75,7 +76,6 @@ def parse_params(args):
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
     parser_chrom.add_argument('num_sims', type = int, help ="Number of simulations")
-    parser_chrom.add_argument('--sim_dir', help = "Directory containing the resulting simulated chromosome", default = "SIM")
     parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
     parser_chrom.add_argument('-k', type = int, help = "Order of markov chain", default = 5)  # KARRO: Added this
@@ -96,14 +96,14 @@ def parse_params(args):
 
     return arg_return
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, sim_dir, output_file, file_index, k):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
 
-    print("sim_dir: ", sim_dir)
-    if not os.path.exists(sim_dir):
-        os.makedirs(sim_dir)
+    print("data_dir: ", data_dir)
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
     # Output file is either specified or replace .fa with .sim.#.fa
     length_arg = "-l %d" % (length) if length else ""
@@ -115,7 +115,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     repeat_arg = repeat
 
     output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), os.path.basename(chromosome)))
-    output_path = "%s/%s" % (sim_dir, output_file)
+    output_path = "%s/%s" % (data_dir, output_file)
 
     cmd = "python3.3 chromsome_simulator.py -m {length} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
     if show_progress:
@@ -135,25 +135,24 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 #    p.wait()
 #    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
 
-def run_raider(seed, f, m, input_file, output_dir, curr_dir):
+def run_raider(seed, f, m, input_file, output_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
-    if output_dir:
-        output_dir = "%s/%s" % (curr_dir, output_dir) if curr_dir else output_dir
-    else:
-        dir_part = curr_dir if curr_dir else "."
-        output_dir = output_dir if output_dir else tempfile.mkdtemp(prefix = "raider_%s_"%(os.path.basename(input_file)), dir = dir_part)
-    if not os.path.exists('./%s' % (output_dir)):
-        os.makedirs('./%s' % (output_dir))
+    #if output_dir:
+    #    output_dir = "%s/%s" % (curr_dir, output_dir) if curr_dir else output_dir
+    #else:
+    #    dir_part = curr_dir if curr_dir else "."
+    #    output_dir = output_dir if output_dir else tempfile.mkdtemp(prefix = "raider_%s_"%(os.path.basename(input_file)), dir = dir_part)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd = "./raider -q -c %d %s %s %s %s" % (f, min_arg, seed, input_file, output_dir)
+    cmd = "./raider -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
     if show_progress:
-        print("Launching raider: ", cmd)
+        print("Launching raider:\n", cmd)
     p = pbsJobHandler(batch_file = "raider", executable = cmd)
     p.submit()
     p.seq_file = input_file
-    p.curr_dir = curr_dir
     p.raider_output = output_dir
     return p
 
@@ -315,14 +314,14 @@ if __name__ == "__main__":
 
 
     ### Generate simulated file(s) and run to completion
+    data_dir = args.results_dir + "/" + args.data_dir
     if args.subparser_name == "chrom_sim":
-        sim_output = args.results_dir + "/" + args.sim_dir
 
         # Launch the jobs
         f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
-                                          sim_dir = args.results_dir + "/" + args.sim_dir, output_file = args.output, file_index = i, 
+                                          data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
                                           k = args.k)
         J = [f(i) for i in range(args.num_sims)]
 
@@ -339,10 +338,16 @@ if __name__ == "__main__":
 
     else:
         # Get the list of file names
-        file_list = seq_files
+        file_list = []
+        for file in seq_files:
+            file_list.append(data_dir + "/" + file)
+            shutil.copy(file, file_list[-1])
 
     ### Run RAIDER
-    RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.m, input_file = file, output_dir = args.results_idr + "/" + args.raider_dir, curr_dir = curr_dir) for files in file_list]
+    RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, 
+                              output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + "raider")
+                   for file in file_list]
+    [p.wait() for p in RAIDER_JOBS]
     #CONSENSUS_JOBS = [create_raider_consensus(p, re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)) for p in RAIDER_JOBS]
     #REPEATMASKER_JOBS = 
 
