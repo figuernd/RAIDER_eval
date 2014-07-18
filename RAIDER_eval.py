@@ -342,7 +342,7 @@ if __name__ == "__main__":
         file_list = seq_files
 
     ### Run RAIDER
-    #RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.m, input_file = file, output_dir = args.output_dir, curr_dir = curr_dir) for files in file_list]
+    RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.m, input_file = file, output_dir = args.results_idr + "/" + args.raider_dir, curr_dir = curr_dir) for files in file_list]
     #CONSENSUS_JOBS = [create_raider_consensus(p, re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)) for p in RAIDER_JOBS]
     #REPEATMASKER_JOBS = 
 
