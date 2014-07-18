@@ -35,9 +35,9 @@ def get_consensus(family_num, R, genome_string, wp):
     consensus = [max([(c,b) for b,c in D.items()])[1] for D in C]
     rep_seq = "".join(consensus)
     wp.write("%d\t%s\n" % (family_num, rep_seq))
-    return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num))
+    return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num), description = "")
 
-def main(seq,elements,output):  
+def main(seq,elements,output,fa_output):  
     genomeFile = seq
     genome_string = next(SeqIO.parse(genomeFile, "fasta"))
     
@@ -61,8 +61,8 @@ def main(seq,elements,output):
             R = []
             current_family = int(A[0])
         R.append((int(A[-3]), int(A[-2])))
-    lib_output = re.sub("((\.fa)|(\.fasta))$", ".lib.fa" , output)
-    SeqIO.write(records, lib_output, "fasta")
+
+    SeqIO.write(records, fa_output, "fasta")
         
 if __name__ == "__main__":
 
@@ -77,6 +77,7 @@ if __name__ == "__main__":
         help = "elements file"
     )
     parser.add_argument("output", type=str, help="output file")
+    parser.add_argument("fa_output", type = str, help="output in fa format")
     args = parser.parse_args()
-    main(args.seq,args.elements,args.output)
+    main(args.seq,args.elements,args.output,args.fa_output)
 

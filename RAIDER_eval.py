@@ -156,6 +156,7 @@ def run_raider(seed, f, m, input_file, output_dir):
     p.submit()
     p.seq_file = input_file
     p.raider_output = output_dir
+    p.consensus_output= output_file.rstrip(".d" + ".txt")
     return p
 
 def create_raider_consensus(p, output):
