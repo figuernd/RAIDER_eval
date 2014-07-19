@@ -131,7 +131,7 @@ class pbsJobHandler:
         self.ppn = ppn
         self.mem = mem
         self.walltime = walltime
-        self.modules = RHmodules
+        self.modules = RHmodules if not self.suppress_pbs else None
         self.output_location = output_location if output_location else "."
 
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)+(":m128" if self.mem else "") + "\n"
@@ -302,10 +302,12 @@ class pbsJobHandler:
         raise PBSError("RedHawk error: out of queue, no output file.  OFILE: %s" % (self.ofile))
 
     
-    def wait(self, delay=10):
+    def wait(self, delay=10, cleanup = False):
         """Spin until job completes."""
         while self.isJobRunning() == True:
             time.sleep(delay)
+        if cleanup:
+            self.erase_files()
         return self.ofile_exists()  
 
     def wait_on_job(self, delay=10):  

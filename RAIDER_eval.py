@@ -32,7 +32,7 @@ def parse_params(args):
 
     # I/O ARGUMENTs
     parser_io = parser.add_argument_group("i/o arguments")
-    parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "RAIDER_EVAL")
+    parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "EVAL")
     parser_io.add_argument('--rd', '--radier_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--rsd', '--rpt_scout_dir', dest = 'rpt_scout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
@@ -51,7 +51,7 @@ def parse_params(args):
 
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using")
+    parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
     
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -148,60 +148,76 @@ def run_raider(seed, f, m, input_file, output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
     cmd1 = "./raider -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
-    cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = output_dir.rstrip(".d") + ".txt")
+
+    out_file = output_dir.rstrip(".d") + ".rm.txt"
+    lib_file = output_dir.rstrip(".d") + ".rm.fa"
+    cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
     if show_progress:
         print("Launching raider:\n", cmd1, "\n", cmd2)
     p = pbsJobHandler(batch_file = "raider", executable = cmd1 + "; " + cmd2)
     p.submit()
+
     p.seq_file = input_file
-    p.raider_output = output_dir
-    p.consensus_output= output_file.rstrip(".d" + ".txt")
+    p.lib_file = lib_file
     return p
 
-def create_raider_consensus(p, output):
-    """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
-    waits until the job is done, then invokes consensus_seq.py on the ouput and
-    writes the results to the output directory."""
-    p.wait();
-    cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
-    #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
-    if show_progress:
-        print("Creating consensus sequence: ", cmd)
-    p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
-    p2.submit()
-    p2.curr_dir = p.curr_dir
-    p2.seq_file = p.seq_file
-    p2.output = output
-    return p2
+# def create_raider_consensus(p, output):
+#     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
+#     waits until the job is done, then invokes consensus_seq.py on the ouput and
+#     writes the results to the output directory."""
+#     p.wait();
+#     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
+#     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
+#     if show_progress:
+#         print("Creating consensus sequence: ", cmd)
+#     p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
+#     p2.submit()
+#     p2.seq_file = p.seq_file
+#     p2.output = output
+#     return p2
 
-def run_repeat_masker(p, num_processors, masker_dir):
+def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait()
-    # Determine actual path the masker directory (if specified)
-    if masker_dir:
-        masker_dir = "%s/%s" % (p.curr_dir, masker_dir) if p.curr_dir else masker_dir
-        if not os.path.exists('./%s' % (masker_dir)):
-            os.makedirs('./%s' % (masker_dir))
-    masker_file = os.path.basename(p.seq_file) + ".out"
-    masker_output = "%s/%s" % (masker_dir, masker_file) if masker_dir else "%s/%s" % (p.curr_dir, masker_file) if p.curr_dir else masker_file
-    lib_output = re.sub("((\.fa)|(\.fasta))$", ".lib.fa" , p.output)
-    library_part = "-lib %s " % (lib_output)
-    processor_part = "-pa %d " % (num_processors) if num_processors else ""
-    output_part = "-dir %s " % (masker_dir) if masker_dir else "-dir %s " % (p.curr_dir) if p.curr_dir else ""
-    cmd = "RepeatMasker %s %s %s %s" % (library_part, processor_part, output_part , p.seq_file)
+    p.wait(cleanup = True)
+
+    cmd = "RepeatMasker -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors,
+                                                                              dir = p.lib_file.rstrip(os.path.basename(p.lib_file)), seq_file = p.seq_file)
     if show_progress:
-        print("Launch repeatmasker: ", cmd)
-    p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
-    p2.submit()
+        print("Launch repeatmasker:\n")
+        print(cmd)
+
+    p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]).submit()
+    
+
     p2.seq_file = p.seq_file
-    p2.consensus = lib_output
-    p2.curr_dir = curr_dir
-    p2.masker_dir = masker_dir
-    p2.masker_output = masker_output
+    p2.rm_output = p.seq_file + ".out"
     return p2
+
+    # # Determine actual path the masker directory (if specified)
+    # if masker_dir:
+    #     masker_dir = "%s/%s" % (p.curr_dir, masker_dir) if p.curr_dir else masker_dir
+    #     if not os.path.exists('./%s' % (masker_dir)):
+    #         os.makedirs('./%s' % (masker_dir))
+    # masker_file = os.path.basename(p.seq_file) + ".out"
+    # masker_output = "%s/%s" % (masker_dir, masker_file) if masker_dir else "%s/%s" % (p.curr_dir, masker_file) if p.curr_dir else masker_file
+    # lib_output = re.sub("((\.fa)|(\.fasta))$", ".lib.fa" , p.output)
+    # library_part = "-lib %s " % (lib_output)
+    # processor_part = "-pa %d " % (num_processors) if num_processors else ""
+    # output_part = "-dir %s " % (masker_dir) if masker_dir else "-dir %s " % (p.curr_dir) if p.curr_dir else ""
+    # cmd = "RepeatMasker %s %s %s %s" % (library_part, processor_part, output_part , p.seq_file)
+    # if show_progress:
+    #     print("Launch repeatmasker: ", cmd)
+    # p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
+    # p2.submit()
+    # p2.seq_file = p.seq_file
+    # p2.consensus = lib_output
+    # p2.curr_dir = curr_dir
+    # p2.masker_dir = masker_dir
+    # p2.masker_output = masker_output
+    # return p2
 
 def run_scout_chrom(p, f, m):
     p.wait()
@@ -346,14 +362,13 @@ if __name__ == "__main__":
             file_list.append(data_dir + "/" + file)
             shutil.copy(file, file_list[-1])
 
-    ### Run RAIDER
+    ### Run RAIDER and REPEATMASKER
     RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, 
                               output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + ".raider.d")
                    for file in file_list]
-    [p.wait() for p in RAIDER_JOBS]
-    #CONSENSUS_JOBS = [create_raider_consensus(p, re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)) for p in RAIDER_JOBS]
-    #REPEATMASKER_JOBS = 
 
+    REPEATMASKER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
+    [p.wait(cleanup = True) for p in REPEATMASKER_JOBS]
 
     # ####################################################################
     # if args.subparser_name == "seq_files" and args.seq_files:
