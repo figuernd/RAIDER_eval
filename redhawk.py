@@ -202,7 +202,7 @@ class pbsJobHandler:
 ###   seconds between retry (default is 10 seconds)
 ### return job id if successful
 ### return -1 if not
-    def submit(self, preserve=True, print_qsub = False, job_limit = job_limit, delay=10, user=current_user ):
+    def submit(self, preserve=False, print_qsub = False, job_limit = job_limit, delay=10, user=current_user ):
         """Submit job to redhawk.  Optional parameters:
            * preserve: if False, delete the batch file.  Default = true.
            * job_limit: If the user currently has this many jobs on the batch, wait until one finishes.
