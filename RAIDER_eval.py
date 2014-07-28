@@ -33,8 +33,8 @@ def parse_params(args):
     # I/O ARGUMENTs
     parser_io = parser.add_argument_group("i/o arguments")
     parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "EVAL")
-    parser_io.add_argument('--rd', '--radier_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
-    parser_io.add_argument('--rsd', '--rpt_scout_dir', dest = 'rpt_scout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
+    parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
+    parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
 
 
@@ -42,12 +42,16 @@ def parse_params(args):
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
     raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    raider_argument.add_argument('-m', '--min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
     raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
+    raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
     
+    # REPSCOUT_ARGUMENTS
+    repscout_argument = parser.add_argument_group("REPSCOUT parameters")
+    raider_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
+
 
     # REPEAT MASKER ARGUMENTS
     parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
@@ -62,8 +66,6 @@ def parse_params(args):
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
-
-    
 
     subparsers = parser.add_subparsers(dest="subparser_name")
     
@@ -121,7 +123,6 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     if show_progress:
         print("Creating simulation:\n", cmd)
 
-    #p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p = pbsJobHandler(batch_file = "%s.batch" % (output_file), executable = cmd)
     p.submit()
     p.sim_output = output_path
@@ -223,18 +224,51 @@ def run_scout_chrom(p, f, m):
     p.wait()
     return run_scout(p.chrom_output, f, m, p.curr_dir)
 
-def run_scout(input_file, f, m, curr_dir):
-    output_file = re.sub(".fa$", ".scout.fa",os.path.basename(input_file))
+
+build_lmer_table_exe = "/usr/local/RepeatScout/build_lmer_table"
+RptScout_exe = "/usr/local/RepeatScout/RepeatScout"
+filter_stage_exe = "/usr/local/RepeatScout/filter-stage-1.prl"
+def run_scout(input_file, output_dir, min_freq, length):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    input_name = os.path.basename(input_file)
     
-    output_path = "%s/%s" %(curr_dir, output_file)
-    cmd = "./RunRepeatScout.sh {sequence} {length} {output} {min}".format(sequence=input_file, length=m, output=output_path, min=f)
-    print(cmd)
-    p = pbsJobHandler(batch_file = "%s.batch" % output_file, executable = cmd)
+    # First: run build_lmer_table
+    lmer_output = output_dir + "/" + input_name.rstrip(".fa") + ".freq.fa"
+    cmd1 = "{build_lmer_table_exe} -min {min} -l {L} -sequence {sequence} -freq {freq}".format(build_lmer_table_exe=build_lmer_table_exe, min=min_freq, L=length, 
+                                                                                               sequence = input_file, freq = lmer_output)
+
+    # Next: Run RepeatScout
+    rptscout_output = output_dir + "/" + input_name.rstrip(".fa") + ".repscout.fa"
+    cmd2 = "{RptScout_exe} -sequence {sequence} -freq {freq} -output {output}".format(RptScout_exe = RptScout_exe, sequence = input_file, freq = lmer_output, output = rptscout_output)
+
+    # Next: Run filter-stage-1
+    filter_stage_output = output_dir + "/" + input_name.rstrip(".fa") + ".repscout.filtered.fa"
+    cmd3 = "cat {input} | perl {filter} > {filter_output}".format(input=rptscout_output, filter = filter_stage_exe, filter_output = filter_stage_output)
+
+    if show_progress:
+        print("RepeatScout:\n", cmd1, "\n", cmd2, "\n", cmd3)
+    exit(1)
+    p = pbsJobHandler(batch_file = "%s.batch" % input_file, executable = cmd1 + "; " + cmd2 + "; " + cmd3)
     p.submit()
+
     p.seq_file = input_file
-    p.scout_output = output_path
-    p.curr_dir = curr_dir
+    p.lib_file = filter_stage_output
+
     return p
+
+    # output_file = re.sub(".fa$", ".scout.fa",os.path.basename(input_file))
+    
+    # output_path = "%s/%s" %(curr_dir, output_file)
+    # cmd = "./RunRepeatScout.sh {sequence} {length} {output} {min}".format(sequence=input_file, length=m, output=output_path, min=f)
+    # print(cmd)
+    # p = pbsJobHandler(batch_file = "%s.batch" % output_file, executable = cmd)
+    # p.submit()
+    # p.seq_file = input_file
+    # p.scout_output = output_path
+    # p.curr_dir = curr_dir
+    # return p
 
 def run_rm_scout(p, num_processors, masker_dir):
     p.wait()
@@ -334,6 +368,8 @@ if __name__ == "__main__":
 
     ### Generate simulated file(s) and run to completion
     data_dir = args.results_dir + "/" + args.data_dir
+ 
+    # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
 
         # Launch the jobs
@@ -362,13 +398,22 @@ if __name__ == "__main__":
             file_list.append(data_dir + "/" + file)
             shutil.copy(file, file_list[-1])
 
-    ### Run RAIDER and REPEATMASKER
-    RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, 
-                              output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + ".raider.d")
-                   for file in file_list]
+    ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
+    ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
+    ### rm_output job.
+    
+    if args.run_raider:
+        RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.raider_min, input_file = file, 
+                                  output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + ".raider.d")
+                       for file in file_list]
 
-    REPEATMASKER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
-    [p.wait(cleanup = True) for p in REPEATMASKER_JOBS]
+        REPEATMASKER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
+    else:
+        REPEATMASKER_JOBS = []
+
+    if args.run_repscout:
+        REPEATMASKER_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min) for file in file_list]
+        
 
     # ####################################################################
     # if args.subparser_name == "seq_files" and args.seq_files:
@@ -469,5 +514,3 @@ if __name__ == "__main__":
     #     #summary_stats(stats, stats_dir, curr_dir)
     #     #summary_job.wait()
     #     #performance_sum(J5, stats_dir, curr_dir)
-
-
