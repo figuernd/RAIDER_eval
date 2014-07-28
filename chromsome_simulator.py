@@ -5,9 +5,11 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 import random
 import sys
-import markov_gen
 import re
 import os.path
+
+import markov_gen
+
 
 def parse_params(args):
     parser = argparse.ArgumentParser(description = "Generate simulated chromsome")

@@ -51,6 +51,7 @@ def parse_params(args):
     # REPSCOUT_ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
     raider_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
+    raider_argument.add_argument('--ssf', '--suppress_second_filter', action = "store_true", "Suppress the second RepScout filter", default = False)
 
 
     # REPEAT MASKER ARGUMENTS
@@ -184,8 +185,9 @@ def run_repeat_masker(p, num_processors):
     on the output and put results in masker_dir (current dir if unspecified)"""
     p.wait(cleanup = True)
 
+    output_dir = p.lib_file.rstrip(os.path.basename(p.lib_file))
     cmd = "RepeatMasker -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors,
-                                                                              dir = p.lib_file.rstrip(os.path.basename(p.lib_file)), seq_file = p.seq_file)
+                                                                              dir = output_dir, seq_file = p.seq_file)
     if show_progress:
         print("Launch repeatmasker:\n")
         print(cmd)
@@ -193,6 +195,7 @@ def run_repeat_masker(p, num_processors):
     p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]).submit()
     
 
+    p2.dir = output_dir
     p2.seq_file = p.seq_file
     p2.rm_output = p.seq_file + ".out"
     return p2
@@ -228,6 +231,7 @@ def run_scout_chrom(p, f, m):
 build_lmer_table_exe = "/usr/local/RepeatScout/build_lmer_table"
 RptScout_exe = "/usr/local/RepeatScout/RepeatScout"
 filter_stage_exe = "/usr/local/RepeatScout/filter-stage-1.prl"
+second_filter_exe = "/usr/local/RepeatScout/filter-stage-2.pr"
 def run_scout(input_file, output_dir, min_freq, length):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -249,7 +253,6 @@ def run_scout(input_file, output_dir, min_freq, length):
 
     if show_progress:
         print("RepeatScout:\n", cmd1, "\n", cmd2, "\n", cmd3)
-    exit(1)
     p = pbsJobHandler(batch_file = "%s.batch" % input_file, executable = cmd1 + "; " + cmd2 + "; " + cmd3)
     p.submit()
 
@@ -269,6 +272,19 @@ def run_scout(input_file, output_dir, min_freq, length):
     # p.scout_output = output_path
     # p.curr_dir = curr_dir
     # return p
+
+def scout_second_filter(p, max_freq):
+    filter2_stage_output = p.seq_file.rstrip(".fa") + ".repscout.filtered2.fa"
+    cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(filter = second_filer_exe, cat = p.rm_output, thresh = max_freq, final = filter2_stage_output)
+    
+    if show_progress:
+        print("RepeatScout Filter2:\n", cmd)
+
+    p2 = pbs.JobHandler(batch_file = "%s.batch" % input_file, executable = cmd)
+
+    p2.seq_file = p.seq_file
+    p2.lib_file = filter2_stage_output
+    return p2
 
 def run_rm_scout(p, num_processors, masker_dir):
     p.wait()
@@ -407,12 +423,18 @@ if __name__ == "__main__":
                                   output_dir = re.sub(args.data_dir, args.raider_dir, file).rstrip(".fa") + ".raider.d")
                        for file in file_list]
 
-        REPEATMASKER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
+        RAIDER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
     else:
-        REPEATMASKER_JOBS = []
+        RAIDER_JOBS = []
 
     if args.run_repscout:
-        REPEATMASKER_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min) for file in file_list]
+        SCOUT_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min) for file in file_list]
+        SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
+        if not arg.suppress_second_filter:
+            SCOUT_JOBS = [scout_second_filter(p, ???) for p in SCOUT_JOBS)
+            SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
+    else:
+        SCOUT_JOBS = []
         
 
     # ####################################################################
