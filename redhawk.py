@@ -272,13 +272,15 @@ class pbsJobHandler:
     def isJobRunning ( self, numTrials = 3, delay = 5 ):
         """Query of the object represented by the job is still running."""
         if self.suppress_pbs:
-            if not os.path.isfile(self.ffile):
-                return True
-            else:
-                self.status = "finished"
-                job_list.remove(self)
-                return False
-
+            try:
+                if not os.path.isfile(self.ffile):
+                    return True
+                else:
+                    self.status = "finished"
+                    job_list.remove(self)
+                    return False
+            except AttributeError:
+                raise PBSError("pbsjob has no attribute ffile: either running in redhawk mode, or job has not been submitted")
         # If we are using pbs...
         counter = 1
         while True:
@@ -302,12 +304,17 @@ class pbsJobHandler:
         raise PBSError("RedHawk error: out of queue, no output file.  OFILE: %s" % (self.ofile))
 
     
-    def wait(self, delay=10, cleanup = False):
-        """Spin until job completes."""
+    def wait(self, delay=10, cleanup = 0):
+        """Spin until job completes.
+        cleanup:
+        * 0 / False: Do not clean up .o / .e / .f files.
+        * 1: Cleanup all .o / .e / .f files.
+        * 2: Cleanup only empty .o / .e / .f files   (2 may not completely work at this point -- need to account fo teh R post-able code)
+        """
         while self.isJobRunning() == True:
             time.sleep(delay)
         if cleanup:
-            self.erase_files()
+            self.erase_files(cleanup == 2)
         return self.ofile_exists()  
 
     def wait_on_job(self, delay=10):  
@@ -406,25 +413,28 @@ class pbsJobHandler:
     #             sys.exit(1)
     #             return None
                                 
-    def erase_files(self):
+    def erase_files(self, empty_only = False):
         """Erase the stdio and stderr files."""
         try:
-            os.remove(self.ofile_name())
+            if not empty_only or os.path.getsize(self.ofile_name()) == 0:
+                os.remove(self.ofile_name())
         except:
             pass
 
         try:
-            os.remove(self.efile_name())
+            if not empty_only or path.getsize(self.efile_name()) == 0:
+                os.remove(self.efile_name())
         except:
             pass
 
         try:
-            os.remove(self.rfile_name())
+            if not empty_only or path.getsize(self.rfile_name()) == 0:
+                os.remove(self.rfile_name())
         except:
             pass
 
         try:
-            os.remove(self.ffile)
+            os.remove(self.ffile)    # This one will never has useful content -- always remove.
         except:
             pass
 
