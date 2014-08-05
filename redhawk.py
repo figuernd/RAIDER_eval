@@ -239,11 +239,13 @@ class pbsJobHandler:
             if trial == retry:
                 return -1
 
-            if not preserve:
-                os.remove(self.batch_file_name)
-
             t=re.split('\.',output)
             self.jobid=t[0]
+
+        if not preserve:
+            os.remove(self.batch_file_name)
+
+
 
         self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
         self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)

@@ -65,7 +65,7 @@ def parse_params(args):
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
     raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "1111011110111101111")
+    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "11111111111111111111")
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
@@ -147,8 +147,9 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     if show_progress:
         print("Creating simulation:\n%s\n" % (cmd))
 
-    print("Sim batch: %s.sim.batch\n" % (output_file))
-    p = pbsJobHandler(batch_file = "%s.sim.batch" % (output_file), executable = cmd)
+    batch_name = data_dir + "/" + output_file + ".sim.batch"
+    print("Sim batch: %s\n" % (batch_name))
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd)
     p.submit()
     p.seq_file = file_base(output_file)
     p.sim_output = output_path
@@ -268,7 +269,7 @@ def run_scout(input_file, output_dir, min_freq, length):
     
     # First: run build_lmer_table
     lmer_output = output_dir + "/" + input_name.rstrip(".fa") + ".freq.fa"
-    cmd1 = "{build_lmer_table_exe} -min {min} -l {L} -sequence {sequence} -freq {freq}".format(build_lmer_table_exe=Locations['build_lmer_table'], min=min_freq, L=length, 
+    cmd1 = "{build_lmer_table_exe} -min {min} -sequence {sequence} -freq {freq}".format(build_lmer_table_exe=Locations['build_lmer_table'], min=min_freq,  
                                                                                                sequence = input_file, freq = lmer_output)
 
     # Next: Run RepeatScout
@@ -319,6 +320,9 @@ def scout_second_filter(p, min_freq):
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
+
+    p2.wait(cleanup = 2)
+    exit(1)
     return p2
 
 # def run_rm_scout(p, num_processors, masker_dir):
