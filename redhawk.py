@@ -81,10 +81,10 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
-           * job_name: A name for the redhawk name.  Default = the batch file name.
+           * job_name: A name for the redhawk process.  Default = the batch file name.
            * nodes: number of nodes required for the job.   Default = 1.
            * ppn: number of processors needed for the job.  Default = 1.
            * mem: Using 128 Gb machine.  Default = False.
@@ -103,6 +103,8 @@ class pbsJobHandler:
                            on other machines for testing.) Will still create all files that would have been created -- emulates redhawk execution as much as possible.
                            Not yes set up to extract resource usage.  If false, will force an attempt to use the pbs job manager.  By default: it will use pbs if
                            possible (specifically: if qstat can be run on the machine)
+           * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
+           * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
@@ -112,7 +114,6 @@ class pbsJobHandler:
             self.batch_file_name = self.batch_file_name + "." + str(os.getpid())
         self.cmd = executable
         self.jobname = job_name if job_name else batch_file
-        self.join = 'n'
         self.file_limit = file_limit
         self.file_delay = file_delay
         self.resources = None
@@ -134,11 +135,26 @@ class pbsJobHandler:
         self.modules = RHmodules if not self.suppress_pbs else None
         self.output_location = output_location if output_location else "."
 
+        s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)+(":m128" if self.mem else "") + "\n"
         f.write(s)
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)
         
+        if stdout_file:
+            self.ofile = self.output_location + "/" + stdout_file
+            f.write("#PBS -o %s\n" % self.ofile)
+        else:
+            self.ofile = None
+            f.write("#PBS -o %s\n" % self.output_location)
+
+        if stderr_file:
+            self.efile = self.output_location + "/" + stderr_file
+            f.write("#PBS -e %s\n" % self.efile)
+        else:
+            self.efile = None
+            f.write("#PBS -e %s\n" % self.output_location)
+
         if join:
             f.write("#PBS -j oe\n")
             
@@ -155,12 +171,6 @@ class pbsJobHandler:
 
         if mail:
             s="#PBS -m "+mail+"\n"
-            f.write(s)
-
-        if output_location:
-            s="#PBS -o "+output_location+"\n"
-            f.write(s)
-            s="#PBS -e "+output_location+"\n"
             f.write(s)
 
         if chdir:
@@ -209,13 +219,19 @@ class pbsJobHandler:
            """
         if self.suppress_pbs:   # We are not using the pbs job handler -- direct call to Popen
             self.jobid = random.randint(1000000, 9999999)
+            if not self.ofile:
+                self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
+
+            if not self.efile:
+                self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
+
             self.ffile = self.output_location + "/" + self.jobname + ".f" + str(self.jobid)
             
             if not re.search("[^2]\>", self.cmd):
-                self.cmd += " > {output_location}/{jobname}.o{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
+                self.cmd += " > {ofile}".format(ofile = self.ofile)
             if not re.search("2\>", self.cmd):
-                self.cmd += " 2> {output_location}/{jobname}.e{jobid}".format(output_location = self.output_location, jobname = self.jobname, jobid=self.jobid)
-            self.cmd += "; echo \"DONE\" > %s" % (self.ffile)
+                self.cmd += " 2> {efile}".format(efile = self.efile)
+            self.cmd += "; echo \"DONE\" > %s" % (self.ffile)   # We need ffile to exist for later checks, but its content doesn't matter.
             self.p = subprocess.Popen(self.cmd, shell=True)
             
 
@@ -247,8 +263,12 @@ class pbsJobHandler:
 
 
 
-        self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
-        self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
+        if not self.ofile:
+            self.ofile = self.output_location + "/" + self.jobname + ".o" + str(self.jobid)
+
+        if not self.efile:
+            self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
+
         self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
@@ -316,7 +336,8 @@ class pbsJobHandler:
         while self.isJobRunning() == True:
             time.sleep(delay)
         if cleanup:
-            self.erase_files(cleanup == 2)
+            self.split_efile()
+            self.erase_files(empty_only = True)
         return self.ofile_exists()  
 
     def wait_on_job(self, delay=10):  
@@ -417,6 +438,7 @@ class pbsJobHandler:
                                 
     def erase_files(self, empty_only = False):
         """Erase the stdio and stderr files."""
+
         try:
             if not empty_only or os.path.getsize(self.ofile_name()) == 0:
                 os.remove(self.ofile_name())
@@ -424,7 +446,7 @@ class pbsJobHandler:
             pass
 
         try:
-            if not empty_only or path.getsize(self.efile_name()) == 0:
+            if not empty_only or os.path.getsize(self.efile_name()) == 0:
                 os.remove(self.efile_name())
         except:
             pass
@@ -517,7 +539,8 @@ class pbsJobHandler:
     def split_efile(self):
         """Split the .e<id> file into a .e<id> and .r<id> file"""
         if not self.split:
-            self.wait()
+            if not self.efile_exists():
+                raise PBSError("Call to split_efile() when efile doesn't exist")
             self.split = True 
 
             with open(self.efile) as fp: line = "".join([line for line in fp])

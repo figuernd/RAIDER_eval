@@ -9,9 +9,10 @@ import tempfile
 import re
 
 #################################################################
-# The following global variables are related to.
+# The following global variables are related to debugging issues.
 show_progress = False
 simulate_only = False
+job_index = {}
 #################################################################
 
 #################################################################
@@ -30,6 +31,13 @@ Locations = None;    # This will be set to one of the above two, and references 
 
 #########
 # Utility functions
+def get_job_index(s):
+    if s not in job_index:
+        job_index[s] = 0
+    v = job_index[s]
+    job_index[s] += 1
+    return v
+
 def file_base(file):
     return os.path.basename(file)
 
@@ -121,6 +129,10 @@ def parse_params(args):
 
     return arg_return
 
+
+############################################################
+# Main functions 
+
 def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
@@ -148,9 +160,14 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
         print("Creating simulation:\n%s\n" % (cmd))
 
     batch_name = data_dir + "/" + output_file + ".sim.batch"
+    job_name = "simulation.%d" % (get_job_index("simulation"))
+    
     print("Sim batch: %s\n" % (batch_name))
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd)
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                      stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
+                      output_location = data_dir)
     p.submit()
+
     p.seq_file = file_base(output_file)
     p.sim_output = output_path
     p.index = file_index
@@ -184,8 +201,10 @@ def run_raider(seed, f, m, input_file, raider_dir):
         print("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
+    job_name = "raider.%d" % get_job_index("raider")
     print("Sim batch: " + batch_name + "\n")
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2)
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
+                      stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr")
     p.submit()
 
     p.seq_file = input_file
@@ -213,7 +232,7 @@ def run_repeat_masker(p, num_processors):
     on the output and put results in masker_dir (current dir if unspecified)"""
     p.wait(cleanup = 2)
 
-    intput_base = file_base(p.seq_file)  # Base name of the file used for input
+    input_base = file_base(p.seq_file)  # Base name of the file used for input
 
     output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
@@ -222,9 +241,13 @@ def run_repeat_masker(p, num_processors):
         print("Launch repeatmasker:\n%s\n" % cmd)
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
+    job_name = "repmask.%d" % get_job_index("repmask")
     print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]).submit()
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"],
+                       job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr").submit()
     
+    p2.wait(cleanup = 2)
+    exit(1)
 
     p2.dir = output_dir
     p2.lib_file = p.lib_file
@@ -322,7 +345,6 @@ def scout_second_filter(p, min_freq):
     p2.lib_file = filter2_stage_output
 
     p2.wait(cleanup = 2)
-    exit(1)
     return p2
 
 # def run_rm_scout(p, num_processors, masker_dir):
