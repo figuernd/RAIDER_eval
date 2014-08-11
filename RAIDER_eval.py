@@ -57,6 +57,7 @@ def parse_params(args):
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
     parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
+    parser_tools.add_argument('-B', '--bigfoot_off', dest = 'run_bigfoot', action = 'store_false', help = 'Turn BIGFOOT off', default = True)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -66,6 +67,7 @@ def parse_params(args):
     parser_io.add_argument('--nuke', dest ='nuke', action = "store_true", help = "Nuke the results directory", default = False)
     parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
+    parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
 
 
@@ -79,16 +81,21 @@ def parse_params(args):
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
     
-    # REPSCOUT_ARGUMENTS
+    # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
     raider_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
-    raider_argument.add_argument('--ssf', '--suppress_second_filter', dest = "suppress_second_filter", action = "store_true", help = "Suppress the second RepScout filter", default = False)
+    raider_argument.add_argument('--usf', '--use_second_filter', dest = "use_second_filter", action = "store_true", help = "Suppress the second RepScout filter", default = False)
 
+    # BIGFOOT ARGUMENTS
+    bigfoot_arguments = parser.add_argument_group("BIGFOOT parameters")
+    # Add appropraite commandline parameters here
 
     # REPEAT MASKER ARGUMENTS
-    parser.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    parser.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
+    repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
+    repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
+    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
     
+
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
     stats_group.add_argument('--stats_dir', help = "Statistics output directory", default = None)
@@ -211,6 +218,29 @@ def run_raider(seed, f, m, input_file, raider_dir):
     p.lib_file = lib_file
     return p
 
+#def run_bigfoot(input_file, bigfoot_dir):
+    """Runs BIGFOOT and returns a submitted pbs object with specific attributes used to run RepeatMasker.
+    * input_file: The name of the .fa sequence file being searched.
+    * bigfoot_dir: The name of the directory that will conain all files from this run.
+    """
+    input_base = file_base(input_file).rstrip(".fa")     # The name of the inputfile -- which I've been using as a basis for all file names
+    #output_dir = bigfoot_dir + "/" + input_base.upper() # If bigfoot creates its own directory for information, use this as the name of that directory.
+    #if not os.path.exists(output_dir):
+    #    os.makedirs(output_dir)
+    
+    #cmd = <whatever>   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    
+    #batch_name = bigfoot_dir + "/" + input_base + ".bigfoot.batch"    # This is the batch fils for the qsub command.
+    #job_name = "bigfoot.%d" % get_job_index("bigfoot")                # This is the redhawk jobname.  get_job_index just assigned the next unused number (for then running multiple jobs)
+    #stdout_file = input_base + ".bigfoot.stdout"                      # Anything bigfoot prints to stdout will be redirected here
+    #stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
+    #p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, current_location = bigfoot_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
+    
+    #p.submit()
+
+    #p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
+    #p.lib_file = <whatever>     # This should be set to the file name that will be the library for the repeatmasker run
+
 # def create_raider_consensus(p, output):
 #     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
 #     waits until the job is done, then invokes consensus_seq.py on the ouput and
@@ -246,8 +276,6 @@ def run_repeat_masker(p, num_processors):
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr").submit()
     
-    p2.wait(cleanup = 2)
-    exit(1)
 
     p2.dir = output_dir
     p2.lib_file = p.lib_file
@@ -329,6 +357,7 @@ def run_scout(input_file, output_dir, min_freq, length):
     # return p
 
 def scout_second_filter(p, min_freq):
+    """This stage isn't working well, and is of questionable use.  Ignoring for now."""
     filter2_stage_output = p.seq_file.rstrip(".fa") + ".repscout.filtered2.fa"
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
     
@@ -508,16 +537,26 @@ if __name__ == "__main__":
     if args.run_repscout:
         SCOUT_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min) for file in file_list]
         SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
-        if not args.suppress_second_filter:
+        if args.use_second_filter:   # Does not appear to be working
             SCOUT_JOBS = [scout_second_filter(p, args.f) for p in SCOUT_JOBS]
             SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
     else:
         SCOUT_JOBS = []
+
+#    if args.run_bigfoot:
+#        bigfoot_dir = args.argresults_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
+#        if not os.path.exists(bigfoot_dir):
+#           os.makedir(bigfoot_dir)
+#        BIGFOOT_JOBS = [run_bigfoot(input_file = file, bigfoot_dir = bigfoot_dir) for file in file_list]
+#        BIGFOOT_JOBS = [run_repeat_masker(p,args.ps) for p in BIGFOOT_JOBS]
+#    else:
+#        BIGFOOT_JOBS = []
         
 
     # Now make sure everything runs
     [p.wait(cleanup = 2) for p in RAIDER_JOBS]
     [p.wait(cleanup = 2) for p in SCOUT_JOBS]
+    [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
     # ####################################################################
     # if args.subparser_name == "seq_files" and args.seq_files:
