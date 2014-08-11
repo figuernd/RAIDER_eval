@@ -145,7 +145,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
 
-    print("data_dir: ", data_dir)
+    #print("data_dir: ", data_dir)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
@@ -169,7 +169,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     batch_name = data_dir + "/" + output_file + ".sim.batch"
     job_name = "simulation.%d" % (get_job_index("simulation"))
     
-    print("Sim batch: %s\n" % (batch_name))
+    #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
                       output_location = data_dir)
@@ -209,7 +209,7 @@ def run_raider(seed, f, m, input_file, raider_dir):
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "raider.%d" % get_job_index("raider")
-    print("Sim batch: " + batch_name + "\n")
+    #print("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr")
     p.submit()
@@ -272,7 +272,7 @@ def run_repeat_masker(p, num_processors):
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
-    print("Sim batch: " + batch_name + "\n")
+    #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr").submit()
     
@@ -335,7 +335,7 @@ def run_scout(input_file, output_dir, min_freq, length):
         print("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
-    print("Sim batch: " + batch_name + "\n")
+    #print("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3)
     p.submit()
 
@@ -365,7 +365,7 @@ def scout_second_filter(p, min_freq):
         print("RepeatScout Filter2:\n%s\n" % cmd)
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
-    print("Sim batch: " + batch_name + "\n")
+    #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd)
     p2.submit()
 
