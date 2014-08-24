@@ -264,7 +264,7 @@ def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait(cleanup = 2)
+    p.wait(cleanup = 0)
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
@@ -312,7 +312,7 @@ def run_repeat_masker(p, num_processors):
     # return p2
 
 # def run_scout_chrom(p, f, m):
-#    p.wait(cleanup = 2)
+#    p.wait(cleanup = 0)
 #    return run_scout(p.chrom_output, f, m, p.curr_dir)
 
 
@@ -343,7 +343,7 @@ def run_scout(input_file, output_dir, min_freq, length):
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.%d" % (get_job_index("repscout"))
     #show_progress.write("Sim batch: " + batch_name + "\n")
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd, job_name = job_name,
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = file_dir(rptscout_output))
     p.submit()
@@ -383,7 +383,7 @@ def scout_second_filter(p, min_freq):
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
 
-    p2.wait(cleanup = 2)
+    p2.wait(cleanup = 0)
     return p2
 
 # def run_rm_scout(p, num_processors, masker_dir):
@@ -412,7 +412,7 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
     repeat file, wait until the job is done and then invoke perform_stats.py on
     the original chromosome file, the original repeat file, the simulated sequence
     file, and the masker output file. Put results in stats_dir (Current dir if unspecified)"""
-    p.wait(cleanup = 2)
+    p.wait(cleanup = 0)
     stats_file = re.sub("((\.fa)|(\.fasta))$", ".%s.stats"%(test) , file_base(p.seq_file))
     stats_out = "%s/%s"%(stats_dir, stats_file) if stats_dir else "%s/%s" % (p.curr_dir, stats_file) if p.curr_dir else stats_file
     print_part = "--print " if print_rpts else "" 
@@ -517,7 +517,7 @@ if __name__ == "__main__":
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
-        [j.wait(cleanup = 2) for j in J]    # Let all the simulations finish
+        [j.wait(cleanup = 0) for j in J]    # Let all the simulations finish
 
         # Quit (if done)
         if simulate_only:
@@ -567,8 +567,8 @@ if __name__ == "__main__":
         
 
     # Now make sure everything runs
-    [p.wait(cleanup = 2) for p in RAIDER_JOBS]
-    [p.wait(cleanup = 2) for p in SCOUT_JOBS]
+    [p.wait(cleanup = 0) for p in RAIDER_JOBS]
+    [p.wait(cleanup = 0) for p in SCOUT_JOBS]
 #    [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
     # ####################################################################
