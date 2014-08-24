@@ -343,7 +343,9 @@ def run_scout(input_file, output_dir, min_freq, length):
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.%d" % (get_job_index("repscout"))
     #show_progress.write("Sim batch: " + batch_name + "\n")
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3)
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd, job_name = job_name,
+                      stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
+                      output_location = file_dir(rptscout_output))
     p.submit()
 
     p.seq_file = input_file
