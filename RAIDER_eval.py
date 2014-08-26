@@ -125,6 +125,7 @@ def parse_params(args):
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('--mc', '--mc_file', dest = 'mc_file', help = "Markov Chain file", default = False)
+    parser_chrom.add_argument('--mi', '--max_interval', dest = "max_interval", type = int, help = "Maximum allowed length of interval between repeats; -1 value (default) means no maximum", default = None) 
     
     arg_return =  parser.parse_args(args)
     
@@ -142,7 +143,8 @@ def parse_params(args):
 ############################################################
 # Main functions 
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file):
+
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -157,6 +159,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     seed_arg = "-s %d" % (rng_seed) if rng_seed else ""
     neg_arg = "-n" if neg_strand else ""
     fam_arg = "-f %s" % (fam_file) if fam_file else ""
+    mi = ("--mi %d" % (mi)) if mi else ""
     seq_arg = chromosome
     repeat_arg = repeat
 
@@ -164,7 +167,8 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "python3.3 chromsome_simulator.py {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+    cmd = "python3.3 chromsome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+
     if show_progress:
         show_progress.write("Creating simulation:\n%s\n" % (cmd))
         show_progress.flush()
@@ -217,6 +221,7 @@ def run_raider(seed, f, m, input_file, raider_dir):
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
                       output_location = output_dir)
+
     p.submit()
 
     p.seq_file = input_file
@@ -283,7 +288,8 @@ def run_repeat_masker(p, num_processors):
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir);
     p2.submit()
-    
+
+
 
     p2.dir = output_dir
     p2.lib_file = p.lib_file
@@ -349,6 +355,7 @@ def run_scout(input_file, output_dir, min_freq, length):
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = output_dir)
+
     p.submit()
 
     p.seq_file = input_file
@@ -379,10 +386,12 @@ def scout_second_filter(p, min_freq):
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
     job_name = "filter2%d" % get_job_index("filter2")
+
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file))
+
     p2.submit()
 
     p2.lib_file = p.lib_file
@@ -519,7 +528,7 @@ if __name__ == "__main__":
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
-                                          k = args.k, mc_file = args.mc_file)
+                                          k = args.k, mc_file = args.mc_file, mi = args.max_interval)
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
