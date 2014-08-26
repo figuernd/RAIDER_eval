@@ -50,7 +50,7 @@ def nextRepeat(rpt_file, use_negative = True, S = {}):
 fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\nscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"
 # fa_out_template: A template for creating lines for the .fa.out file.
 fa_out_template = "\t0\t0\t0\t0\t{chr}\t{start}\t{finish}\t(0)\t{strand}\t{family}\t{rpt_class}\t0\t0\t(0)\t1"
-def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, max_interval = None, num_repeats = None, max_length = None):
+def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, max_interval = None, num_repeats = None, max_length = None, limiting_chr = None):
     """
     Generate a syntehtic sequence with real repeats:
     * seq: A sequence (as a string).
@@ -70,20 +70,34 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
 
     rpt_count = 0
     length = min(len(seq), max_length) if max_length else len(seq)
+    debug_sim_len = 0
     for chr, start, finish, strand, family, rpt_class in rpt_gen:
+        if limiting_chr == None:
+            limiting_chr = {}
+
+        if chr not in limiting_chr:
+            continue
+
         if start >= current_coord:
             
             rpt_count += 1
-            s.append(markov_gen.generate_sequence(markov_list, min(start - current_coord, max_interval)))
+            inter_seq_len = min(start-current_coord, max_interval)
+            inter_seq = markov_gen.generate_sequence(markov_list, inter_seq_len)
+            assert len(inter_seq) == inter_seq_len
+            s.append(inter_seq)
+            debug_sim_len += len(inter_seq)
             coord_adjust += max(0, start-current_coord-max_interval)
 
-            s.append(seq[start:finish].lower() if mask else seq[start:finish].upper())
+            rpt_seq = seq[start:finish]
+            s.append(rpt_seq.lower() if mask else rpt_seq.upper())
+            debug_sim_len += len(rpt_seq)
+            
             fa_out.append(fa_out_template.format(chr=chr, start=start+1-coord_adjust, finish=finish-coord_adjust, strand=strand, family=family, rpt_class=rpt_class))
             
             if num_repeats and rpt_count == num_repeats:
                 break
 
-        current_coord = finish
+            current_coord = finish
         
     if num_repeats:
         max_interval = min(1000, max_interval)
