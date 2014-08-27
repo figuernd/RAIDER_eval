@@ -1,0 +1,22 @@
+compiling tests.o
+In file included from ../../seqan/core/include/seqan/seq_io.h:64:0,
+                 from SeedChain.h:5,
+                 from tests.cpp:2:
+../../seqan/core/include/seqan/seq_io/sequence_stream_impl.h: In member function 'void seqan::SequenceStreamImpl_::_guessFileTypeAndFormatForReadingAndInitialize()':
+../../seqan/core/include/seqan/seq_io/sequence_stream_impl.h:233:16: warning: enumeration value 'FILE_TYPE_GZ' not handled in switch [-Wswitch]
+../../seqan/core/include/seqan/seq_io/sequence_stream_impl.h:233:16: warning: enumeration value 'FILE_TYPE_GZ_DIRECT' not handled in switch [-Wswitch]
+../../seqan/core/include/seqan/seq_io/sequence_stream_impl.h:233:16: warning: enumeration value 'FILE_TYPE_BZ2' not handled in switch [-Wswitch]
+tests.cpp: In member function 'virtual void SeedChain_seedToInt_Test::TestBody()':
+tests.cpp:26:37: error: cannot convert 'seqan::CharString {aka seqan::String<char, seqan::Alloc<> >}' to 'uint {aka unsigned int}' for argument '2' to 'size_t seedToInt(const char*, uint)'
+tests.cpp: In member function 'virtual void SeedChain_getMaxBase_Test::TestBody()':
+tests.cpp:44:39: error: invalid initialization of non-const reference of type 'size_t& {aka long unsigned int&}' from an rvalue of type 'size_t* {aka long unsigned int*}'
+In file included from tests.cpp:2:0:
+SeedChain.h:116:6: error: in passing argument 2 of 'void getMaxBase(Lmer*, size_t&, short unsigned int&)'
+tests.cpp: In member function 'virtual void SeedChain_intToSeed_Test::TestBody()':
+tests.cpp:51:14: error: 'EXPECT' was not declared in this scope
+In file included from tests.cpp:1:0:
+../../gtest-1.6.0/include/gtest/gtest.h: In instantiation of 'testing::AssertionResult testing::internal::CmpHelperEQ(const char*, const char*, const T1&, const T2&) [with T1 = long unsigned int; T2 = int]':
+../../gtest-1.6.0/include/gtest/gtest.h:1353:30:   required from 'static testing::AssertionResult testing::internal::EqHelper<lhs_is_null_literal>::Compare(const char*, const char*, const T1&, const T2&) [with T1 = long unsigned int; T2 = int; bool lhs_is_null_literal = false]'
+tests.cpp:12:2:   required from here
+../../gtest-1.6.0/include/gtest/gtest.h:1316:3: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+make: *** [tests.o] Error 1
