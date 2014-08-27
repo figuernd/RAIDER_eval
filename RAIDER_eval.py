@@ -26,7 +26,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
                     'filter_stage-2':'./filter-stage-2.prl',
-                    'raider':'./raider'}
+                    'raider':'./raider',
+                    'bigfoot':'./bigfoot'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 #########
@@ -241,19 +242,20 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    cmd = "bigfoot -l {L} -c {C} -i {I} -t {T} {bigfoot_dir} {input_file}"   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd = "{bigfoot} -l {L} -c {C} -i {I} -t {T} {bigfoot_dir} {input_file}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
     
     lib_file = bigfoot_dir + "/" + "seeds"
     batch_name = bigfoot_dir + "/" + input_base + ".bigfoot.batch"    # This is the batch fils for the qsub command.
     job_name = "bigfoot.%d" % get_job_index("bigfoot")                # This is the redhawk jobname.  get_job_index just assigned the next unused number (for then running multiple jobs)
     stdout_file = input_base + ".bigfoot.stdout"                      # Anything bigfoot prints to stdout will be redirected here
     stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, current_location = bigfoot_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, output_location = output_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
     
     p.submit()
 
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
     p.lib_file = lib_file     # This should be set to the file name that will be the library for the repeatmasker run
+    return p 
 
 # def create_raider_consensus(p, output):
 #     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
@@ -578,9 +580,9 @@ if __name__ == "__main__":
     if args.run_bigfoot:
         bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
         if not os.path.exists(bigfoot_dir):
-           os.makedir(bigfoot_dir)
-        BIGFOOT_JOBS = [run_bigfoot(input_file = file, bigfoot_dir = bigfoot_dir, L = bigfoot_L, C = bigfoot_min, I = bigfoot_I, T = bigfoot_T) for file in file_list]
-        BIGFOOT_JOBS = [run_repeat_masker(p,args.ps) for p in BIGFOOT_JOBS]
+           os.makedirs(bigfoot_dir)
+        BIGFOOT_JOBS = [run_bigfoot(input_file = file, bigfoot_dir = bigfoot_dir, L = args.bigfoot_L, C = args.bigfoot_min, I = args.bigfoot_I, T = args.bigfoot_T) for file in file_list]
+        BIGFOOT_JOBS = [run_repeat_masker(p,args.pa) for p in BIGFOOT_JOBS]
     else:
         BIGFOOT_JOBS = []
         
