@@ -32,6 +32,7 @@ Locations = None;    # This will be set to one of the above two, and references 
 #########
 # Utility functions
 def get_job_index(s):
+    global job_index
     if s not in job_index:
         job_index[s] = 0
     v = job_index[s]
@@ -103,7 +104,7 @@ def parse_params(args):
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
-    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stdout", default = False)
+    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to debug.txt", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
     subparsers = parser.add_subparsers(dest="subparser_name")
@@ -124,12 +125,14 @@ def parse_params(args):
     parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('--mc', '--mc_file', dest = 'mc_file', help = "Markov Chain file", default = False)
+    parser_chrom.add_argument('--mi', '--max_interval', dest = "max_interval", type = int, help = "Maximum allowed length of interval between repeats; -1 value (default) means no maximum", default = None) 
     
     arg_return =  parser.parse_args(args)
     
     #### The following is to set the global debugging variables 
     global show_progress
-    show_progress = arg_return.show_progress
+    if arg_return.show_progress:
+        show_progress = open("debug.txt", "w")
 
     global simulate_only
     simulate_only = arg_return.simulate_only
@@ -140,7 +143,8 @@ def parse_params(args):
 ############################################################
 # Main functions 
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file):
+
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -155,6 +159,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     seed_arg = "-s %d" % (rng_seed) if rng_seed else ""
     neg_arg = "-n" if neg_strand else ""
     fam_arg = "-f %s" % (fam_file) if fam_file else ""
+    mi = ("--mi %d" % (mi)) if mi else ""
     seq_arg = chromosome
     repeat_arg = repeat
 
@@ -162,9 +167,11 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "python3.3 chromsome_simulator.py {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+    cmd = "python3.3 chromsome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+
     if show_progress:
-        print("Creating simulation:\n%s\n" % (cmd))
+        show_progress.write("Creating simulation:\n%s\n" % (cmd))
+        show_progress.flush()
 
     batch_name = data_dir + "/" + output_file + ".sim.batch"
     job_name = "simulation.%d" % (get_job_index("simulation"))
@@ -205,13 +212,16 @@ def run_raider(seed, f, m, input_file, raider_dir):
     cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
     if show_progress:
-        print("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        show_progress.write("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        show_progress.flush()
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "raider.%d" % get_job_index("raider")
-    #print("Sim batch: " + batch_name + "\n")
+    #show_progress.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
-                      stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr")
+                      stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
+                      output_location = output_dir)
+
     p.submit()
 
     p.seq_file = input_file
@@ -249,7 +259,7 @@ def run_raider(seed, f, m, input_file, raider_dir):
 #     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
 #     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
 #     if show_progress:
-#         print("Creating consensus sequence: ", cmd)
+#         show_progress.write("Creating consensus sequence: ", cmd)
 #     p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
 #     p2.submit()
 #     p2.seq_file = p.seq_file
@@ -260,7 +270,7 @@ def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait(cleanup = 2)
+    p.wait(cleanup = 0)
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
@@ -268,14 +278,18 @@ def run_repeat_masker(p, num_processors):
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
-        print("Launch repeatmasker:\n%s\n" % cmd)
+        show_progress.write("Launch repeatmasker:\n%s\n" % cmd)
+        show_progress.flush()
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"],
-                       job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr").submit()
-    
+                       job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
+                       output_location = output_dir);
+    p2.submit()
+
+
 
     p2.dir = output_dir
     p2.lib_file = p.lib_file
@@ -307,7 +321,7 @@ def run_repeat_masker(p, num_processors):
     # return p2
 
 # def run_scout_chrom(p, f, m):
-#    p.wait(cleanup = 2)
+#    p.wait(cleanup = 0)
 #    return run_scout(p.chrom_output, f, m, p.curr_dir)
 
 
@@ -332,11 +346,16 @@ def run_scout(input_file, output_dir, min_freq, length):
     cmd3 = "cat {input} | perl {filter} > {filter_output}".format(input=rptscout_output, filter = Locations['filter_stage-1'], filter_output = filter_stage_output)
 
     if show_progress:
-        print("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+        show_progress.write("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+        show_progress.flush()
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
-    #print("Sim batch: " + batch_name + "\n")
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3)
+    job_name = "rptscout.%d" % (get_job_index("repscout"))
+    #show_progress.write("Sim batch: " + batch_name + "\n")
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
+                      stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
+                      output_location = output_dir)
+
     p.submit()
 
     p.seq_file = input_file
@@ -362,18 +381,24 @@ def scout_second_filter(p, min_freq):
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
     
     if show_progress:
-        print("RepeatScout Filter2:\n%s\n" % cmd)
+        show_progress.write("RepeatScout Filter2:\n%s\n" % cmd)
+        show_progress.flush()
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
+    job_name = "filter2%d" % get_job_index("filter2")
+
     #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd)
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                       stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
+                       output_location = file_dir(p.seq_file))
+
     p2.submit()
 
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
 
-    p2.wait(cleanup = 2)
+    p2.wait(cleanup = 0)
     return p2
 
 # def run_rm_scout(p, num_processors, masker_dir):
@@ -402,13 +427,16 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
     repeat file, wait until the job is done and then invoke perform_stats.py on
     the original chromosome file, the original repeat file, the simulated sequence
     file, and the masker output file. Put results in stats_dir (Current dir if unspecified)"""
-    p.wait(cleanup = 2)
+    p.wait(cleanup = 0)
     stats_file = re.sub("((\.fa)|(\.fasta))$", ".%s.stats"%(test) , file_base(p.seq_file))
     stats_out = "%s/%s"%(stats_dir, stats_file) if stats_dir else "%s/%s" % (p.curr_dir, stats_file) if p.curr_dir else stats_file
     print_part = "--print " if print_rpts else "" 
     cmd = "python3.3 perform_stats.py %s %s %s %s %s %s" % (print_part, args.chromosome, true_repeats, p.seq_file, p.masker_output, stats_out)
+
     if show_progress:
-        print("Launching analysis:\n%s\n" % cmd)
+        show_progress.write("Launching analysis:\n%s\n" % cmd)
+        show_progress.flush()
+
     p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
     p2.submit()
     p2.curr_dir = p.curr_dir
@@ -500,11 +528,11 @@ if __name__ == "__main__":
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
-                                          k = args.k, mc_file = args.mc_file)
+                                          k = args.k, mc_file = args.mc_file, mi = args.max_interval)
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
-        [j.wait(cleanup = 2) for j in J]    # Let all the simulations finish
+        [j.wait(cleanup = 0) for j in J]    # Let all the simulations finish
 
         # Quit (if done)
         if simulate_only:
@@ -554,9 +582,9 @@ if __name__ == "__main__":
         
 
     # Now make sure everything runs
-    [p.wait(cleanup = 2) for p in RAIDER_JOBS]
-    [p.wait(cleanup = 2) for p in SCOUT_JOBS]
-    [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
+    [p.wait(cleanup = 0) for p in RAIDER_JOBS]
+    [p.wait(cleanup = 0) for p in SCOUT_JOBS]
+#    [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
     # ####################################################################
     # if args.subparser_name == "seq_files" and args.seq_files:

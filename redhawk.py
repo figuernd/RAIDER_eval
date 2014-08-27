@@ -331,7 +331,7 @@ class pbsJobHandler:
         cleanup:
         * 0 / False: Do not clean up .o / .e / .f files.
         * 1: Cleanup all .o / .e / .f files.
-        * 2: Cleanup only empty .o / .e / .f files   (2 may not completely work at this point -- need to account fo teh R post-able code)
+        * 2: Cleanup only empty .o / .e / .f files   (2 may not completely work at this point -- need to account fo the R post-able code)
         """
         while self.isJobRunning() == True:
             time.sleep(delay)
