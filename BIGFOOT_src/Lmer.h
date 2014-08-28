@@ -14,6 +14,10 @@
 
 using namespace std;
 
+typedef unsigned int uint;
+
+
+
 /**
  * Primary responsibility of this class is to represent an Lmer and keep count
  * of all bases that immediately follow it. Hence subsequentA, subsequentC, etc.
