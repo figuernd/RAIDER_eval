@@ -21,7 +21,8 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'RptScout':'/usr/local/RepeatScout/RepeatScout',
                 'filter_stage-1':'/usr/local/RepeatScout/filter-stage-1.prl',
                 'filter_stage-2':'/usr/local/RepeatScout/filter-stage-2.prl',
-                'raider':'./raider'}
+                'raider':'./raider',
+                'bigfoot':'./bigfoot'}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -108,7 +109,7 @@ def parse_params(args):
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
-    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to debug.txt", default = False)
+    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to debug.txt and stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
     subparsers = parser.add_subparsers(dest="subparser_name")
@@ -176,6 +177,8 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     if show_progress:
         show_progress.write("Creating simulation:\n%s\n" % (cmd))
         show_progress.flush()
+        sys.stderr.write("Creating simulation:\n%s\n" % (cmd))
+        sys.stderr.flush()
 
     batch_name = data_dir + "/" + output_file + ".sim.batch"
     job_name = "simulation.%d" % (get_job_index("simulation"))
@@ -218,6 +221,8 @@ def run_raider(seed, f, m, input_file, raider_dir):
     if show_progress:
         show_progress.write("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
         show_progress.flush()
+        sys.stderr.write("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.flush()
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "raider.%d" % get_job_index("raider")
@@ -286,6 +291,8 @@ def run_repeat_masker(p, num_processors):
     if show_progress:
         show_progress.write("Launch repeatmasker:\n%s\n" % cmd)
         show_progress.flush()
+        sys.stderr.write("Launch repeatmasker:\n%s\n" % cmd)
+        sys.stderr.flush()
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
@@ -354,6 +361,8 @@ def run_scout(input_file, output_dir, min_freq, length):
     if show_progress:
         show_progress.write("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         show_progress.flush()
+        sys.stderr.write("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+        sys.stderr.flush()
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.%d" % (get_job_index("repscout"))
@@ -389,6 +398,8 @@ def scout_second_filter(p, min_freq):
     if show_progress:
         show_progress.write("RepeatScout Filter2:\n%s\n" % cmd)
         show_progress.flush()
+        sys.stderr.write("RepeatScout Filter2:\n%s\n" % cmd)
+        sys.stderr.flush()
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
     job_name = "filter2%d" % get_job_index("filter2")
@@ -442,6 +453,8 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
     if show_progress:
         show_progress.write("Launching analysis:\n%s\n" % cmd)
         show_progress.flush()
+        sys.stderr.write("Launching analysis:\n%s\n" % cmd)
+        sys.stderr.flush()
 
     p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
     p2.submit()
