@@ -248,6 +248,13 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
         os.makedirs(output_dir)
     
     cmd = "{bigfoot} -l {L} -c {C} -i {I} -t {T} {bigfoot_dir} {input_file}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+
+    if show_progress:
+        show_progress.write("Launching bigfoot:\n%s\n" % (cmd))
+        show_progress.flush()
+        sys.stderr.write("Launching bigfoot:\n%s\n" % (cmd))
+        sys.stderr.flush()
+
     
     lib_file = bigfoot_dir + "/" + "seeds"
     batch_name = bigfoot_dir + "/" + input_base + ".bigfoot.batch"    # This is the batch fils for the qsub command.
