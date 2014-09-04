@@ -78,7 +78,7 @@ def parse_params(args):
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
     raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "11111111111111111111")
+    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "111111111111111111111111111111")
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
