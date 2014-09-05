@@ -1,0 +1,5 @@
+   SW   perc perc perc  query     position in query              matching    repeat        position in repeat
+score   div. del. ins.  sequence  begin    end          (left)   repeat      class/family begin  end    (left)  ID
+
+  11    32.0  0.0  0.0  seq_file      1801     1997 (15069426) + repeat39717 Unspecified      5    201   (29)   1  
+  447   32.0  0.0  0.0  seq_file      2801     2997 (15069426) + repeat39717 Unspecified      5    201   (29)   1  
