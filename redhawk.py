@@ -272,7 +272,7 @@ class pbsJobHandler:
         self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
-            if self.surpress_pbs:
+            if self.suppress_pbs:
                 print("Popen: jobid: {jobid}, process id: {pid}".format(jobid = self.jobid, pid = self.p.pid))
             else:
                 print("PBS: jobid: {jobid}".format(jobid = self.jobid))
@@ -622,10 +622,11 @@ if __name__ == "__main__":
 
     settings2 = parser.add_argument_group("Less important job-related settings")
     settings2.add_argument('-b', '--batch', action = "store", type = str, dest = "batch", help="Batch file name", default = "redhawk_run")
-    settings2.add_argument('-P', '--pid_off', action = "store_false", dest = "pid", help = "Surpress use of pid in file names", default = True)
+    settings2.add_argument('-P', '--pid_off', action = "store_false", dest = "pid", help = "Suppress use of pid in file names", default = True)
     #settings2.add_argument('-T', '--time_off', action = "store_false", dest = "timing", help = "Suppress runtime reporting", default = True)
     settings2.add_argument('-R', '--resources_off', action = "store_false", dest = "print_resources", help = "Suppress resource usage reporting", default = True)
     settings2.add_argument('-K', '--keep_files', action = "store_true", dest = "keep", help = "Keep files generated", default = False)
+    settings2.add_argument('-j', '--job_name', dest = "job_name", help = "Redhawk job name", default = None)
 
     #term = parser.add_argument_group("Alternative jobs (internal option -- not intended for users)")
     #term.add_argument('--post_process', action = 'store_true', dest = 'post_process', help="Process the result", default = False)
@@ -638,7 +639,7 @@ if __name__ == "__main__":
 
 
     
-    p = pbsJobHandler(batch_file = args.batch, executable = " ".join(args.command), use_pid = args.pid, nodes = args.nodes, ppn = args.ppn, mem = args.mem, 
+    p = pbsJobHandler(batch_file = args.batch, executable = " ".join(args.command), job_name = args.job_name, use_pid = args.pid, nodes = args.nodes, ppn = args.ppn, mem = args.mem, 
                       walltime = args.walltime, output_location = args.output_location, chdir = args.target_directory, RHmodules = args.RHmodules)
     if args.create:
         sys.exit(0)
