@@ -144,7 +144,7 @@ def get_stats(real_indices, gen_indices, gen_length):
     return tp, fp, fn, tn, tpr, tnr, ppv, npv, fpr, fdr, tps, fps, fns
 
 def stats(tp, fp, fn, tn):
-    tpr = tp/(tp + fn) if tp + fp > 0 else -1
+    tpr = tp/(tp + fn) if tp + fn > 0 else -1
     tnr = tn/(fp + tn) if fp + tn > 0 else -1
     ppv = tp/(tp + fp) if tp + fp > 0 else -1
     npv = tn/(tn + fn) if tn + fn > 0 else -1
