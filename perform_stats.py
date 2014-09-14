@@ -137,6 +137,7 @@ def get_stats(real_indices, gen_indices, gen_length):
             fns.append((s1, e1))
             fn += e1 - s1
         else:
+            leftover_real = True
             fps.append((s2, e2))
             fp += e2 - s2
     tn = gen_length - fp - tp - fn
