@@ -91,10 +91,10 @@ def parse_params(args):
 
     # BIGFOOT ARGUMENTS
     bigfoot_arguments = parser.add_argument_group("BIGFOOT parameters")
-    raider_argument.add_argument('-L', '--bigfoot_L', type = int, help = "Minimum repeat length. Defaults to 20.", default = 20)
-    raider_argument.add_argument('-min', '--bigfoot_min', type = int, help = "E.R. occurrence threshold", default = 2)
-    raider_argument.add_argument('-I', '--bigfoot_I', type = float, help = "Minimum percent frequency of more frequent Lmer a less frequent Lmer must have to be part of the same family", default = 0.75)
-    raider_argument.add_argument('-T', '--bigfoot_T', type = float, help = "Minimum percent of time a base must occur after an Lmer to be considered significant", default = 0.75)
+    bigfoot_arguments.add_argument('-L', '--bigfoot_L', type = int, help = "Minimum repeat length. Defaults to 20.", default = 20)
+    bigfoot_arguments.add_argument('-min', '--bigfoot_min', type = int, help = "E.R. occurrence threshold", default = 2)
+    bigfoot_arguments.add_argument('-I', '--bigfoot_I', type = float, help = "Minimum percent frequency of more frequent Lmer a less frequent Lmer must have to be part of the same family", default = 0.75)
+    bigfoot_arguments.add_argument('-T', '--bigfoot_T', type = float, help = "Minimum percent of time a base must occur after an Lmer to be considered significant", default = 0.75)
 
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
