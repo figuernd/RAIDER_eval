@@ -12,7 +12,7 @@ import markov_gen
 
 
 def parse_params(args):
-    parser = argparse.ArgumentParser(description = "Generate simulated chromsome")
+    parser = argparse.ArgumentParser(description = "Generate simulated chromosome")
     # parser.add_argument('-c', '--cutoff', type = int, help = "Limit model to first c non-N bases")
     parser.add_argument('-k', type = int, help = "Order of Markov chain", default = 5)
     parser.add_argument('-s', '--seed', type = int, help = "RNG seed", default = None)
@@ -39,17 +39,19 @@ def nextRepeat(rpt_file, use_negative = True, S = {}):
     fp = open(rpt_file)
     fp.readline()
     fp.readline()
+    line_number = -1
     for line in fp:
+        line_number += 1
         if line.rstrip():
             A = re.split("\s+", line.strip())
-            chr, start, finish, strand, family, rpt_class = A[4], int(A[5])-1, int(A[6]), A[8], A[9], A[10]
+            chr, start, finish, strand, family, rpt_class, rpt_id = A[4], int(A[5])-1, int(A[6]), A[8], A[9], A[10], A[14]
             if (strand == '+' or use_negative) and (family in S or not S):
-                yield chr, start, finish, strand, family, rpt_class
+                yield chr, start, finish, strand, family, rpt_class, rpt_id
 
 # fa_out_header: The fixed header lines for the .fa.out file
-fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\nscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"
+fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\n\tscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"
 # fa_out_template: A template for creating lines for the .fa.out file.
-fa_out_template = "\t0\t0\t0\t0\t{chr}\t{start}\t{finish}\t(0)\t{strand}\t{family}\t{rpt_class}\t0\t0\t(0)\t1"
+fa_out_template = "\t0\t0\t0\t0\t{chr}\t{start}\t{finish}\t(0)\t{strand}\t{family}\t{rpt_class}\t0\t0\t(0)\t{rpt_id}"
 def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, max_interval = None, num_repeats = None, max_length = None, limiting_chr = None):
     """
     Generate a syntehtic sequence with real repeats:
@@ -71,11 +73,9 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
     rpt_count = 0
     length = min(len(seq), max_length) if max_length else len(seq)
     debug_sim_len = 0
-    for chr, start, finish, strand, family, rpt_class in rpt_gen:
-        if limiting_chr == None:
-            limiting_chr = {}
-
-        if chr not in limiting_chr:
+    
+    for chr, start, finish, strand, family, rpt_class, rpt_id in rpt_gen:
+        if limiting_chr and chr not in limiting_chr:
             continue
 
         if start >= current_coord:
@@ -92,12 +92,14 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
             s.append(rpt_seq.lower() if mask else rpt_seq.upper())
             debug_sim_len += len(rpt_seq)
             
-            fa_out.append(fa_out_template.format(chr=chr, start=start+1-coord_adjust, finish=finish-coord_adjust, strand=strand, family=family, rpt_class=rpt_class))
+            fa_out.append(fa_out_template.format(chr=chr, start=start+1-coord_adjust, finish=finish-coord_adjust, strand=strand, family=family, rpt_class=rpt_class, rpt_id=rpt_id))
             
             if num_repeats and rpt_count == num_repeats:
                 break
 
             current_coord = finish
+    
+    print("Len: ", len(fa_out))
         
     if num_repeats:
         max_interval = min(1000, max_interval)

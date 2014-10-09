@@ -172,7 +172,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "python3.3 chromsome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+    cmd = "python3.3 chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
 
     if show_progress:
         show_progress.write("Creating simulation:\n%s\n" % (cmd))

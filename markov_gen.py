@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 ############################################################################
 # simulation.py
-# Code for generating a simulated chromsome based on a k-degree markov chain and a model sequences
+# Code for generating a simulated chromosome based on a k-degree markov chain and a model sequences
 # Written by: Jiajun Wang, John Karro
 # Date: March, 2014
 # Email: karroje@miamiOH.edu
