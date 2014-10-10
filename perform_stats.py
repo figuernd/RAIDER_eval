@@ -155,7 +155,7 @@ def stats(tp, fp, fn, tn):
 
 
 #def main(seq_file, real_repeats, sim_seq, masker_output, output_file, print_reps):
-def main(real_repeats, masker_output, output_file, print_reps, exclusions):
+def perform_stats(real_repeats, masker_output, exclusions):
     # assuming masker_repeats references repeats named in consensus_output file
     #orig_record = SeqIO.read(seq_file, "fasta")
     #gen_record = SeqIO.read(sim_seq, "fasta")
@@ -170,9 +170,21 @@ def main(real_repeats, masker_output, output_file, print_reps, exclusions):
         exclusion_set = None
     real_bounds_generator = repeat_bounds_generator(real_repeats, exclusion_set)
     gen_bounds_generator = repeat_bounds_generator(masker_output, exclusion_set)
-    tp, fp, fn, tn, tpr, tnr, ppv, npv, fpr, fdr, tps, fps, fns= get_stats(real_bounds_generator, gen_bounds_generator, l) #get_stats(real_indices, gen_indices, l)
+    return get_stats(real_bounds_generator, gen_bounds_generator, l) #get_stats(real_indices, gen_indices, l)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Generate Sensitivity and Specificity Stats")
+    parser.add_argument('-p', '--print_reps', action = "store_true", help = "Print out the repeats", default= False)
+    #parser.add_argument("seq_file", help = "Sequence file")
+    parser.add_argument('-e', '--exclusion_file', help = "File of repeats to be ignored during analysis", default = None)
+    parser.add_argument("repeat_file", help = "Repeats file")
+    parser.add_argument("masker_output", help = "Masker output using consensus sequence and sequence file")
+    parser.add_argument("output_file", help = "Statistics output file")
+    args = parser.parse_args()
+
+    tp, fp, fn, tn, tpr, tnr, ppv, npv, fpr, fdr, tps, fps, fns = perform_stats(args.repeat_file, args.masker_output, args.exclusion_file)
  
-    f = open(output_file, 'w')
+    f = open(args.output_file, 'w')
     f.write("TP: %d \n" % (tp))
     f.write("FP: %d \n" % (fp))
     f.write("TN: %d \n" % (tn))
@@ -184,7 +196,7 @@ def main(real_repeats, masker_output, output_file, print_reps, exclusions):
     f.write("FPR: %f \n" % (fpr))
     f.write("FDR: %f \n" % (fdr))
     f.write("\n")
-    if print_reps:
+    if args.print_reps:
         f.write("\nThese bases were correctly identified (true positives):\n")
         f.write('\n'.join('\t(%s %s)' % x for x in tps))
         f.write("\nThese bases were incorrectly identified (false positives):\n")
@@ -197,16 +209,7 @@ def main(real_repeats, masker_output, output_file, print_reps, exclusions):
         #    f.write("\t %s \n" %(str(orig_record.seq[rep[0]:rep[1]]).upper()))
     f.close()    
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "Generate Sensitivity and Specificity Stats")
-    parser.add_argument('-p', '--print_reps', action = "store_true", help = "Print out the repeats", default= False)
-    #parser.add_argument("seq_file", help = "Sequence file")
-    parser.add_argument('-e', '--exclusion_file', help = "File of repeats to be ignored during analysis", default = None)
-    parser.add_argument("repeat_file", help = "Repeats file")
-    parser.add_argument("masker_output", help = "Masker output using consensus sequence and sequence file")
-    parser.add_argument("output_file", help = "Statistics output file")
-    args = parser.parse_args()
-    main(args.repeat_file, args.masker_output, args.output_file, args.print_reps, args.exclusion_file)
+
 
     
 
