@@ -4,7 +4,7 @@ CC = g++ -std=c++11
 
 CXXFLAGS+=-Wall -W -O3 -DNDEBUG
 
-CPPINCL+=-I./seqan/core/include
+CPPINCL+=-I./../seqan/core/include
 CPPINCL+=-I../../../research/seqan/extras/include
 
 
