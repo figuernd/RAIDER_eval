@@ -39,14 +39,12 @@ def nextRepeat(rpt_file, use_negative = True, S = {}):
     fp = open(rpt_file)
     fp.readline()
     fp.readline()
-    line_number = -1
     for line in fp:
-        line_number += 1
         if line.rstrip():
             A = re.split("\s+", line.strip())
             chr, start, finish, strand, family, rpt_class, rpt_id = A[4], int(A[5])-1, int(A[6]), A[8], A[9], A[10], A[14]
             if (strand == '+' or use_negative) and (family in S or not S):
-                yield chr, start, finish, strand, family, rpt_class, rpt_id
+                yield chr, start, finish, strand, family, rpt_class, int(rpt_id)
 
 # fa_out_header: The fixed header lines for the .fa.out file
 fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\n\tscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"

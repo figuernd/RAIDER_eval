@@ -189,6 +189,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
                       output_location = data_dir)
     p.submit()
 
+    p.output_file = output_file
     p.seq_file = file_base(output_file)
     p.sim_output = output_path
     p.index = file_index
@@ -605,109 +606,19 @@ if __name__ == "__main__":
         BIGFOOT_JOBS = [run_repeat_masker(p,args.pa) for p in BIGFOOT_JOBS]
     else:
         BIGFOOT_JOBS = []
-        
 
+
+    # Print output files
+    with open("") as fp:
+        open(args.results_dir + "/final_file_list.txt")
+        
+        # Print Simulation information
+        for j in J:
+            fp.write("Simulation file: {file} ({file}.out})".format(???))
+                
     # Now make sure everything runs
     [p.wait(cleanup = 0) for p in RAIDER_JOBS]
     [p.wait(cleanup = 0) for p in SCOUT_JOBS]
     [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
-    # ####################################################################
-    # if args.subparser_name == "seq_files" and args.seq_files:
-
-    #     ### For each listed file (in args.seq_files): invoke RAIDER on the file
-    #     ### and put the resuling pbs object ito the J list.
-    #     J = []
-    #     for file in args.seq_files:
-    #         assert file.endswith(".fa") or file.endswith('.fasta')
-    #         J.append(run_raider(seed = args.seed, f = args.f, m = args.min, input_file = file, output_dir = args.output_dir, curr_dir = curr_dir))
-    #     ### Sequentially work the the J list and, when the next job has finished,
-    #     ### start the conensus sequence job running and stick the new pbs job nto
-    #     ### the J2 job. 
-    #     J2 = []
-    #     for p in J:
-    #         # The below line is creating the output name in such a way as to avoid conflict.
-    #         # It will change X.fa to X.conensus.fa (if args.output_ext == None), stick that output_ext
-    #         # string in there if it does exist.
-    #         output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.file)
-    #         J2.append(create_raider_consensus(p, output))
-
-    #     ### Sequentially work through the J2 list and, when next job has finished,
-    #     ### start repeatmasker job running and stick new pbs job onto J3 list
-    #     J3 = []
-    #     for p in J2:
-    #         J3.append(run_repeat_masker(p, args.pa, args.masker_dir))
-    #     for p in J3:
-    #         p.wait()
-
-    # elif args.subparser_name == "chrom_sim" and args.chromosome and args.repeat and args.num_sims:
-    #     ### Create n simulated chromosomes, invoke RAIDER on each chromosome
-    #     ### and put the resulting pbs object into the J list.
-    #     J =[]
-    #     for i in range(int(args.num_sims)):
-    #         J.append(simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
-    #                                      rng_seed = args.rng_seed, length = args.length, 
-    #                                      neg_strand = args.negative_strand, fam_file = args.family_file, 
-    #                                      chrom_dir = args.chrom_dir, output_file= args.output, file_index = i, 
-    #                                      curr_dir = curr_dir, k = args.k)) 
-
-    #     if simulate_only:
-    #         [r.wait() for r in J]
-    #         [r.erase_files() for r in J]
-    #         sys.exit(0)
-
-
-    #     ### Sequentially work through the J list and, when next job is finished,
-    #     ### start raider job running and put resulting pbs job object into J2 list
-    #     J2 = []
-    #     for p in J:
-    #         J2.append(run_raider_chrom(p, seed = args.seed, f = args.f, m = args.min,  output_dir = args.output_dir))
-
-    #     ### Sequentially work through the J2 list and, when next job is finished,
-    #     ### start consensus sequence job running and stick new pbs job onto J3 list
-
-    #     J3 = []
-    #     for p in J2:
-    #         output = re.sub("((\.fa)|(\.fasta))$", ".consensus%sfa" % ("." if not args.output_ext else "." + output_ext + "."), p.seq_file)
-    #         J3.append(create_raider_consensus(p, output))
-
-    #     rm_raider_dir = "RM_raider" #, dir = (curr_dir if curr_dir else "."))
-    #     ### Sequentially work through the J3 list and, when next job is finished,
-    #     ### start repeatmasker job running and stick new job onto J4 list
-    #     J4 = []
-    #     for p in J3:
-    #         J4.append(run_repeat_masker(p, args.pa, rm_raider_dir))
-    #     ### Sequentially work through the J4 list and, when next job is finished,
-    #     ### start statistics job running and stick new job onto J5 list
-    #     J5 = []
-    #     stats_dir = "%s/%s" % (curr_dir, args.stats_dir) if curr_dir and args.stats_dir else args.stats_dir
-    #     if args.stats_dir and not os.path.exists('./%s' % (stats_dir)):
-    #         os.makedirs('./%s' % (stats_dir))
-    #     for p in J4:
-    #         J5.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "raider"))
-    #     ### Wait for all statistics jobs to complete. Submit the list of files to the
-    #     ### performance_sum method to generate the final summary of statistics
-    #     J6 = []
-    #     for p in J5:
-    #         p.wait()
-    #     performance_sum(J5, stats_dir, curr_dir, "raider")   # J6.append(p.stats_output)
-        
-        
-    #     J7 = []
-    #     for p in J:
-    #         J7.append(run_scout_chrom(p, f = args.f, m = len(args.seed)))
-
-    #     rm_scout_dir = "RM_scout" #, dir = (curr_dir if curr_dir else "."))
-    #     J8 = []
-    #     for p in J7:
-    #         J8.append(run_rm_scout(p, args.pa, rm_scout_dir))
-    #     J9 = []
-    #     for p in J8:
-    #         J9.append(performance_stats(p, args.repeat, stats_dir, args.print_reps, "scout"))
-    #     J10 = []
-    #     for p in J9:
-    #         p.wait()
-    #     performance_sum(J9, stats_dir, curr_dir, "scout")
-    #     #summary_stats(stats, stats_dir, curr_dir)
-    #     #summary_job.wait()
-    #     #performance_sum(J5, stats_dir, curr_dir)
+    
