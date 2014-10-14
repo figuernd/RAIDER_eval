@@ -11,7 +11,6 @@ import re
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
-simulate_only = False
 job_index = {}
 #################################################################
 
@@ -139,8 +138,10 @@ def parse_params(args):
     if arg_return.show_progress:
         show_progress = open("debug.txt", "w")
 
-    global simulate_only
-    simulate_only = arg_return.simulate_only
+    if arg_return.simulate_only:    # Set to supress all tools
+        arg_return.run_raider = False
+        arg_return.run_repscout = False
+        arg_return.run_bigfoot = False
 
     return arg_return
 
@@ -549,7 +550,6 @@ if __name__ == "__main__":
  
     # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
-
         # Launch the jobs
         f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
                                           rng_seed = args.rng_seed, length = args.length, 
@@ -560,11 +560,6 @@ if __name__ == "__main__":
 
         # Run jobs to completion
         [j.wait(cleanup = 0) for j in J]    # Let all the simulations finish
-
-        # Quit (if done)
-        if simulate_only:
-            [j.erase_files() for j in J]
-            sys.exit(0)
 
         # Get the list of simulated file names
         file_list = [j.sim_output for j in J]
@@ -579,8 +574,8 @@ if __name__ == "__main__":
     ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
     ### rm_output job.
-    
     if args.run_raider:
+        print("HERE1")
         RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.raider_min, input_file = file, 
                                   raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file)))
                        for file in file_list]
@@ -588,6 +583,7 @@ if __name__ == "__main__":
         RAIDER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
     else:
         RAIDER_JOBS = []
+
 
     if args.run_repscout:
         SCOUT_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min) for file in file_list]
@@ -598,6 +594,7 @@ if __name__ == "__main__":
     else:
         SCOUT_JOBS = []
 
+
     if args.run_bigfoot:
         bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
         if not os.path.exists(bigfoot_dir):
@@ -607,18 +604,23 @@ if __name__ == "__main__":
     else:
         BIGFOOT_JOBS = []
 
-
-    # Print output files
-    with open("") as fp:
-        open(args.results_dir + "/final_file_list.txt")
-        
-        # Print Simulation information
-        for j in J:
-            fp.write("Simulation file: {file} ({file}.out})".format(???))
-                
     # Now make sure everything runs
     [p.wait(cleanup = 0) for p in RAIDER_JOBS]
     [p.wait(cleanup = 0) for p in SCOUT_JOBS]
     [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
+    print("---------------------")
+    print("AA: ", len(RAIDER_JOBS))
+
+
+    # Print output files log
+    print("---------------------")
+    print(len(RAIDER_JOBS))
+    with open(args.results_dir + "/file_log.txt", "w") as fp:
+        for i in range(len(J)):
+            fp.write("%d simulation_file %s\n" % (i, J[i].sim_output))
+            fp.write("%d raider %s\n" % (i, RAIDER_JOBS[i].rm_output if RAIDER_JOBS else "None"))
+            fp.write("%d repscout %s\n" % (i, SCOUT_JOBS[i].rm_output if SCOUT_JOBS else "None"))
+            fp.write("%d bigfoot %s\n" % (i, BIGFOOT_JOBS[i].rm_output if BIGFOOT_JOBS else "None"))
+                
     
