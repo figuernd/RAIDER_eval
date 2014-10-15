@@ -49,7 +49,7 @@ def nextRepeat(rpt_file, use_negative = True, S = {}):
 # fa_out_header: The fixed header lines for the .fa.out file
 fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\n\tscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"
 # fa_out_template: A template for creating lines for the .fa.out file.
-fa_out_template = "\t0\t0\t0\t0\t{chr}\t{start}\t{finish}\t(0)\t{strand}\t{family}\t{rpt_class}\t0\t0\t(0)\t{rpt_id}"
+fa_out_template = "\t0\t0\t0\t0\t{chr}\t{start}\t{finish}\t({left})\t{strand}\t{family}\t{rpt_class}\t0\t0\t(0)\t{rpt_id}\n"
 def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, max_interval = None, num_repeats = None, max_length = None, limiting_chr = None):
     """
     Generate a syntehtic sequence with real repeats:
@@ -66,7 +66,7 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
         max_interval = len(seq)
 
     s = []                # Hold the sequence (in chunks)
-    fa_out = [fa_out_header]           # Hold the new .fa.out file contents (by line)
+    fa_out = []           # Hold the new .fa.out file contents (by line)
 
     rpt_count = 0
     length = min(len(seq), max_length) if max_length else len(seq)
@@ -90,22 +90,29 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
             s.append(rpt_seq.lower() if mask else rpt_seq.upper())
             debug_sim_len += len(rpt_seq)
             
-            fa_out.append(fa_out_template.format(chr=chr, start=start+1-coord_adjust, finish=finish-coord_adjust, strand=strand, family=family, rpt_class=rpt_class, rpt_id=rpt_id))
+            fa_out.append([chr, start+1-coord_adjust, finish-coord_adjust, strand, family, rpt_class, rpt_id])
+            #fa_out.append(fa_out_template.format(chr=chr, start=start+1-coord_adjust, finish=finish-coord_adjust, strand=strand, family=family, rpt_class=rpt_class, rpt_id=rpt_id))
             
             if num_repeats and rpt_count == num_repeats:
                 break
 
             current_coord = finish
     
-    print("Len: ", len(fa_out))
-        
     if num_repeats:
         max_interval = min(1000, max_interval)
-        
+
     tail_length = min(max_interval, length-current_coord)
     if tail_length > 0:
         s.append(markov_gen.generate_sequence(markov_list, tail_length))
-    return "".join(s), "\n".join(fa_out)
+
+    sim_seq = "".join(s)
+    sim_seq_len = len(sim_seq)
+    fa_out_str = fa_out_header
+    for chr, start, finish, strand, family, rpt_class, rpt_id in fa_out:
+        fa_out_str += fa_out_template.format(chr=chr, start=start, finish=finish, left = sim_seq_len - finish, strand=strand, family=family, rpt_class=rpt_class, rpt_id=rpt_id)
+
+
+    return sim_seq, fa_out_str
 
 bases = set("ACGTacgt")
 def loadSeqAndChain(seq_file, k, suppress_save = False, mc_file = None, retain_n = False):
