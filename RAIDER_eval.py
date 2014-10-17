@@ -7,6 +7,7 @@ import argparse
 from redhawk import *
 import tempfile
 import re
+import perform_stats
 
 #################################################################
 # The following global variables are related to debugging issues.
@@ -106,8 +107,8 @@ def parse_params(args):
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
-    stats_group.add_argument('--stats_dir', help = "Statistics output directory", default = None)
-    stats_group.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
+    stats_group.add_argument('--stats_file', dest = 'stats_file', help = "Statistics output directory", default = "stats.txt")
+    #stats_group.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
@@ -133,7 +134,7 @@ def parse_params(args):
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('--mc', '--mc_file', dest = 'mc_file', help = "Markov Chain file", default = False)
     parser_chrom.add_argument('--mi', '--max_interval', dest = "max_interval", type = int, help = "Maximum allowed length of interval between repeats; -1 value (default) means no maximum", default = None) 
-    
+
     arg_return =  parser.parse_args(args)
     
     #### The following is to set the global debugging variables 
@@ -612,13 +613,8 @@ if __name__ == "__main__":
     [p.wait(cleanup = 0) for p in SCOUT_JOBS]
     [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
-    print("---------------------")
-    print("AA: ", len(RAIDER_JOBS))
-
 
     # Print output files log
-    print("---------------------")
-    print(len(RAIDER_JOBS))
     with open(args.results_dir + "/file_log.txt", "w") as fp:
         for i in range(len(J)):
             fp.write("%d simulation_file %s\n" % (i, J[i].sim_output))
@@ -626,4 +622,23 @@ if __name__ == "__main__":
             fp.write("%d repscout %s\n" % (i, SCOUT_JOBS[i].rm_output if SCOUT_JOBS else "None"))
             fp.write("%d bigfoot %s\n" % (i, BIGFOOT_JOBS[i].rm_output if BIGFOOT_JOBS else "None"))
                 
-    
+    ######
+    # Calculate statistics (not bothering with parallelization yet)
+    print_str = "{:<12}" + "".join("{:<20}"*4) + "".join("{:<20}"*6 + "\n")
+    with open(args.results_dir + "/" + args.stats_file, "w") as fp:
+        fp.write(print_str.format("#tool", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr"))
+        for i in range(len(J)):
+            if RAIDER_JOBS:
+                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i].rm_output, None))
+                for j in range(4,10):
+                    T[j] = round(T[j], 4)
+                fp.write(print_str.format(*(["raider"] + list(T)[:10])))
+            if SCOUT_JOBS:
+                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None))
+                for j in range(4,10):
+                    T[j] = round(T[j], 4)
+                fp.write(print_str.format(*(["SCOUT_JOBS"] + list(T)[:10])))
+             #if BIGFOOT_JOBS:
+            #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
+            #    fp.write(print_str.format(*(["bigfoot"] + list(T))))
+
