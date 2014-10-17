@@ -77,11 +77,14 @@ def parse_params(args):
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
     raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
-    raider_argument.add_argument('-s', '--seed', help = "Spaced seed string", default = "111111111111111111111111111111")
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
+    seed_group = raider_argument.add_mutually_exclusive_group(required = False)
+    seed_group.add_argument('-s', '--seed', help = "Spaced seed string", default = "111111111111111111111111111111")    
+    seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
+
     
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -234,7 +237,7 @@ def run_raider(seed, f, m, input_file, raider_dir):
                       output_location = output_dir)
 
     p.submit()
-
+    p.seed = seed
     p.seq_file = input_file
     p.lib_file = lib_file
     return p
@@ -312,7 +315,7 @@ def run_repeat_masker(p, num_processors):
     p2.submit()
 
 
-
+    p2.seed = p.seed if hasattr(p2, "seed") else "NA"
     p2.dir = output_dir
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
@@ -575,10 +578,10 @@ if __name__ == "__main__":
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
     ### rm_output job.
     if args.run_raider:
-        print("HERE1")
+        seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip())] if args.seed_file else [args.seed]
         RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.raider_min, input_file = file, 
                                   raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file)))
-                       for file in file_list]
+                       for file in file_list for seed in seed_list]
 
         RAIDER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
     else:
