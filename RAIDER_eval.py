@@ -207,20 +207,20 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 #    p.wait()
 #    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
 
-def run_raider(seed, f, m, input_file, raider_dir):
+def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
 
     input_base = file_base(input_file).rstrip(".fa")
-    output_dir = raider_dir + "/" + input_base.upper()
+    output_dir = raider_dir + "/" + input_base.upper() + ".s" + str(seed_num)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
     cmd1 = "{raider} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider = Locations['raider'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
-    out_file = raider_dir + "/" + input_base + ".raider_consensus.txt"
-    lib_file = raider_dir + "/" + input_base + ".raider_consensus.fa"
+    out_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.txt"
+    lib_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.fa"
 
     cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
@@ -239,6 +239,7 @@ def run_raider(seed, f, m, input_file, raider_dir):
 
     p.submit()
     p.seed = seed
+    p.seed_num = seed_num
     p.seq_file = input_file
     p.lib_file = lib_file
     return p
@@ -317,6 +318,7 @@ def run_repeat_masker(p, num_processors):
 
 
     p2.seed = p.seed if hasattr(p2, "seed") else "NA"
+    p2.seed_num = p.seed_num if hasattr(p2, "seed_num") else "NA"
     p2.dir = output_dir
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
@@ -579,10 +581,10 @@ if __name__ == "__main__":
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
     ### rm_output job.
     if args.run_raider:
-        seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip())] if args.seed_file else [args.seed]
-        RAIDER_JOBS = [run_raider(seed = args.seed, f = args.f, m = args.raider_min, input_file = file, 
+        seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
+        RAIDER_JOBS = [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                                   raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file)))
-                       for file in file_list for seed in seed_list]
+                       for file in file_list for i,seed in enumerate(seed_list)]
 
         RAIDER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
     else:
@@ -623,18 +625,25 @@ if __name__ == "__main__":
             fp.write("%d bigfoot %s\n" % (i, BIGFOOT_JOBS[i].rm_output if BIGFOOT_JOBS else "None"))
                 
     ######
+    # Create copy of seed file (if RAIDER is being used)
+    if RAIDER_JOBS:
+        with open(args.results_dir + "/seed_file.txt", "w") as fp:
+            fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
+            
+
+    ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "".join("{:<20}"*4) + "".join("{:<20}"*6 + "\n")
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<20}"*4) + "".join("{:<20}"*6 + "\n")
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr"))
         for i in range(len(J)):
             if RAIDER_JOBS:
-                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i].rm_output, None))
+                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i].seed_num, RAIDER_JOBS[i].rm_output, None))
                 for j in range(4,10):
                     T[j] = round(T[j], 4)
                 fp.write(print_str.format(*(["raider"] + list(T)[:10])))
             if SCOUT_JOBS:
-                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None))
+                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", "NA", SCOUT_JOBS[i].rm_output, None))
                 for j in range(4,10):
                     T[j] = round(T[j], 4)
                 fp.write(print_str.format(*(["SCOUT_JOBS"] + list(T)[:10])))
