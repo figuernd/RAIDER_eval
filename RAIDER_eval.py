@@ -317,8 +317,8 @@ def run_repeat_masker(p, num_processors):
     p2.submit()
 
 
-    p2.seed = p.seed if hasattr(p2, "seed") else "NA"
-    p2.seed_num = p.seed_num if hasattr(p2, "seed_num") else "NA"
+    p2.seed = p.seed if hasattr(p, "seed") else "NA"
+    p2.seed_num = p.seed_num if hasattr(p, "seed_num") else "NA"
     p2.dir = output_dir
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
@@ -582,11 +582,11 @@ if __name__ == "__main__":
     ### rm_output job.
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        RAIDER_JOBS = [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                  raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file)))
-                       for file in file_list for i,seed in enumerate(seed_list)]
+        RAIDER_JOBS = [[run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+                                  raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file))) for i,seed in enumerate(seed_list)]
+                       for file in file_list]
 
-        RAIDER_JOBS = [run_repeat_masker(p,args.pa) for p in RAIDER_JOBS]
+        RAIDER_JOBS = [[run_repeat_masker(p,args.pa) for p in P] for P in RAIDER_JOBS]
     else:
         RAIDER_JOBS = []
 
@@ -611,7 +611,7 @@ if __name__ == "__main__":
         BIGFOOT_JOBS = []
 
     # Now make sure everything runs
-    [p.wait(cleanup = 0) for p in RAIDER_JOBS]
+    [p.wait(cleanup = 0) for P in RAIDER_JOBS for p in P]
     [p.wait(cleanup = 0) for p in SCOUT_JOBS]
     [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
 
@@ -620,7 +620,7 @@ if __name__ == "__main__":
     with open(args.results_dir + "/file_log.txt", "w") as fp:
         for i in range(len(J)):
             fp.write("%d simulation_file %s\n" % (i, J[i].sim_output))
-            fp.write("%d raider %s\n" % (i, RAIDER_JOBS[i].rm_output if RAIDER_JOBS else "None"))
+            fp.write("%d raider %s\n" % (i, RAIDER_JOBS[i][0].rm_output if RAIDER_JOBS else "None"))
             fp.write("%d repscout %s\n" % (i, SCOUT_JOBS[i].rm_output if SCOUT_JOBS else "None"))
             fp.write("%d bigfoot %s\n" % (i, BIGFOOT_JOBS[i].rm_output if BIGFOOT_JOBS else "None"))
                 
@@ -633,20 +633,20 @@ if __name__ == "__main__":
 
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<20}"*4) + "".join("{:<20}"*6 + "\n")
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6 + "\n")
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
         fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr"))
         for i in range(len(J)):
             if RAIDER_JOBS:
-                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i].seed_num, RAIDER_JOBS[i].rm_output, None))
-                for j in range(4,10):
-                    T[j] = round(T[j], 4)
-                fp.write(print_str.format(*(["raider"] + list(T)[:10])))
+                for j in range(len(RAIDER_JOBS[i])):
+                    Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i][j].rm_output, None)
+                    Stats = [round(x,4) for x in Stats]
+                    fp.write(print_str.format(*(["raider", RAIDER_JOBS[i][j].seed_num] + list(Counts) + list(Stats))))
             if SCOUT_JOBS:
-                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", "NA", SCOUT_JOBS[i].rm_output, None))
+                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None))
                 for j in range(4,10):
                     T[j] = round(T[j], 4)
-                fp.write(print_str.format(*(["SCOUT_JOBS"] + list(T)[:10])))
+                fp.write(print_str.format(*(["SCOUT_JOBS", "NA"] + list(T)[:10])))
              #if BIGFOOT_JOBS:
             #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
             #    fp.write(print_str.format(*(["bigfoot"] + list(T))))

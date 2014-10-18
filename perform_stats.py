@@ -181,7 +181,7 @@ def stats(tp, fp, fn, tn):
     return tpr, tnr, ppv, npv, fpr, fdr
 
 
-def perform_stats(real_repeats, tool_output, exclusions, output_file, print_reps):
+def perform_stats(real_repeats, tool_output, exclusions):
     """ Calculates the performance statistics and prints them to output file. 
     
     Keyword arguments:
@@ -189,7 +189,6 @@ def perform_stats(real_repeats, tool_output, exclusions, output_file, print_reps
     tool_output -- repeatmasker file for repeats found by tool
     exclusions -- set of exclusion criteria for repeats to be skipped
     output_file -- file to which print output
-    print_reps -- whether or not should print out the classified repeat bounds
     """
     l = get_sequence_length(real_repeats) 
     
@@ -201,8 +200,8 @@ def perform_stats(real_repeats, tool_output, exclusions, output_file, print_reps
     real_bounds = repeat_bounds_generator(real_repeats, exclusion_set)
     gen_bounds = repeat_bounds_generator(tool_output, exclusion_set)
     
-    generate_output(output_file, print_reps, *get_stats(real_bounds, gen_bounds, l)) 
-    
+    return get_stats(real_bounds, gen_bounds, l)
+
 def generate_output(output_file, print_reps, counts, stats, lists):
     """ Writes performance statistics to specified output file.
     
@@ -234,7 +233,7 @@ if __name__ == "__main__":
     parser.add_argument("output_file", help = "Statistics output file")
     args = parser.parse_args()
 
-    perform_stats(args.repeat_file, args.masker_output, args.exclusion_file, args.output_file, args.print_reps)
+    generate_output(args.output_file, args.print_reps, *perform_stats(args.repeat_file, args.masker_output, args.exclusion_file))
  
 
 
