@@ -643,10 +643,9 @@ if __name__ == "__main__":
                     Stats = [round(x,4) for x in Stats]
                     fp.write(print_str.format(*(["raider", RAIDER_JOBS[i][j].seed_num] + list(Counts) + list(Stats))))
             if SCOUT_JOBS:
-                T = list(perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None))
-                for j in range(4,10):
-                    T[j] = round(T[j], 4)
-                fp.write(print_str.format(*(["SCOUT_JOBS", "NA"] + list(T)[:10])))
+                Count, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
+                Starts = [round(x,4) for x in Stats]
+                fp.write(print_str.format(*(["repscout", "NA"] + list(Counts) + list(Stats))))
              #if BIGFOOT_JOBS:
             #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
             #    fp.write(print_str.format(*(["bigfoot"] + list(T))))
