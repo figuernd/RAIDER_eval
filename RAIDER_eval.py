@@ -138,10 +138,6 @@ def parse_params(args):
     arg_return =  parser.parse_args(args)
     
     #### The following is to set the global debugging variables 
-    global show_progress
-    if arg_return.show_progress:
-        show_progress = open("debug.txt", "w")
-
     if arg_return.simulate_only:    # Set to supress all tools
         arg_return.run_raider = False
         arg_return.run_repscout = False
@@ -225,9 +221,9 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
     if show_progress:
-        show_progress.write("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        show_progress.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         show_progress.flush()
-        sys.stderr.write("Launching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
@@ -257,9 +253,9 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     cmd = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {bigfoot_dir} {input_file}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
 
     if show_progress:
-        show_progress.write("Launching bigfoot:\n%s\n" % (cmd))
+        show_progress.write("\nLaunching bigfoot:\n%s\n" % (cmd))
         show_progress.flush()
-        sys.stderr.write("Launching bigfoot:\n%s\n" % (cmd))
+        sys.stderr.write("\nLaunching bigfoot:\n%s\n" % (cmd))
         sys.stderr.flush()
 
     
@@ -303,9 +299,9 @@ def run_repeat_masker(p, num_processors):
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
-        show_progress.write("Launch repeatmasker:\n%s\n" % cmd)
+        show_progress.write("\nLaunch repeatmasker:\n%s\n" % cmd)
         show_progress.flush()
-        sys.stderr.write("Launch repeatmasker:\n%s\n" % cmd)
+        sys.stderr.write("\nLaunch repeatmasker:\n%s\n" % cmd)
         sys.stderr.flush()
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
@@ -374,9 +370,9 @@ def run_scout(input_file, output_dir, min_freq, length):
     cmd3 = "cat {input} | perl {filter} > {filter_output}".format(input=rptscout_output, filter = Locations['filter_stage-1'], filter_output = filter_stage_output)
 
     if show_progress:
-        show_progress.write("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+        show_progress.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         show_progress.flush()
-        sys.stderr.write("RepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+        sys.stderr.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         sys.stderr.flush()
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
@@ -411,9 +407,9 @@ def scout_second_filter(p, min_freq):
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
     
     if show_progress:
-        show_progress.write("RepeatScout Filter2:\n%s\n" % cmd)
+        show_progress.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         show_progress.flush()
-        sys.stderr.write("RepeatScout Filter2:\n%s\n" % cmd)
+        sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         sys.stderr.flush()
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
@@ -466,9 +462,9 @@ def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
     cmd = "python3.3 perform_stats.py %s %s %s %s %s %s" % (print_part, args.chromosome, true_repeats, p.seq_file, p.masker_output, stats_out)
 
     if show_progress:
-        show_progress.write("Launching analysis:\n%s\n" % cmd)
+        show_progress.write("\nLaunching analysis:\n%s\n" % cmd)
         show_progress.flush()
-        sys.stderr.write("Launching analysis:\n%s\n" % cmd)
+        sys.stderr.write("\nLaunching analysis:\n%s\n" % cmd)
         sys.stderr.flush()
 
     p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
@@ -553,6 +549,12 @@ if __name__ == "__main__":
 
     ### Generate simulated file(s) and run to completion
     data_dir = args.results_dir + "/" + args.data_dir
+
+    ### Set up the debugging log file (if needed)
+    if args.show_progress:
+        show_progress = open(args.results_dir + "/debug.txt", "w")
+
+
  
     # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
@@ -643,9 +645,9 @@ if __name__ == "__main__":
                     Stats = [round(x,4) for x in Stats]
                     fp.write(print_str.format(*(["raider", RAIDER_JOBS[i][j].seed_num] + list(Counts) + list(Stats))))
             if SCOUT_JOBS:
-                Count, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
-                Starts = [round(x,4) for x in Stats]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(Counts) + list(Stats))))
+                CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
+                StatsSJ = [round(x,4) for x in StatsSJ]
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountsSJ) + list(StatsSJ))))
              #if BIGFOOT_JOBS:
             #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
             #    fp.write(print_str.format(*(["bigfoot"] + list(T))))
