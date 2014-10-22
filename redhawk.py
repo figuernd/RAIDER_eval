@@ -225,13 +225,10 @@ class pbsJobHandler:
             if not self.efile:
                 self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
 
-            self.ffile = self.output_location + "/" + self.jobname + ".f" + str(self.jobid)
-            
             if not re.search("[^2]\>", self.cmd):
                 self.cmd += " > {ofile}".format(ofile = self.ofile)
             if not re.search("2\>", self.cmd):
                 self.cmd += " 2> {efile}".format(efile = self.efile)
-            self.cmd += "; echo \"DONE\" > %s" % (self.ffile)   # We need ffile to exist for later checks, but its content doesn't matter.
             self.p = subprocess.Popen(self.cmd, shell=True)
             
 
@@ -291,18 +288,16 @@ class pbsJobHandler:
 ###    return False if the job is done, completed for sure
 ###    return True if the job is in Q, R states [ or that PBS/Torque is not available ]
 ### Prereq is jobid must be a submitted job
-    def isJobRunning ( self, numTrials = 3, delay = 5 ):
+    def isJobRunning(self, numTrials = 3, delay = 5):
         """Query of the object represented by the job is still running."""
         if self.suppress_pbs:
-            try:
-                if not os.path.isfile(self.ffile):
-                    return True
-                else:
-                    self.status = "finished"
-                    job_list.remove(self)
-                    return False
-            except AttributeError:
-                raise PBSError("pbsjob has no attribute ffile: either running in redhawk mode, or job has not been submitted")
+            if not self.p.ppoll():
+                return True
+            else:
+                self.status = "finished"
+                job_list.remove(self)
+                return False
+
         # If we are using pbs...
         counter = 1
         while True:
@@ -333,8 +328,12 @@ class pbsJobHandler:
         * 1: Cleanup all .o / .e / .f files.
         * 2: Cleanup only empty .o / .e / .f files   (2 may not completely work at this point -- need to account fo the R post-able code)
         """
-        while self.isJobRunning() == True:
-            time.sleep(delay)
+        if self.suppress_pbs:
+            self.p.wait()
+            self.status = "finished"
+        else:
+            while self.isJobRunning() == True:
+                time.sleep(delay)
         if cleanup:
             self.split_efile()
             self.erase_files(empty_only = True)
@@ -454,11 +453,6 @@ class pbsJobHandler:
         try:
             if not empty_only or path.getsize(self.rfile_name()) == 0:
                 os.remove(self.rfile_name())
-        except:
-            pass
-
-        try:
-            os.remove(self.ffile)    # This one will never has useful content -- always remove.
         except:
             pass
 

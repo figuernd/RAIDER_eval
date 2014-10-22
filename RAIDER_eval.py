@@ -82,7 +82,7 @@ def parse_params(args):
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
-    seed_group = raider_argument.add_mutually_exclusive_group(required = False)
+    seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
 
@@ -544,7 +544,6 @@ if __name__ == "__main__":
         subprocess.call("rm -r %s" % args.results_dir, shell = True)
     if not os.path.exists(args.results_dir):
         os.makedirs(args.results_dir)
-
 
 
     ### Generate simulated file(s) and run to completion
