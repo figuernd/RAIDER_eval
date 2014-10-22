@@ -83,7 +83,7 @@ def parse_params(args):
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
-    seed_group.add_argument('-s', '--seed', help = "Spaced seed string", default = "111111111111111111111111111111")    
+    seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
 
     
@@ -646,7 +646,7 @@ if __name__ == "__main__":
             if SCOUT_JOBS:
                 CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
                 StatsSJ = [round(x,4) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountsSJ) + list(StatsSJ))))
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
              #if BIGFOOT_JOBS:
             #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
             #    fp.write(print_str.format(*(["bigfoot"] + list(T))))
