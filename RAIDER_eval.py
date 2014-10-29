@@ -251,7 +251,7 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    cmd = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {bigfoot_dir} {input_file}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {input_file} {bigfoot_dir}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
 
     if show_progress:
         show_progress.write("\nLaunching bigfoot:\n%s\n" % (cmd))
