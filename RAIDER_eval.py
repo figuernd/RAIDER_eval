@@ -124,17 +124,24 @@ def parse_params(args):
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
+    parser_chrom.add_argument('-k', type = int, help = "Order of markov chain", default = 5)  # KARRO: Added this
+    parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
+    parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
+    parser_chrom.add_argument('--family_file', help = "List of repeat families to use", default = None)
+    parser_chrom.add_argument('--mc', '--mc_file', dest = 'mc_file', help = "Markov Chain file", default = False)
+    parser_chrom.add_argument('--mi', '--max_interval', dest = "max_interval", type = int, 
+                              help = "Maximum allowed length of interval between repeats; -1 value (default) means no maximum", default = None) 
+    parser_chrom.add_argument('--rn', '--retain_n', dest = "retain_n", action = 'store_true', 
+                              help = "If used, will use the whole chromosome.  Otherwise, cuts of Ns at either end.", default = False)
+    parser_chrom.add_argument('--nr', '--num_repeats', dest = 'num_repeats', type = int, 
+                              help = "Specify the number of repeats.  Simulation will terminate either 1000 bases or max interval bases past the nth instance of a repeat (excluding any other repeats in that range).", default = None)
+    parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
+    parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
+    parser_chrom.add_argument('-t', '--num_sims', type = int, dest = "num_sims", help ="Number of simulations", default = 1)
+
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
-    parser_chrom.add_argument('-t', '--num_sims', type = int, dest = "num_sims", help ="Number of simulations", default = 1)
-    parser_chrom.add_argument('--rng_seed', type = int, help = "RNG seed", default = None) 
-    parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
-    parser_chrom.add_argument('-k', type = int, help = "Order of markov chain", default = 5)  # KARRO: Added this
-    parser_chrom.add_argument('-n', '--negative_strand', action = "store_true", help = "Use repeats on negative string", default = False)
-    parser_chrom.add_argument('-f', '--family_file', help = "List of repeat families to use", default = None)
-    parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
-    parser_chrom.add_argument('--mc', '--mc_file', dest = 'mc_file', help = "Markov Chain file", default = False)
-    parser_chrom.add_argument('--mi', '--max_interval', dest = "max_interval", type = int, help = "Maximum allowed length of interval between repeats; -1 value (default) means no maximum", default = None) 
+
 
     arg_return =  parser.parse_args(args)
     
@@ -151,7 +158,7 @@ def parse_params(args):
 # Main functions 
 
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -167,6 +174,8 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     neg_arg = "-n" if neg_strand else ""
     fam_arg = "-f %s" % (fam_file) if fam_file else ""
     mi = ("--mi %d" % (mi)) if mi else ""
+    retain_n = "--rn" if retain_n else ""
+    num_repeats = ("--nr %d" % (num_repeats)) if num_repeats else ""
     seq_arg = chromosome
     repeat_arg = repeat
 
@@ -174,7 +183,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "python3.3 chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, repeat=repeat_arg, output=output_path)
+    cmd = "python3.3 chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {retain_n} {num_repeats} {repeat} {output}".format(mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, retain_n=retain_n, num_repeats=num_repeats, repeat=repeat_arg, output=output_path)
 
     if show_progress:
         show_progress.write("Creating simulation:\n%s\n" % (cmd))
@@ -566,7 +575,8 @@ if __name__ == "__main__":
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
-                                          k = args.k, mc_file = args.mc_file, mi = args.max_interval)
+                                          k = args.k, mc_file = args.mc_file, mi = args.max_interval,
+                                          retain_n = args.retain_n, num_repeats = args.num_repeats)
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
@@ -645,13 +655,15 @@ if __name__ == "__main__":
             if RAIDER_JOBS:
                 for j in range(len(RAIDER_JOBS[i])):
                     Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i][j].rm_output, None)
-                    Stats = [round(x,4) for x in Stats]
+                    Stats = [round(x,5) for x in Stats]
                     fp.write(print_str.format(*(["raider", RAIDER_JOBS[i][j].seed_num] + list(Counts) + list(Stats))))
             if SCOUT_JOBS:
                 CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
-                StatsSJ = [round(x,4) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
-             #if BIGFOOT_JOBS:
-            #    T = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
-            #    fp.write(print_str.format(*(["bigfoot"] + list(T))))
+                StatsSJ = [round(x,5) for x in StatsSJ]
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))]
+            if BIGFOOT_JOBS:
+                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
+                StatsBF = [round(x,5) for x in StatsBF]
+                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF))))
+                            
 
