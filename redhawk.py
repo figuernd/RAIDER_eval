@@ -50,7 +50,7 @@ except:
 else:
     pbs_present = True
 
-job_list = set()    # Gobal list of all jobs that have been submitted and not yet identified as having quit
+job_list = set()    # Global list of all jobs that have been submitted and not yet identified as having quit
 
 job_limit = 200 if pbs_present else 2
 
@@ -290,6 +290,9 @@ class pbsJobHandler:
 ### Prereq is jobid must be a submitted job
     def isJobRunning(self, numTrials = 3, delay = 5):
         """Query of the object represented by the job is still running."""
+        if self.status == "finished":
+            return False
+
         if self.suppress_pbs:
             if not self.p.ppoll():
                 return True

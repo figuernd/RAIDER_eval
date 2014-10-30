@@ -673,16 +673,14 @@ if __name__ == "__main__":
             if RAIDER_JOBS:
                 for j in range(len(RAIDER_JOBS[i])):
                     p = RAIDER_JOBS[i][j]
-                    print("1: ", p.tool_resources)
-                    print("2: ", p.getResources())
                     Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
-                    fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + p.tool_resources + p.getResources())))
+                    fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
             if SCOUT_JOBS:
                 p = SCOUT_JOBS[i]
                 CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsSJ = [round(x,5) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + p.tool_resources + p.getResources())))
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + list(p.tool_resources) + list(p.getResources()))))
             if BIGFOOT_JOBS:
                 p = BIGFOOT_JOBS[i]
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
