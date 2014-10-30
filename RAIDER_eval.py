@@ -144,12 +144,14 @@ def parse_params(args):
 
 
     arg_return =  parser.parse_args(args)
-    
+
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
         arg_return.run_raider = False
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
+
+
 
     return arg_return
 
@@ -663,7 +665,7 @@ if __name__ == "__main__":
                 fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
             if BIGFOOT_JOBS:
                 print("HERE")
-                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
+                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
                 fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF))))
                             
