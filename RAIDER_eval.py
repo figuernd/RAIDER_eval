@@ -664,7 +664,6 @@ if __name__ == "__main__":
                 StatsSJ = [round(x,5) for x in StatsSJ]
                 fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
             if BIGFOOT_JOBS:
-                print("HERE")
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
                 fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF))))
