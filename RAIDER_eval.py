@@ -33,6 +33,11 @@ Locations = None;    # This will be set to one of the above two, and references 
 
 #########
 # Utility functions
+def sum_resources(T1, T2):
+    if T1[0] == -1 or T2[0] == -1:
+        return [-1]*4
+    return [T1[0] + T2[0], T1[1] + T2[1], max(T1[2], T2[2]), max(T1[3], T2[3])]
+
 def get_job_index(s):
     global job_index
     if s not in job_index:
@@ -246,6 +251,9 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
                       output_location = output_dir)
 
     p.submit()
+    p.tool_resources = [0]*4
+
+    p.description = "raider"
     p.seed = seed
     p.seed_num = seed_num
     p.seq_file = input_file
@@ -279,7 +287,8 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, output_location = output_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
     
     p.submit()
-
+    p.description = "bigfoot"
+    p.tool_resources = [0]*4
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
     p.lib_file = lib_file     # This should be set to the file name that will be the library for the repeatmasker run
     return p 
@@ -304,6 +313,7 @@ def run_repeat_masker(p, num_processors):
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
     p.wait(cleanup = 0)
+    p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
@@ -324,13 +334,15 @@ def run_repeat_masker(p, num_processors):
                        output_location = output_dir);
     p2.submit()
 
-
+    p2.description = "RptMasker"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
     p2.seed_num = p.seed_num if hasattr(p, "seed_num") else "NA"
     p2.dir = output_dir
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.rm_output = output_dir + "/" + file_base(p.seq_file) + ".out"
+    p2.tool_resources = p.resources
+    p2.tool_description = p.description
     return p2
 
     # # Determine actual path the masker directory (if specified)
@@ -398,6 +410,8 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
                       output_location = output_dir)
 
     p.submit()
+    p.description = "rep_scout"
+    p.tool_resources = [0,0,0,0]
 
     p.seq_file = input_file
     p.lib_file = filter_stage_output if use_first_filter else rptscout_output
@@ -417,7 +431,9 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     # return p
 
 def scout_second_filter(p, min_freq):
-    """This stage isn't working well, and is of questionable use.  Ignoring for now."""
+    """NOT CURRENTLY WORKING!!! Does not run correctly, and does not properly adjust time"""
+    p.wait()
+
     filter2_stage_output = p.seq_file.rstrip(".fa") + ".repscout.filtered2.fa"
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
     
@@ -436,12 +452,12 @@ def scout_second_filter(p, min_freq):
                        output_location = file_dir(p.seq_file))
 
     p2.submit()
-
+    p2.description = "rep_scout"
+    p2.time_resources = p.time_resources + p.getResources()
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
 
-    p2.wait(cleanup = 0)
     return p2
 
 # def run_rm_scout(p, num_processors, masker_dir):
@@ -650,23 +666,28 @@ if __name__ == "__main__":
 
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6 + "\n")
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem"))
         for i in range(len(J)):
             if RAIDER_JOBS:
                 for j in range(len(RAIDER_JOBS[i])):
-                    Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", RAIDER_JOBS[i][j].rm_output, None)
+                    p = RAIDER_JOBS[i][j]
+                    print("1: ", p.tool_resources)
+                    print("2: ", p.getResources())
+                    Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
-                    fp.write(print_str.format(*(["raider", RAIDER_JOBS[i][j].seed_num] + list(Counts) + list(Stats))))
+                    fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + p.tool_resources + p.getResources())))
             if SCOUT_JOBS:
-                CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
+                p = SCOUT_JOBS[i]
+                CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsSJ = [round(x,5) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + p.tool_resources + p.getResources())))
             if BIGFOOT_JOBS:
-                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", BIGFOOT_JOBS[i].rm_output, None)
+                p = BIGFOOT_JOBS[i]
+                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
-                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF))))
+                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + p.tool_resources + p.getResources())))
                             
 
             

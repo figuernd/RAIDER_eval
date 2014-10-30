@@ -485,7 +485,7 @@ class pbsJobHandler:
             self.wait()
 
             if self.suppress_pbs:
-                self.resorces = (-1, -1, -1, -1)
+                self.resources = [-1, -1, -1, -1]
             else:
                 fp = self.rfile_handle()
 
@@ -506,8 +506,6 @@ class pbsJobHandler:
 
     def getResources(self, cleanup=True):
         """Return cpu_time, wall_time, memory, and virtual memory used"""
-        if self.suppress_pbs:
-            raise PBSError("Cannot get resources on a pbs-suppressed job")
         self.loadResources()
         return self.resources
 
