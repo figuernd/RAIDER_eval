@@ -483,19 +483,23 @@ class pbsJobHandler:
     def loadResources(self):
         if not self.resources:
             self.wait()
-            fp = self.rfile_handle()
 
-            for line in fp:
-                if line.startswith("Resources Used:"):
-                    r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
-                    if not r:
-                        raise PBSError("Bad resource line: " + line)
-                    cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))
-                    wall_time = 60*int(r.group(6)) + 3600*int(r.group(7)) + int(r.group(8))
-                    memory = 1024*int(r.group(4))
-                    vmemory = 1024*int(r.group(5))
-                    self.resources = (cpu_time, wall_time, memory, vmemory);  
-                    break
+            if self.suppress_pbs:
+                self.resorces = (-1, -1, -1, -1)
+            else:
+                fp = self.rfile_handle()
+
+                for line in fp:
+                    if line.startswith("Resources Used:"):
+                        r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
+                        if not r:
+                            raise PBSError("Bad resource line: " + line)
+                        cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))
+                        wall_time = 60*int(r.group(6)) + 3600*int(r.group(7)) + int(r.group(8))
+                        memory = 1024*int(r.group(4))
+                        vmemory = 1024*int(r.group(5))
+                        self.resources = (cpu_time, wall_time, memory, vmemory);  
+                        break
                 
 
 

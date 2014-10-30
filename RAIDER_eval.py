@@ -317,7 +317,7 @@ def run_repeat_masker(p, num_processors):
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
     #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir);
     p2.submit()
@@ -660,10 +660,12 @@ if __name__ == "__main__":
             if SCOUT_JOBS:
                 CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
                 StatsSJ = [round(x,5) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))]
+                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ))))
             if BIGFOOT_JOBS:
+                print("HERE")
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", SCOUT_JOBS[i].rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
                 fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF))))
                             
 
+            
