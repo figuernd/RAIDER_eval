@@ -143,7 +143,7 @@ def parse_params(args):
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('-t', '--num_sims', type = int, dest = "num_sims", help ="Number of simulations", default = 1)
-    parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_true', help = "Retain low complexity and simple repeats (tossed by default)", default = False)
+    parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
 
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
