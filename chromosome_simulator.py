@@ -25,6 +25,7 @@ def parse_params(args):
     parser.add_argument('--rn', '--retain_n', dest = "retain_n", action = 'store_true', help = "If used, will use the whole chromosome.  Otherwise, cuts of Ns at either end.", default = False)
     parser.add_argument('--nr', '--num_repeats', dest = 'num_repeats', type = int, help = "Specify the number of repeats.  Simulation will terminate either 1000 bases or max interval bases past the nth instance of a repeat (excluding any other repeats in that range).", default = None)
     parser.add_argument('-l', '--max_length', dest = 'max_length', type = int, help = "Maximum allowed length of simulated sequence.", default = None)
+    parser.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_true', help = "Retain low complexity and simple repeats (tossed by default)", default = False)
     #parser.add_argument('-o', '--output', help = "Output file (Default: replace chomosome file \".fa\" with \".sim.fa\")")
     parser.add_argument("seq_file", help = "Sequence file (must be .fa)")
     parser.add_argument("repeat_file", help = "RepeatMasker file (.fa.out)")
@@ -32,7 +33,7 @@ def parse_params(args):
     return parser.parse_args(args)
 
 
-def nextRepeat(rpt_file, use_negative = True, S = {}):
+def nextRepeat(rpt_file, use_negative = True, S = {}, E = {}):
     """Generator: each invokation returns the chromosome, start, finish, starand, 
     and family for the next repeat of the repeatmasker .fa.out files.  S, if not empty,
     is a filter for which repeats to use."""
@@ -43,7 +44,7 @@ def nextRepeat(rpt_file, use_negative = True, S = {}):
         if line.rstrip():
             A = re.split("\s+", line.strip())
             chr, start, finish, strand, family, rpt_class, rpt_id = A[4], int(A[5])-1, int(A[6]), A[8], A[9], A[10], A[14]
-            if (strand == '+' or use_negative) and (family in S or not S):
+            if (strand == '+' or use_negative) and (family in S or not S) and not (rpt_class in E):
                 yield chr, start, finish, strand, family, rpt_class, int(rpt_id)
 
 # fa_out_header: The fixed header lines for the .fa.out file
@@ -146,7 +147,7 @@ def loadSeqAndChain(seq_file, k, suppress_save = False, mc_file = None, retain_n
 
     
 
-def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime = True, filter_file = "rpt_list.txt", mask = False, seed = None, suppress = False, max_interval = -1, retain_n = False, num_repeats = None, max_length = None):
+def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime = True, filter_file = "rpt_list.txt", mask = False, seed = None, suppress = False, max_interval = -1, retain_n = False, num_repeats = None, max_length = None, toss_low = False):
     """
     Create a simualted chrosome with real repeat sequences from a chromsoe file.
     Parameters:
@@ -163,7 +164,7 @@ def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime
     template_seq, markov_list, coord_adjust  = loadSeqAndChain(args.seq_file, args.k, suppress, args.mc_file, args.retain_n)
 
     filter_set = {y.strip() for line in open(filter_file) for y in re.split("\s+", line.rstrip())} if filter_file else {}
-    rpt_gen = nextRepeat(repeat_file, use_3prime, filter_set)
+    rpt_gen = nextRepeat(repeat_file, use_3prime, filter_set, E = {'Low_complexity', 'Simple_repeat'} if toss_low else {})
 
     simulated_sequence, fa_out = generate_chromosome(seq = template_seq, markov_list = markov_list, coord_adjust = coord_adjust, rpt_gen = rpt_gen, mask = mask, max_interval = max_interval, num_repeats = num_repeats, max_length = max_length)
             
@@ -176,4 +177,4 @@ if __name__ == "__main__":
                            repeat_file = args.repeat_file, use_3prime = args.negative_strand, 
                            filter_file = args.family_file, mask = args.mask, seed = args.seed,
                            max_interval = args.max_interval, num_repeats = args.num_repeats,
-                           max_length = args.max_length)
+                           max_length = args.max_length, toss_low = not args.low_complexity)
