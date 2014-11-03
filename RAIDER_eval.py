@@ -61,6 +61,7 @@ def parse_params(args):
     #parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
     #parser2.add_argument('--no', '--named_organize', dest = "named_organize", help = "Organize under a named directory", default = None)
 
+
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
