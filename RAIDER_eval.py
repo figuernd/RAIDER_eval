@@ -66,6 +66,7 @@ def parse_params(args):
     parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
     parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
     parser_tools.add_argument('-B', '--bigfoot_off', dest = 'run_bigfoot', action = 'store_false', help = 'Turn BIGFOOT off', default = True)
+    parser_tools.add_argument('--bo', '--bigfoot_only', dest = 'bigfoot_only', action = 'store_true', help = "Use BigFoot only", default = False)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -150,6 +151,11 @@ def parse_params(args):
 
 
     arg_return =  parser.parse_args(args)
+
+    if arg_return.bigfoot_only:
+        arg_return.run_raider = False
+        arg_return.run_repscout = False
+        arg_return.run_bigfoot = True
 
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
