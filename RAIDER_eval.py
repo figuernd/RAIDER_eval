@@ -263,10 +263,12 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     p.tool_resources = [0]*4
 
     p.description = "raider"
+    p.tools_resources = [0]*4
     p.seed = seed
     p.seed_num = seed_num
     p.seq_file = input_file
     p.lib_file = lib_file
+
     return p
 
 def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
@@ -279,7 +281,9 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    cmd = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {input_file} {bigfoot_dir}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd1 = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {input_file} {output_dir}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, output_dir = output_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd2 = "cp {output_dir}/seeds {bigfoot_dir}/{input_base}.seeds".format(output_dir=output_dir, bigfoot_dir=bigfoot_dir, input_base=input_base)
+    cmd = cmd1 + "; " + cmd2;
 
     if show_progress:
         show_progress.write("\nLaunching bigfoot:\n%s\n" % (cmd))
@@ -288,18 +292,22 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
         sys.stderr.flush()
 
     
-    lib_file = bigfoot_dir + "/" + "seeds"
+    lib_file = bigfoot_dir + "/" + input_base + ".seeds"
     batch_name = bigfoot_dir + "/" + input_base + ".bigfoot.batch"    # This is the batch fils for the qsub command.
     job_name = "bigfoot.%d" % get_job_index("bigfoot")                # This is the redhawk jobname.  get_job_index just assigned the next unused number (for then running multiple jobs)
     stdout_file = input_base + ".bigfoot.stdout"                      # Anything bigfoot prints to stdout will be redirected here
     stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, output_location = output_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
-    
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                      stdout_file = stdout_file, stderr_file = stderr_file,
+                      output_location = output_dir)    
+
+
     p.submit()
     p.description = "bigfoot"
     p.tool_resources = [0]*4
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
     p.lib_file = lib_file     # This should be set to the file name that will be the library for the repeatmasker run
+
     return p 
 
 def run_piler(input_file, piler_dir):
@@ -703,7 +711,7 @@ if __name__ == "__main__":
                 p = BIGFOOT_JOBS[i]
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
-                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + p.tool_resources + p.getResources())))
+                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
                             
 
             

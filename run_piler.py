@@ -21,14 +21,16 @@ if __name__ == "__main__":
     cmd1 = "./pals -self {seq_file} {gff_file}"
     cmd2 = "./piler2 -trs {gff_file} -out {trs_file}"
     cmd3 = "./piler2 --trs2fasta {trs_file} -seq {seq_file} -path {fam_dir}"
-    subprocess.call("; ".join([cmd1, cmd2, cmd3]).format(seq_file=seq_file, gff_file=gff_file, trs_file = trs_file, fam_dir=fam_dir), shell = True)
+    cmd = "; ".join([cmd1, cmd2, cmd3]).format(seq_file=seq_file, gff_file=gff_file, trs_file = trs_file, fam_dir=fam_dir)
+    print(cmd);
 
     cmd = ""
-    for fam in glob(fam_dir "/*"):
+    for fam in glob(fam_dir + "/*"):
         cmd += "./muscle -in {fam} -out {fam}.aligned -maxiters 1 -diags1; ".format(fam=fam)
         cmd += "./piler2 -cons {fam}.aligned -out {fam}.cons; ".format(fam=fam)
     cmd += "cat {fam_dir}/*.cons > {piler_dir}/{output_file}".format(fam_dir = fam_dir, piler_dir = piler_dir, output_file = output_lib)
-    subprocess.call(cmd, shell = True)
+    print(cmd)
+    #subprocess.call(cmd, shell = True)
 
     
 
