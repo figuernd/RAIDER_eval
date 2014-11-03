@@ -172,10 +172,10 @@ def stats(tp, fp, fn, tn):
     fn -- number of bases incorrectly classified as not part of repeat
     tn -- number of bases correctly classified as not part of repeat
     """
-    tpr = tp/(tp + fn) if tp + fn > 0 else -1
-    tnr = tn/(fp + tn) if fp + tn > 0 else -1
-    ppv = tp/(tp + fp) if tp + fp > 0 else -1
-    npv = tn/(tn + fn) if tn + fn > 0 else -1
+    tpr = tp/float(tp + fn) if tp + fn > 0 else -1
+    tnr = tn/float(fp + tn) if fp + tn > 0 else -1
+    ppv = tp/float(tp + fp) if tp + fp > 0 else -1
+    npv = tn/float(tn + fn) if tn + fn > 0 else -1
     fpr = 1 - tnr if tnr > -1 else -1
     fdr = 1 - ppv if ppv > -1 else -1
     return tpr, tnr, ppv, npv, fpr, fdr

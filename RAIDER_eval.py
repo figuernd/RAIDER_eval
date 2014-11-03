@@ -295,6 +295,15 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     p.lib_file = lib_file     # This should be set to the file name that will be the library for the repeatmasker run
     return p 
 
+def run_piler(input_file, piler_dir):
+    """Runs Piler and returns a submitted pbs object with specific attributes used to run RepeatMasker."""
+    input_base = file_base(input_file).rstrip(".fa")
+    output_file = piler_dir + "/" + input_base.upper()
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    cmd1 = "run_piler.py"
+
 # def create_raider_consensus(p, output):
 #     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
 #     waits until the job is done, then invokes consensus_seq.py on the ouput and
