@@ -249,10 +249,10 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     cmd2 = "python3.3 consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
     if show_progress:
-        show_progress.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
-        show_progress.flush()
         sys.stderr.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+        show_progress.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
+        show_progress.flush()
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "raider.%d" % get_job_index("raider")
