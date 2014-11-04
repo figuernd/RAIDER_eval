@@ -67,6 +67,7 @@ def parse_params(args):
     parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
     parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
     parser_tools.add_argument('-B', '--bigfoot_off', dest = 'run_bigfoot', action = 'store_false', help = 'Turn BIGFOOT off', default = True)
+    parser_tools.add_argument('-P', '--piler_off', dest = 'run_piler', action = 'store_false', help = 'Turn PILER off', default = True)
     parser_tools.add_argument('--bo', '--bigfoot_only', dest = 'bigfoot_only', action = 'store_true', help = "Use BigFoot only", default = False)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
@@ -78,8 +79,9 @@ def parse_params(args):
     parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
+    parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
-
+    
 
     
     # RAIDER ARGUMENTS
@@ -313,11 +315,34 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
 def run_piler(input_file, piler_dir):
     """Runs Piler and returns a submitted pbs object with specific attributes used to run RepeatMasker."""
     input_base = file_base(input_file).rstrip(".fa")
-    output_file = piler_dir + "/" + input_base.upper()
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    lib_file = input_base + ".lib"
+    if not os.path.exists(piler_dir):
+        os.makedirs(piler_dir)
 
-    cmd1 = "run_piler.py"
+
+    cmd = "python3.3 run_piler.py {input_file} {piler_dir} {output_file}".format(input_file = input_file, piler_dir = piler_dir, output_file = lib_file);
+    
+    if show_progress:
+        show_progress.write("\nLaunching Piler:\n%s\n" % (cmd))
+        show_progress.flush()
+        sys.stderr.write("\nLaunching Piler:\n%s\n" % (cmd))
+        sys.stderr.flush()
+
+    batch_name = piler_dir + "/" + input_base + ".piler.batch";
+    job_name = "piler%d" % get_job_index("piler")
+    stdout_file = input_base + ".piler.stdout";
+    stderr_file = input_base + ".piler.stderr";
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                      stdout_file = stdout_file, stderr_file = stderr_file,
+                      output_location = piler_dir)
+
+    p.submit()
+    p.description = "piler"
+    p.tool_resources = [0]*4
+    p.seq_file = input_file
+    p.lib_file = piler_dir + "/" + lib_file
+
+    return p
 
 # def create_raider_consensus(p, output):
 #     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
@@ -669,10 +694,20 @@ if __name__ == "__main__":
     else:
         BIGFOOT_JOBS = []
 
+    if args.run_piler:
+        piler_dir = args.results_dir + "/" + args.piler_dir    # Name of the directory all piler files will go into
+        if not os.path.exists(piler_dir):
+           os.makedirs(piler_dir)
+        PILER_JOBS = [run_piler(input_file = file, piler_dir = piler_dir) for file in file_list]
+        PILER_JOBS = [run_repeat_masker(p,args.pa) for p in PILER_JOBS]
+    else:
+        PILER_JOBS = []
+
     # Now make sure everything runs
     [p.wait(cleanup = 0) for P in RAIDER_JOBS for p in P]
     [p.wait(cleanup = 0) for p in SCOUT_JOBS]
     [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
+    [p.wait(cleanup = 2) for p in PILER_JOBS]
 
 
     # Print output files log
@@ -712,6 +747,11 @@ if __name__ == "__main__":
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
                 fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
+            if PILER_JOBS:
+                p = PILER_JOBS[i]
+                CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+                StatsP = [round(x,5) for x in StatsP]
+                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
                             
 
             
