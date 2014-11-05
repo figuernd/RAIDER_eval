@@ -468,7 +468,7 @@ def run_repeat_masker(p, num_processors):
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
-        sys.stderr.write("\nLaunch repeatmasker (%d):\n%s\n" % (p.description, cmd))
+        sys.stderr.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
         sys.stderr.flush()
     progress_fp.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
     progress_fp.flush()
@@ -554,9 +554,6 @@ if __name__ == "__main__":
 
 
     ### Generate simulated file(s) and run to completion
-    data_dir = args.results_dir + "/" + args.data_dir
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
 
     ### Set up the debugging log file (if needed)
     progress_fp = open(args.results_dir + "/debug.txt", "w")
@@ -566,7 +563,11 @@ if __name__ == "__main__":
     # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
         # Launch the jobs
-        f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.repeat, 
+        data_dir = args.results_dir + "/" + args.data_dir
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+
+        f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.chromosome + ".out",
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
@@ -582,7 +583,10 @@ if __name__ == "__main__":
 
     else:
         # Get the list of file names
-        file_list = [args.seq_files]
+        file_list = args.seq_files
+        data_dir = file_dir(file_list[0])
+        if len(file_list) > 1:
+            assert all([file_dir(file) == data_dir for file in file_list[1:]]), "All data files must be in the same directory."
 #        for file in args.seq_files:
 #            file_list.append(data_dir + "/" + file_base(file))
 #            shutil.copy(file, file_list[-1])
