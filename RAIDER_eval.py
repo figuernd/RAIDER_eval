@@ -156,6 +156,7 @@ def parse_params(args):
         arg_return.run_raider = False
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
+        arg_return.run_piler = False
 
 
 
@@ -688,7 +689,14 @@ if __name__ == "__main__":
                 p = BIGFOOT_JOBS[i]
                 CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsBF = [round(x,5) for x in StatsBF]
-                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + p.tool_resources + p.getResources())))
+                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
+            if PILER_JOBS:
+                p = PILER_JOBS[i]
+                CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+                StatsP = [round(x,5) for x in StatsP]
+                fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
+
+
                             
 
             
