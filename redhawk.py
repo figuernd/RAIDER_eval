@@ -539,11 +539,15 @@ class pbsJobHandler:
         """Split the .e<id> file into a .e<id> and .r<id> file"""
         if not self.split:
             if not self.efile_exists():
-                raise PBSError("Call to split_efile() when efile doesn't exist")
+                raise PBSError("Call to split_efile() when efile doesn't exist (%s, %s)" % (p.cmd, p.efile))
             self.split = True 
 
             with open(self.efile) as fp: line = "".join([line for line in fp])
-            first, second = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL).group(1,2)
+            try:
+                first, second = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL).group(1,2)
+            except AttributeError as e:
+                print("efile: ", self.efile)
+                raise e
             with open(self.efile, "w") as fp: fp.write(first)
             with open(self.rfile, "w") as fp: fp.write(second)
 

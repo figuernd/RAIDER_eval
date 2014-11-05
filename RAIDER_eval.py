@@ -1,3 +1,4 @@
+#!/software/python/3.3.3/bin/python3.3
 import sys
 import subprocess
 import os
@@ -12,6 +13,8 @@ import perform_stats
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
+
+test_tools = ["raider", "bigfoot", "piler", "rep_scout"]  # List of implemented tools -- not just for debugging, but overall control
 #################################################################
 
 #################################################################
@@ -21,7 +24,7 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'filter_stage-1':'/usr/local/RepeatScout/filter-stage-1.prl',
                 'filter_stage-2':'/usr/local/RepeatScout/filter-stage-2.prl',
                 'raider':'./raider',
-                'bigfoot':'./bigfoot', 
+                'bigfoot':'./bigfoot',
                 'python':'python3.4'}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
@@ -53,6 +56,9 @@ def file_base(file):
 def file_dir(file):
     return file.rstrip(file_base(file)).rstrip("/")
 
+
+
+
 def parse_params(args):
     """Parse command line arguments using the argparse library"""
     parser = argparse.ArgumentParser(description = "Evaluate RAIDER against RepeatScout")
@@ -62,11 +68,14 @@ def parse_params(args):
     #parser2.add_argument('--organize', action = "store_true", help = "Create directory for all Raider Eval output", default = False)
     #parser2.add_argument('--no', '--named_organize', dest = "named_organize", help = "Organize under a named directory", default = None)
 
+
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
-    parser_tools.add_argument('-R', '--raider_off', dest = 'run_raider', action = 'store_false', help = 'Turn RAINDER off', default = True)
-    parser_tools.add_argument('--RS', '--repscout_off', dest = 'run_repscout', action = 'store_false', help = 'Turn RAINDER off', default = True)
-    parser_tools.add_argument('-B', '--bigfoot_off', dest = 'run_bigfoot', action = 'store_false', help = 'Turn BIGFOOT off', default = True)
+    parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
+    parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
+    parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -77,8 +86,9 @@ def parse_params(args):
     parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
+    parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
-
+    
 
     
     # RAIDER ARGUMENTS
@@ -119,7 +129,7 @@ def parse_params(args):
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
-    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progres', action = 'store_true', help = "Print reports on program progress to debug.txt and stderr", default = False)
+    debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
     subparsers = parser.add_subparsers(dest="subparser_name")
@@ -144,12 +154,22 @@ def parse_params(args):
     parser_chrom.add_argument('-l', '--length', type = int, help = "Simulated sequence length", default = None)
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('-t', '--num_sims', type = int, dest = "num_sims", help ="Number of simulations", default = 1)
+    parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
 
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
     parser_chrom.add_argument('repeat', help = "Repeat file")
 
 
     arg_return =  parser.parse_args(args)
+
+    global show_progress
+    show_progress = arg_return.show_progress
+
+    if arg_return.all_tools:
+        arg_return.run_raider = True
+        arg_return.run_repscout = True
+        arg_return.run_bigfoot = True
+        arg_return.run_piler = True
 
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
@@ -167,7 +187,7 @@ def parse_params(args):
 # Main functions 
 
 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats):
+def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -185,6 +205,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     mi = ("--mi %d" % (mi)) if mi else ""
     retain_n = "--rn" if retain_n else ""
     num_repeats = ("--nr %d" % (num_repeats)) if num_repeats else ""
+    low_complexity = "--lc" if low_complexity else ""
     seq_arg = chromosome
     repeat_arg = repeat
 
@@ -192,14 +213,13 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {retain_n} {num_repeats} {repeat} {output}".format(python=locations["python"], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, retain_n=retain_n, num_repeats=num_repeats, repeat=repeat_arg, output=output_path)
+    cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {retain_n} {num_repeats} {lc} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, repeat=repeat_arg, output=output_path)
 
     if show_progress:
         sys.stderr.write("Creating simulation:\n%s\n" % (cmd))
         sys.stderr.flush()
-    progress_file.write("Creating simulation:\n%s\n" % (cmd))
-    progress_file.flush()
-
+    progress_fp.write("Creating simulation:\n%s\n" % (cmd))
+    progress_fp.flush()
 
     batch_name = data_dir + "/" + output_file + ".sim.batch"
     job_name = "simulation.%d" % (get_job_index("simulation"))
@@ -238,17 +258,17 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     out_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.txt"
     lib_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.fa"
 
-    cmd2 = "{python} consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(python=locations["python"], seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
+    cmd2 = "{python} consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(python = Locations['python'], seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
 
     if show_progress:
         sys.stderr.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
-    progress_file.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
-    progress_file.flush()
+    progress_fp.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.flush()
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "raider.%d" % get_job_index("raider")
-    #progress_file.write("Sim batch: " + batch_name + "\n")
+    #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
                       output_location = output_dir)
@@ -257,10 +277,12 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     p.tool_resources = [0]*4
 
     p.description = "raider"
+    p.tools_resources = [0]*4
     p.seed = seed
     p.seed_num = seed_num
     p.seq_file = input_file
     p.lib_file = lib_file
+
     return p
 
 def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
@@ -273,28 +295,66 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    cmd = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {input_file} {bigfoot_dir}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, bigfoot_dir = bigfoot_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd1 = "{bigfoot} -l {L} -c {C} --I {I} --T {T} {input_file} {output_dir}".format(bigfoot = Locations['bigfoot'], L = L, C = C, I = I, T = T, output_dir = output_dir, input_file = input_file)   # Put the command-line executable for for bigfoot here.  Use input_file for the input file name, and put any output into bigfoot_dir
+    cmd2 = "cp {output_dir}/seeds {bigfoot_dir}/{input_base}.seeds".format(output_dir=output_dir, bigfoot_dir=bigfoot_dir, input_base=input_base)
+    cmd = cmd1 + "; " + cmd2;
 
     if show_progress:
         sys.stderr.write("\nLaunching bigfoot:\n%s\n" % (cmd))
         sys.stderr.flush()
-    progress_file.write("\nLaunching bigfoot:\n%s\n" % (cmd))
-    progress_file.flush()
+    progress_fp.write("\nLaunching bigfoot:\n%s\n" % (cmd))
+    progress_fp.flush()
 
     
-    lib_file = bigfoot_dir + "/" + "seeds"
+    lib_file = bigfoot_dir + "/" + input_base + ".seeds"
     batch_name = bigfoot_dir + "/" + input_base + ".bigfoot.batch"    # This is the batch fils for the qsub command.
     job_name = "bigfoot.%d" % get_job_index("bigfoot")                # This is the redhawk jobname.  get_job_index just assigned the next unused number (for then running multiple jobs)
     stdout_file = input_base + ".bigfoot.stdout"                      # Anything bigfoot prints to stdout will be redirected here
     stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd, stdout_file = stdout_file, stderr_file = stderr_file, output_location = output_dir)   # I think we need the current_location paramter to put the output files in the right directory -- but I don't see it in run_raider.  Don't have time to check right now.
-    
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                      stdout_file = stdout_file, stderr_file = stderr_file,
+                      output_location = output_dir)    
+
+
     p.submit()
     p.description = "bigfoot"
     p.tool_resources = [0]*4
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
     p.lib_file = lib_file     # This should be set to the file name that will be the library for the repeatmasker run
+
     return p 
+
+def run_piler(input_file, piler_dir):
+    """Runs Piler and returns a submitted pbs object with specific attributes used to run RepeatMasker."""
+    input_base = file_base(input_file).rstrip(".fa")
+    lib_file = input_base + ".lib"
+    if not os.path.exists(piler_dir):
+        os.makedirs(piler_dir)
+
+
+    cmd = "{python} run_piler.py {input_file} {piler_dir} {output_file}".format(python = Locations['python'], input_file = input_file, piler_dir = piler_dir, output_file = lib_file);
+    
+    if show_progress:
+        sys.stderr.write("\nLaunching Piler:\n%s\n" % (cmd))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunching Piler:\n%s\n" % (cmd))
+    progress_fp.flush()
+
+    batch_name = piler_dir + "/" + input_base + ".piler.batch";
+    job_name = "piler%d" % get_job_index("piler")
+    stdout_file = input_base + ".piler.stdout";
+    stderr_file = input_base + ".piler.stderr";
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                      stdout_file = stdout_file, stderr_file = stderr_file,
+                      output_location = piler_dir)
+
+    p.submit()
+    p.description = "piler"
+    p.tool_resources = [0]*4
+    p.seq_file = input_file
+    p.lib_file = piler_dir + "/" + lib_file
+
+    return p
 
 # def create_raider_consensus(p, output):
 #     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
@@ -304,77 +364,10 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
 #     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
 #     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
 #     if show_progress:
-#         progress_file.write("Creating consensus sequence: ", cmd)
-#     p2 = pbsJobHandler(batch_file = "%s.batch" % (os.path.basename(output)), executable = cmd)
 #     p2.submit()
 #     p2.seq_file = p.seq_file
 #     p2.output = output
 #     return p2
-
-def run_repeat_masker(p, num_processors):
-    """Given the pbs object used to start a consensus sequence job as well as
-    repeatmasker arguments, wait until the job is done and then call repeatmasker 
-    on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait(cleanup = 0)
-    p.loadResources()
-
-    input_base = file_base(p.seq_file)  # Base name of the file used for input
-
-    output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
-    cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
-
-    if show_progress:
-        sys.stderr.write("\nLaunch repeatmasker:\n%s\n" % cmd)
-        sys.stderr.flush()
-    progress_file.write("\nLaunch repeatmasker:\n%s\n" % cmd)
-    progress_file.flush()
-
-    batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
-    job_name = "repmask.%d" % get_job_index("repmask")
-    #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
-                       job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir);
-    p2.submit()
-
-    p2.description = "RptMasker"
-    p2.seed = p.seed if hasattr(p, "seed") else "NA"
-    p2.seed_num = p.seed_num if hasattr(p, "seed_num") else "NA"
-    p2.dir = output_dir
-    p2.lib_file = p.lib_file
-    p2.seq_file = p.seq_file
-    p2.rm_output = output_dir + "/" + file_base(p.seq_file) + ".out"
-    p2.tool_resources = p.resources
-    p2.tool_description = p.description
-    return p2
-
-    # # Determine actual path the masker directory (if specified)
-    # if masker_dir:
-    #     masker_dir = "%s/%s" % (p.curr_dir, masker_dir) if p.curr_dir else masker_dir
-    #     if not os.path.exists('./%s' % (masker_dir)):
-    #         os.makedirs('./%s' % (masker_dir))
-    # masker_file = os.path.basename(p.seq_file) + ".out"
-    # masker_output = "%s/%s" % (masker_dir, masker_file) if masker_dir else "%s/%s" % (p.curr_dir, masker_file) if p.curr_dir else masker_file
-    # lib_output = re.sub("((\.fa)|(\.fasta))$", ".lib.fa" , p.output)
-    # library_part = "-lib %s " % (lib_output)
-    # processor_part = "-pa %d " % (num_processors) if num_processors else ""
-    # output_part = "-dir %s " % (masker_dir) if masker_dir else "-dir %s " % (p.curr_dir) if p.curr_dir else ""
-    # cmd = "RepeatMasker %s %s %s %s" % (library_part, processor_part, output_part , p.seq_file)
-    # if show_progress:
-    #     print("Launch repeatmasker: ", cmd)
-    # p2 = pbsJobHandler(batch_file = "repeatmasker", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
-    # p2.submit()
-    # p2.seq_file = p.seq_file
-    # p2.consensus = lib_output
-    # p2.curr_dir = curr_dir
-    # p2.masker_dir = masker_dir
-    # p2.masker_output = masker_output
-    # return p2
-
-# def run_scout_chrom(p, f, m):
-#    p.wait(cleanup = 0)
-#    return run_scout(p.chrom_output, f, m, p.curr_dir)
-
 
 
 def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
@@ -402,12 +395,12 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     if show_progress:
         sys.stderr.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         sys.stderr.flush()
-    progress_file.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
-    progress_file.flush()
+    progress_fp.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
+    progress_fp.flush()
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.%d" % (get_job_index("repscout"))
-    #progress_file.write("Sim batch: " + batch_name + "\n")
+    #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = output_dir)
@@ -443,8 +436,8 @@ def scout_second_filter(p, min_freq):
     if show_progress:
         sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         sys.stderr.flush()
-    progress_file.write("\nRepeatScout Filter2:\n%s\n" % cmd)
-    progress_file.flush()
+    progress_fp.write("\nRepeatScout Filter2:\n%s\n" % cmd)
+    progress_fp.flush()
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
     job_name = "filter2%d" % get_job_index("filter2")
@@ -463,50 +456,48 @@ def scout_second_filter(p, min_freq):
 
     return p2
 
-# def run_rm_scout(p, num_processors, masker_dir):
-#     p.wait()
-#     if masker_dir:
-#         masker_dir = "%s/%s" % (p.curr_dir, masker_dir) if p.curr_dir else masker_dir
-#         if not os.path.exists('./%s' % (masker_dir)):
-#             os.makedirs('./%s' % (masker_dir))
-#     masker_file = os.path.basename(p.seq_file) + ".out"
-#     pa_part = num_processors if num_processors else 4
-#     masker_output="%s/%s" % (masker_dir, masker_file) if masker_dir else "%s/%s" % (p.curr_dir, masker_file) if p.curr_dir else masker_file
-#     cmd = "./MaskRepeatScout.sh {sequence} {output} {pas} {dir}".format(sequence=p.seq_file, output=p.scout_output, pas=pa_part, dir=masker_dir)
-#     print(cmd)
-#     p2 = pbsJobHandler(batch_file = "repeatmaskerscout", executable = cmd, RHmodules = ["RepeatMasker", "python-3.3.3"]) 
-#     p2.submit()
-#     p2.seq_file = p.seq_file
-#     p2.consensus = p.scout_output
-#     p2.curr_dir = p.curr_dir
-#     p2.masker_dir = masker_dir
-#     p2.masker_output = masker_output
-#     return p2
 
 
-def performance_stats(p, true_repeats, stats_dir, print_rpts, test):
-    """Given the pbs object used to start a repeatmasker job as well as the original
-    repeat file, wait until the job is done and then invoke perform_stats.py on
-    the original chromosome file, the original repeat file, the simulated sequence
-    file, and the masker output file. Put results in stats_dir (Current dir if unspecified)"""
+def run_repeat_masker(p, num_processors):
+    """Given the pbs object used to start a consensus sequence job as well as
+    repeatmasker arguments, wait until the job is done and then call repeatmasker 
+    on the output and put results in masker_dir (current dir if unspecified)"""
     p.wait(cleanup = 0)
-    stats_file = re.sub("((\.fa)|(\.fasta))$", ".%s.stats"%(test) , file_base(p.seq_file))
-    stats_out = "%s/%s"%(stats_dir, stats_file) if stats_dir else "%s/%s" % (p.curr_dir, stats_file) if p.curr_dir else stats_file
-    print_part = "--print " if print_rpts else "" 
-    cmd = "{%s perform_stats.py %s %s %s %s %s %s" % (location[python], print_part, args.chromosome, true_repeats, p.seq_file, p.masker_output, stats_out)
+    p.loadResources()
+
+    input_base = file_base(p.seq_file)  # Base name of the file used for input
+
+    output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
+    cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
-        sys.stderr.write("\nLaunching analysis:\n%s\n" % cmd)
+        sys.stderr.write("\nLaunch repeatmasker (%d):\n%s\n" % (p.description, cmd))
         sys.stderr.flush()
-    progress_file.write("\nLaunching analysis:\n%s\n" % cmd)
-    progress_file.flush()
+    progress_fp.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
+    progress_fp.flush()
 
-    p2 = pbsJobHandler(batch_file = "stats", executable = cmd)
+    batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
+    job_name = "repmask.%d" % get_job_index("repmask")
+    #print("Sim batch: " + batch_name + "\n")
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
+                       job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
+                       output_location = output_dir);
     p2.submit()
-    p2.curr_dir = p.curr_dir
-    p2.stats_dir = stats_dir
-    p2.stats_output = stats_out
+
+    p2.description = "RptMasker"
+    p2.seed = p.seed if hasattr(p, "seed") else "NA"
+    p2.seed_num = p.seed_num if hasattr(p, "seed_num") else "NA"
+    p2.dir = output_dir
+    p2.lib_file = p.lib_file
+    p2.seq_file = p.seq_file
+    p2.rm_output = output_dir + "/" + file_base(p.seq_file) + ".out"
+    p2.tool_resources = p.resources
+    p2.tool_description = p.description
     return p2
+
+
+
+
 
 def performance_sum(stats_jobs, stats_dir, curr_dir, test):
     """Given a list of all of the statistics jobs, uses the statistics output files to
@@ -542,6 +533,8 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
     smry.close()
 
 
+
+############################################################################################
 if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
 
@@ -557,23 +550,6 @@ if __name__ == "__main__":
         assert False, "Could not determine host."
     ###
 
-
-
-
-    # ### Setup directory organization
-    # if args.organize or args.named_organize:
-    #     if args.organize:
-    #         prefix_part = "REV_%d_%d_" % (args.f, len(args.seed))
-    #         curr_dir = tempfile.mkdtemp(prefix = prefix_part, dir = ".")
-    #     else:
-    #         curr_dir = args.named_organize
-    #         if not os.path.exists(curr_dir):
-    #             os.makedirs(curr_dir)
-
-    #     if not os.path.exists('./%s' % (curr_dir)):
-    #         os.makedirs('./%s' % (curr_dir))
-    # else:
-    #     curr_dir = None
     if args.nuke and os.path.exists(args.results_dir):
         subprocess.call("rm -r %s" % args.results_dir, shell = True)
     if not os.path.exists(args.results_dir):
@@ -588,6 +564,7 @@ if __name__ == "__main__":
 
 
  
+
     # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
         # Launch the jobs
@@ -596,7 +573,7 @@ if __name__ == "__main__":
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
                                           k = args.k, mc_file = args.mc_file, mi = args.max_interval,
-                                          retain_n = args.retain_n, num_repeats = args.num_repeats)
+                                          retain_n = args.retain_n, num_repeats = args.num_repeats, low_complexity = args.low_complexity)
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
@@ -615,53 +592,65 @@ if __name__ == "__main__":
     ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
     ### rm_output job.
+
+    ############## First: Launch tools
+    jobs = []
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        RAIDER_JOBS = [[run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                  raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file))) for i,seed in enumerate(seed_list)]
-                       for file in file_list]
-
-        RAIDER_JOBS = [[run_repeat_masker(p,args.pa) for p in P] for P in RAIDER_JOBS]
-    else:
-        RAIDER_JOBS = []
-
+        jobs += [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+                            raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file))) for i,seed in enumerate(seed_list)
+                 for file in file_list]
 
     if args.run_repscout:
-        SCOUT_JOBS = [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
-        SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
-        if args.use_second_filter:   # Does not appear to be working
-            SCOUT_JOBS = [scout_second_filter(p, args.f) for p in SCOUT_JOBS]
-            SCOUT_JOBS = [run_repeat_masker(p, args.pa) for p in SCOUT_JOBS]
-    else:
-        SCOUT_JOBS = []
-
+        jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
 
     if args.run_bigfoot:
         bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
         if not os.path.exists(bigfoot_dir):
            os.makedirs(bigfoot_dir)
-        BIGFOOT_JOBS = [run_bigfoot(input_file = file, bigfoot_dir = bigfoot_dir, L = args.bigfoot_L, C = args.bigfoot_min, I = args.bigfoot_I, T = args.bigfoot_T) for file in file_list]
-        BIGFOOT_JOBS = [run_repeat_masker(p,args.pa) for p in BIGFOOT_JOBS]
-    else:
-        BIGFOOT_JOBS = []
+        jobs += [run_bigfoot(input_file = file, bigfoot_dir = bigfoot_dir, L = args.bigfoot_L, C = args.bigfoot_min, I = args.bigfoot_I, T = args.bigfoot_T) for file in file_list]
 
-    # Now make sure everything runs
-    [p.wait(cleanup = 0) for P in RAIDER_JOBS for p in P]
-    [p.wait(cleanup = 0) for p in SCOUT_JOBS]
-    [p.wait(cleanup = 2) for p in BIGFOOT_JOBS]
+    if args.run_piler:
+        piler_dir = args.results_dir + "/" + args.piler_dir    # Name of the directory all piler files will go into
+        if not os.path.exists(piler_dir):
+           os.makedirs(piler_dir)
+        jobs +=[run_piler(input_file = file, piler_dir = piler_dir) for file in file_list]
+
+
+    ############## Second: Launch repeatmasker jobs
+    job_set = {j for j in jobs}
+    RM_jobs = set()
+    while job_set:
+        finished_jobs = set()
+        for j in job_set:
+            if not j.isJobRunning():
+                new_job = run_repeat_masker(j, args.pa)
+                RM_jobs.add(new_job)
+                finished_jobs.add(j)
+        job_set = job_set - finished_jobs
+
+    # Let them run to completion
+    job_dic = {tool:[] for tool in test_tools}
+               
+    for j in RM_jobs:
+        j.wait(cleanup = 2);
+        job_dic[j.tool_description].append(j)
+    job_dic['raider'].sort(key = lambda x: x.seed_num)
+        
 
 
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
         for i in range(len(J)):
             fp.write("%d simulation_file %s\n" % (i, J[i].sim_output))
-            fp.write("%d raider %s\n" % (i, RAIDER_JOBS[i][0].rm_output if RAIDER_JOBS else "None"))
-            fp.write("%d repscout %s\n" % (i, SCOUT_JOBS[i].rm_output if SCOUT_JOBS else "None"))
-            fp.write("%d bigfoot %s\n" % (i, BIGFOOT_JOBS[i].rm_output if BIGFOOT_JOBS else "None"))
-                
+        for k in test_tools:
+            fp.write(k + "\n")
+            for j in job_dic[k]:
+                fp.write(j.rm_output + "\n")
+
     ######
     # Create copy of seed file (if RAIDER is being used)
-    if RAIDER_JOBS:
+    if job_dic['raider']:
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
@@ -671,32 +660,35 @@ if __name__ == "__main__":
     print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
         fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem"))
-        for i in range(len(J)):
-            if RAIDER_JOBS:
-                for j in range(len(RAIDER_JOBS[i])):
-                    p = RAIDER_JOBS[i][j]
-                    print("1: ", p.tool_resources)
-                    print("2: ", p.getResources())
-                    Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-                    Stats = [round(x,5) for x in Stats]
-                    fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + p.tool_resources + p.getResources())))
-            if SCOUT_JOBS:
-                p = SCOUT_JOBS[i]
-                CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-                StatsSJ = [round(x,5) for x in StatsSJ]
-                fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + p.tool_resources + p.getResources())))
-            if BIGFOOT_JOBS:
-                p = BIGFOOT_JOBS[i]
-                CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-                StatsBF = [round(x,5) for x in StatsBF]
-                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
-            if PILER_JOBS:
-                p = PILER_JOBS[i]
-                CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-                StatsP = [round(x,5) for x in StatsP]
-                fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
 
+        for key in test_tools:
+            for p in job_dic[key]:
+                Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                Stats = [round(x,5) for x in Stats]
+                fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
 
+        # for i in range(len(J)):
+        #     if RAIDER_JOBS:
+        #         for j in range(len(RAIDER_JOBS[i])):
+        #             p = RAIDER_JOBS[i][j]
+        #             Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+        #             Stats = [round(x,5) for x in Stats]
+        #             fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+        #     if SCOUT_JOBS:
+        #         p = SCOUT_JOBS[i]
+        #         CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+        #         StatsSJ = [round(x,5) for x in StatsSJ]
+        #         fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + list(p.tool_resources) + list(p.getResources()))))
+        #     if BIGFOOT_JOBS:
+        #         p = BIGFOOT_JOBS[i]
+        #         CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+        #         StatsBF = [round(x,5) for x in StatsBF]
+        #         fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
+        #     if PILER_JOBS:
+        #         p = PILER_JOBS[i]
+        #         CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
+        #         StatsP = [round(x,5) for x in StatsP]
+        #         fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
                             
 
             
