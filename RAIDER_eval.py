@@ -3,6 +3,7 @@ import sys
 import subprocess
 import os
 import os.path
+import shutil
 import argparse
 from redhawk import *
 import tempfile
@@ -88,7 +89,6 @@ def parse_params(args):
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
-    
 
     
     # RAIDER ARGUMENTS
@@ -136,7 +136,7 @@ def parse_params(args):
     
     # SEQUENCE FILE OPTION ARGUMENTS
     parser_seqs = subparsers.add_parser("seq_files")
-    parser_seqs.add_argument('seq_files', nargs = "+", help = "Files containing genomic sequence (for running on real data)")
+    parser_seqs.add_argument('seq_files', nargs = '+', help = "Use files directly (no simulation)", default = None)
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
@@ -157,7 +157,6 @@ def parse_params(args):
     parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
 
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
-    parser_chrom.add_argument('repeat', help = "Repeat file")
 
 
     arg_return =  parser.parse_args(args)
@@ -193,8 +192,6 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     file) into run_raider"""
 
     #print("data_dir: ", data_dir)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
 
     # Output file is either specified or replace .fa with .sim.#.fa
     length_arg = "-l %d" % (length) if length else ""
@@ -558,10 +555,11 @@ if __name__ == "__main__":
 
     ### Generate simulated file(s) and run to completion
     data_dir = args.results_dir + "/" + args.data_dir
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
     ### Set up the debugging log file (if needed)
     progress_fp = open(args.results_dir + "/debug.txt", "w")
-
 
  
 
@@ -584,10 +582,11 @@ if __name__ == "__main__":
 
     else:
         # Get the list of file names
-        file_list = []
-        for file in seq_files:
-            file_list.append(data_dir + "/" + file)
-            shutil.copy(file, file_list[-1])
+        file_list = [args.seq_files]
+#        for file in args.seq_files:
+#            file_list.append(data_dir + "/" + file_base(file))
+#            shutil.copy(file, file_list[-1])
+#            shutil.copy(file + ".out", file_list[-1] + ".out")
 
     ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
@@ -641,8 +640,8 @@ if __name__ == "__main__":
 
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
-        for i in range(len(J)):
-            fp.write("%d simulation_file %s\n" % (i, J[i].sim_output))
+        for i in range(len(file_list)):
+            fp.write("%d simulation_file %s\n" % (i, file_list[i]))
         for k in test_tools:
             fp.write(k + "\n")
             for j in job_dic[k]:
