@@ -15,7 +15,6 @@ import perform_stats
 show_progress = False
 job_index = {}
 
-test_tools = ["raider", "bigfoot", "piler", "rep_scout"]  # List of implemented tools -- not just for debugging, but overall control
 #################################################################
 
 #################################################################
@@ -184,14 +183,10 @@ def parse_params(args):
 
 ############################################################
 # Main functions 
-
-
 def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
-
-    #print("data_dir: ", data_dir)
 
     # Output file is either specified or replace .fa with .sim.#.fa
     length_arg = "-l %d" % (length) if length else ""
@@ -239,7 +234,6 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 #    on the newly generated chromosome output file"""
 #    p.wait()
 #    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
-
 def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
@@ -531,6 +525,7 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
 
 
 
+test_tools = ["raider", "bigfoot", "piler", "rep_scout"]  # List of implemented tools 
 ############################################################################################
 if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
@@ -559,13 +554,15 @@ if __name__ == "__main__":
     progress_fp = open(args.results_dir + "/debug.txt", "w")
 
  
+    data_dir = args.results_dir + "/" + args.data_dir
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
+
 
     # First: we put the chromosomes (simulated or real) into data_dir
     if args.subparser_name == "chrom_sim":
         # Launch the jobs
-        data_dir = args.results_dir + "/" + args.data_dir
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
 
         f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.chromosome + ".out",
                                           rng_seed = args.rng_seed, length = args.length, 
@@ -582,15 +579,11 @@ if __name__ == "__main__":
         file_list = [j.sim_output for j in J]
 
     else:
-        # Get the list of file names
-        file_list = args.seq_files
-        data_dir = file_dir(file_list[0])
-        if len(file_list) > 1:
-            assert all([file_dir(file) == data_dir for file in file_list[1:]]), "All data files must be in the same directory."
-#        for file in args.seq_files:
-#            file_list.append(data_dir + "/" + file_base(file))
-#            shutil.copy(file, file_list[-1])
-#            shutil.copy(file + ".out", file_list[-1] + ".out")
+        file_list = []
+        for file in args.seq_files:
+            file_list.append(data_dir + "/" + file_base(file))
+            shutil.copy(file, file_list[-1])
+            shutil.copy(file + ".out", file_list[-1] + ".out")
 
     ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
     ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
@@ -601,7 +594,7 @@ if __name__ == "__main__":
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
         jobs += [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                            raider_dir = re.sub(args.data_dir, args.raider_dir, file_dir(file))) for i,seed in enumerate(seed_list)
+                            raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
     if args.run_repscout:
@@ -666,6 +659,8 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
+                print("seq file: " + p.seq_file + ".out")
+                print("rm file: " , p.rm_output)
                 Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                 Stats = [round(x,5) for x in Stats]
                 fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
