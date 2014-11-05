@@ -158,6 +158,7 @@ def parse_params(args):
     if arg_return.bigfoot_only:
         arg_return.run_raider = False
         arg_return.run_repscout = False
+        arg_return.run_piler = False
         arg_return.run_bigfoot = True
 
     #### The following is to set the global debugging variables 
@@ -165,6 +166,7 @@ def parse_params(args):
         arg_return.run_raider = False
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
+        arg_return.run_piler = False
 
 
 
@@ -751,7 +753,7 @@ if __name__ == "__main__":
                 p = PILER_JOBS[i]
                 CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
                 StatsP = [round(x,5) for x in StatsP]
-                fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
+                fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
                             
 
             
