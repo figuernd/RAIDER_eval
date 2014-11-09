@@ -453,7 +453,7 @@ def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait(cleanup = 0)
+    p.wait()
     p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
@@ -473,7 +473,7 @@ def run_repeat_masker(p, num_processors):
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir);
-    p2.submit()
+    p2.submit(preserve=True)
 
     p2.description = "RptMasker"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
@@ -573,7 +573,7 @@ if __name__ == "__main__":
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
-        [j.wait(cleanup = 0) for j in J]    # Let all the simulations finish
+        [j.wait() for j in J]    # Let all the simulations finish
 
         # Get the list of simulated file names
         file_list = [j.sim_output for j in J]
@@ -629,11 +629,10 @@ if __name__ == "__main__":
     job_dic = {tool:[] for tool in test_tools}
                
     for j in RM_jobs:
-        j.wait(cleanup = 2);
+        j.wait();
         job_dic[j.tool_description].append(j)
     job_dic['raider'].sort(key = lambda x: x.seed_num)
         
-
 
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
@@ -659,8 +658,6 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
-                print("seq file: " + p.seq_file + ".out")
-                print("rm file: " , p.rm_output)
                 Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                 Stats = [round(x,5) for x in Stats]
                 fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
