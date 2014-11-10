@@ -14,6 +14,7 @@ import perform_stats
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
+time_limit = "4:00:00"
 
 #################################################################
 
@@ -76,6 +77,7 @@ def parse_params(args):
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -100,7 +102,7 @@ def parse_params(args):
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
-
+    
     
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -119,7 +121,6 @@ def parse_params(args):
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
-    
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -159,6 +160,9 @@ def parse_params(args):
 
 
     arg_return =  parser.parse_args(args)
+
+    global time_limit
+    time_limit = args.time_limit
 
     global show_progress
     show_progress = arg_return.show_progress
@@ -219,7 +223,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir)
+                      output_location = data_dir, walltime = time_limit)
     p.submit()
 
     p.output_file = output_file
@@ -262,7 +266,7 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir)
+                      output_location = output_dir, walltime = time_limit)
 
     p.submit()
     p.tool_resources = [0]*4
@@ -304,7 +308,7 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = output_dir)    
+                      output_location = output_dir, walltime = time_limit)    
 
 
     p.submit()
@@ -337,7 +341,7 @@ def run_piler(input_file, piler_dir):
     stderr_file = input_base + ".piler.stderr";
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = piler_dir)
+                      output_location = piler_dir, walltime = time_limit)
 
     p.submit()
     p.description = "piler"
@@ -394,7 +398,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir)
+                      output_location = output_dir, walltime = time_limit)
 
     p.submit()
     p.description = "rep_scout"
@@ -436,7 +440,7 @@ def scout_second_filter(p, min_freq):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
-                       output_location = file_dir(p.seq_file))
+                       output_location = file_dir(p.seq_file), walltime = time_limit)
 
     p2.submit()
     p2.description = "rep_scout"
@@ -472,7 +476,7 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir);
+                       output_location = output_dir, walltime = time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
