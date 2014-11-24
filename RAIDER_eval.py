@@ -14,6 +14,7 @@ import perform_stats
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
+time_limit = "4:00:00"
 
 #################################################################
 
@@ -25,14 +26,16 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'filter_stage-2':'/usr/local/RepeatScout/filter-stage-2.prl',
                 'raider':'./raider',
                 'bigfoot':'./bigfoot',
-                'python':'python3.4'}
+                'python':'python3.4',
+                'araider':'./araider'}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
                     'filter_stage-2':'./filter-stage-2.prl',
                     'raider':'./raider',
                     'bigfoot':'./bigfoot',
-                    'python':'python3.3'}
+                    'python':'python3.3',
+                    'araider':'./araider'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 #########
@@ -72,10 +75,12 @@ def parse_params(args):
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
     parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -84,6 +89,7 @@ def parse_params(args):
     parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "EVAL")
     parser_io.add_argument('--nuke', dest ='nuke', action = "store_true", help = "Nuke the results directory", default = False)
     parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
+    parser_io.add_argument('--ard', '--araider_dir', dest = "araider_dir", help = "Subdirectory containing araider results", default = "ARAIDER")
     parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
@@ -100,7 +106,7 @@ def parse_params(args):
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
-
+    
     
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -119,7 +125,6 @@ def parse_params(args):
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
-    
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -160,11 +165,15 @@ def parse_params(args):
 
     arg_return =  parser.parse_args(args)
 
+    global time_limit
+    time_limit = arg_return.time_limit
+
     global show_progress
     show_progress = arg_return.show_progress
 
     if arg_return.all_tools:
         arg_return.run_raider = True
+        arg_return.run_araider = True
         arg_return.run_repscout = True
         arg_return.run_bigfoot = True
         arg_return.run_piler = True
@@ -172,6 +181,7 @@ def parse_params(args):
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
         arg_return.run_raider = False
+        arg_return.run_araider = False
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
         arg_return.run_piler = False
@@ -219,7 +229,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir)
+                      output_location = data_dir, walltime = time_limit)
     p.submit()
 
     p.output_file = output_file
@@ -262,12 +272,54 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir)
+                      output_location = output_dir, walltime = time_limit)
 
     p.submit()
     p.tool_resources = [0]*4
 
     p.description = "raider"
+    p.tools_resources = [0]*4
+    p.seed = seed
+    p.seed_num = seed_num
+    p.seq_file = input_file
+    p.lib_file = lib_file
+
+    return p
+
+def run_araider(seed, seed_num, f, m, input_file, araider_dir):
+    """Given raider parameters and an input file, run RAIDER and put the output into
+    the directory specified in output_dir (creating a random name is none is
+    specified."""
+
+    input_base = file_base(input_file).rstrip(".fa")
+    output_dir = araider_dir + "/" + input_base.upper() + ".s" + str(seed_num)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    min_arg = "-m %d" % (m) if m else ""
+    cmd1 = "{araider} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(araider = Locations['araider'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+
+    out_file = araider_dir + "/" + input_base + ".s" + str(seed_num) + ".araider_consensus.txt"
+    lib_file = araider_dir + "/" + input_base + ".s" + str(seed_num) + ".araider_consensus.fa"
+
+    cmd2 = "{python} consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(python = Locations['python'], seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
+
+    if show_progress:
+        sys.stderr.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.flush()
+
+    batch_name = araider_dir + "/" + input_base + ".araider.batch"
+    job_name = "araider.%d" % get_job_index("araider")
+    #progress_fp.write("Sim batch: " + batch_name + "\n")
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
+                      stdout_file = input_base + ".araider.stdout", stderr_file = input_base + ".araider.stderr",
+                      output_location = output_dir)
+
+    p.submit()
+    p.tool_resources = [0]*4
+
+    p.description = "araider"
     p.tools_resources = [0]*4
     p.seed = seed
     p.seed_num = seed_num
@@ -304,7 +356,7 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     stderr_file = input_base + ".bigfoot.stderr"                      # Anything bigfoot prints to stderr will be redirected here
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = output_dir)    
+                      output_location = output_dir, walltime = time_limit)    
 
 
     p.submit()
@@ -337,7 +389,7 @@ def run_piler(input_file, piler_dir):
     stderr_file = input_base + ".piler.stderr";
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = piler_dir)
+                      output_location = piler_dir, walltime = time_limit)
 
     p.submit()
     p.description = "piler"
@@ -394,7 +446,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir)
+                      output_location = output_dir, walltime = time_limit)
 
     p.submit()
     p.description = "rep_scout"
@@ -436,7 +488,7 @@ def scout_second_filter(p, min_freq):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
-                       output_location = file_dir(p.seq_file))
+                       output_location = file_dir(p.seq_file), walltime = time_limit)
 
     p2.submit()
     p2.description = "rep_scout"
@@ -472,7 +524,7 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir);
+                       output_location = output_dir, walltime = time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
@@ -525,7 +577,7 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
 
 
 
-test_tools = ["raider", "bigfoot", "piler", "rep_scout"]  # List of implemented tools 
+test_tools = ["raider", "bigfoot", "piler", "rep_scout", "araider"]  # List of implemented tools 
 ############################################################################################
 if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
@@ -597,6 +649,11 @@ if __name__ == "__main__":
                             raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
+    if args.run_araider:
+        seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
+        jobs += [run_araider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+                            araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
+                 for file in file_list]
     if args.run_repscout:
         jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
 
@@ -632,6 +689,7 @@ if __name__ == "__main__":
         j.wait();
         job_dic[j.tool_description].append(j)
     job_dic['raider'].sort(key = lambda x: x.seed_num)
+    job_dic['araider'].sort(key = lambda x: x.seed_num)
         
 
     # Print output files log
@@ -649,6 +707,9 @@ if __name__ == "__main__":
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
+    if job_dic['araider']:
+        with open(args.results_dir + "/seed_file.txt", "w") as fp:
+            fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
 
     ######
     # Calculate statistics (not bothering with parallelization yet)
