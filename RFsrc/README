@@ -1,0 +1,107 @@
+RepeatFinder as described in the paper "A clustering method for repeat analysis
+in DNA sequences," by Natalia Volfovsky, Brian J. Haas, and Steven L. Salzberg.
+Genome Biology 2:8 (2001), research0027.1-11.
+
+See the file LICENSE for licensing terms.  This is open source
+software.  
+
+Copyright (c) 2001-2003 The Institute for Genomic Research, Rockville, MD.  All
+rights reserved.
+
+INPUT
+-----
+multifasta file
+
+OUTPUT
+------
+1. AB.map.<id>.
+
+ClassNumber  RepeatID  SeqID  Coord1 Coord2
+
+    1          C1R1    Seq1       1     100
+
+2. AB.mfasta.<id>.
+
+multifasta file of actual repeat sequences
+
+Title of each sequence is as follows
+
+>RepeatID SeqID Coord1 Length Copies
+
+OPTIONS and DEFAULT VALUES
+--------------------------
+
+-f <file in multiple-fasta format>
+
+-r <minimal exact repeat length>
+
+     DEFAULT  50
+
+-g  <maximal gap for merging>
+
+    (file:/home/natalia/web/Repeat_finder.html#brief)
+
+
+    DEFAULT   25
+
+-o  <overlap >
+
+    DEFAULT   gap option
+
+-e   <expect value for BLAST>
+
+    DEFAULT 1e-8
+
+-i   <identification name>
+
+-d   <full path of scrap directory>
+
+    DEFAULT  current directory
+
+-v    <verbose>
+
+    DEFAULT  yes
+
+
+
+SRC
+___
+
+needs REPuter  http://BiBiServ.TechFak.Uni-Bielefeld.DE/reputer/
+
+ABclass_search.cc  - update clusters after BLAST
+
+Input files:  
+R_map    -   results of the preliminary clustering
+Qresult  -   results of BLAST search (pairs of similar classes)
+seq.coord -  coordinates of assemblies
+
+
+BBclass_search.cc  - clustering  "merging with overlap"
+parameters:  -r <length of the minimal repeat> -o <overlap>
+Input files: all.repeats - results from REPuter
+             all.coord - non-duplicated all repeat coordinates
+             seq.coord - coordinates of  assemblies
+
+GBBclass_search.cc - clustering  "metging with gap"
+
+parameters:  -r <length of the minimal repeat> -g <gap>
+Input files: all.repeats - results from REPuter
+             all.coord - non-duplicated all repeat coordinates
+             seq.coord - coordinates of assemblies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
