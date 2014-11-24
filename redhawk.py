@@ -38,6 +38,11 @@ echo "" >&2
 exit 0
 """
 
+bad_ep_str = """
+Redhawk Epilogue Args:
+Resources Used: cput=00:00:00,mem=0kb,vmem=0kb,walltime=00:00:00
+"""
+
 ############################################################
 # Library-global variables
 log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
@@ -59,7 +64,7 @@ redhawkInQueueRe = re.compile("\s+[R|Q]\s+[^\s]+\s*$")
 
 # This contains the default parameter values for __init__.  Doing it this way is no longer necessary,
 # but its not worth taking out.
-pbs_defaults = {'use_pid':True, 'job_name':None, 'nodes':1, 'ppn':1, 'mem':False, 'walltime':"40:00:00", 'address':None, 'join':False, 'env':None, 'queue':None, 'mail':None, 'output_location':None, 'chdir':None, 'RHmodules':None, 'file_limit':6, 'file_delay':5, 'epilogue_file':None}
+pbs_defaults = {'use_pid':True, 'job_name':None, 'nodes':1, 'ppn':1, 'mem':False, 'walltime':"00:30:00", 'address':None, 'join':False, 'env':None, 'queue':None, 'mail':None, 'output_location':None, 'chdir':None, 'RHmodules':None, 'file_limit':6, 'file_delay':5, 'epilogue_file':None}
 
 
 
@@ -126,6 +131,7 @@ class pbsJobHandler:
         s="#PBS -N "+ self.jobname +"\n"
         f.write(s)
 
+        self.has_split = False    # Indicate whether the err file has ever been split (added for debugging)
      
         #some defaults:
         self.nodes = nodes
@@ -196,10 +202,9 @@ class pbsJobHandler:
         self.jobid=0
         self.split = self.suppress_pbs   # Set to true when the .e file gets split, unless we are not using pbs (in which case it is irrelevant)
         
-        if os.path.isfile(self.epilogue):
-            os.remove(self.epilogue)
-        open(self.epilogue, "w").write(epilogue_str)
-        subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
+        if not os.path.isfile(self.epilogue):
+            open(self.epilogue, "w").write(epilogue_str)
+            subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
 
 
 
@@ -284,7 +289,7 @@ class pbsJobHandler:
         return self.submit(preserve, print_qsub, job_limit, delay, user)
 
 ### isJobRunning
-### This is primarily useful for waiting a _submitted_ job to finish
+### This is primarily useful for waiting for a _submitted_ job to finish
 ###    return False if the job is done, completed for sure
 ###    return True if the job is in Q, R states [ or that PBS/Torque is not available ]
 ### Prereq is jobid must be a submitted job
@@ -294,7 +299,7 @@ class pbsJobHandler:
             return False
 
         if self.suppress_pbs:
-            if not self.p.ppoll():
+            if not self.p.poll():
                 return True
             else:
                 self.status = "finished"
@@ -302,10 +307,10 @@ class pbsJobHandler:
                 return False
 
         # If we are using pbs...
-        counter = 1
         while True:
-            file_exists = False
-            if self.ofile_exists():  #output.find(magicString) >=0 or redhawkStatsRe.search(output):
+            if self.ofile_exists() or self.efile_exists():  #output.find(magicString) >=0 or redhawkStatsRe.search(output):
+                while not(self.efile_exists() and self.ofile_exists()):
+                    pass
                 self.status = "finished"
                 job_list.remove(self)
                 return False
@@ -317,19 +322,12 @@ class pbsJobHandler:
                 return True
 
             time.sleep(delay)
-            #if counter % 10 == 0:
-            #   print ("isJobRunning: %d, %s, %s, %s" % (counter, self.ofile, os.getcwd(), str(os.path.isfile(self.ofile))))
-            counter += 1
 
         raise PBSError("RedHawk error: out of queue, no output file.  OFILE: %s" % (self.ofile))
 
     
-    def wait(self, delay=10, cleanup = 0):
+    def wait(self, delay=10):
         """Spin until job completes.
-        cleanup:
-        * 0 / False: Do not clean up .o / .e / .f files.
-        * 1: Cleanup all .o / .e / .f files.
-        * 2: Cleanup only empty .o / .e / .f files   (2 may not completely work at this point -- need to account fo the R post-able code)
         """
         if self.suppress_pbs:
             self.p.wait()
@@ -337,9 +335,6 @@ class pbsJobHandler:
         else:
             while self.isJobRunning() == True:
                 time.sleep(delay)
-        if cleanup:
-            self.split_efile()
-            self.erase_files(empty_only = True)
         return self.ofile_exists()  
 
     def wait_on_job(self, delay=10):  
@@ -537,19 +532,29 @@ class pbsJobHandler:
 
     def split_efile(self):
         """Split the .e<id> file into a .e<id> and .r<id> file"""
+        self.has_split = True
         if not self.split:
             if not self.efile_exists():
-                raise PBSError("Call to split_efile() when efile doesn't exist (%s, %s)" % (p.cmd, p.efile))
+                raise PBSError("Call to split_efile() when efile doesn't exist (%s, %s)" % (self.cmd, self.efile))
             self.split = True 
 
             with open(self.efile) as fp: line = "".join([line for line in fp])
-            try:
-                first, second = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL).group(1,2)
-            except AttributeError as e:
-                print("efile: ", self.efile)
-                raise e
-            with open(self.efile, "w") as fp: fp.write(first)
-            with open(self.rfile, "w") as fp: fp.write(second)
+            count = 0
+            r = None
+            while r is None:
+                r = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL)
+                if not r:
+                    count += 1
+                    if count == 1:
+                        break
+                    time.sleep(5)
+
+            if r:
+                first, second = r.group(1,2)
+                with open(self.efile, "w") as fp: fp.write(first)
+                with open(self.rfile, "w") as fp: fp.write(second)
+            else:
+                with open(self.rfile, "w") as fp: fp.write(bad_ep_str + "\n")
 
 
 ### Hold until the user has < limit jobs in the circulation
