@@ -286,6 +286,36 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
 
     return p
 
+def run_composites_finder(elements_file, seq_file, compositesFinderDir):
+    input_base = file_base(elements_file)
+    output_dir = compositesFinderDir + "/" + input_base.upper()
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    compositesDiscover = compositesFinderDir + "/" + "CompositesDiscover"
+    slimComFinder = compositesFinderDir + "/" + "SlimComFinder.py"
+    cmd1 = "{compositesFinder} {input_file}".format(compositesFinder = compositesDiscover, input_file = elements_file)
+    cmd2 = "{python} {slim_composites_finder} {elements} {sequence_file} {output_file}".format(python = "python", slim_composites_finder = slimComFinder,
+                        elements = elements_file, sequence_file = seq_file, output_file = output_dir + "/" + "ConsensusSequences")
+
+    if show_progress:
+        sys.stderr.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.flush()
+
+    batch_name =  compositesFinderDir + "/" + input_base + ".composites finder.batch"
+    job_name = "composites finder.%d" % get_job_index("composites finder")
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
+                      stdout_file = input_base + ".comFinder.stdout", stderr_file = input_base + ".comFinder.stderr",
+                      output_location = output_dir, walltime = time_limit)
+
+    p.submit()
+    p.description = "composites.finder"
+    p.elementsFile = elements_file
+    p.seqFile = seq_file
+
+    return p
+
 def run_araider(seed, seed_num, f, m, input_file, araider_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
