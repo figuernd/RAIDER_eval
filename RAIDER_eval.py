@@ -93,7 +93,7 @@ def parse_params(args):
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--A2', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
@@ -191,7 +191,7 @@ def parse_params(args):
         arg_return.run_bigfoot = True
         arg_return.run_piler = True
 
-    if arg_areturn.all_tools:
+    if arg_return.all_tools:
         arg_return.run_araider = True
 
 
@@ -202,7 +202,6 @@ def parse_params(args):
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
         arg_return.run_piler = False
-
 
 
     return arg_return
@@ -651,7 +650,7 @@ if __name__ == "__main__":
 
     ### Set up the debugging log file (if needed)
     progress_fp = open(args.results_dir + "/debug.txt", "w")
-
+    progress_fp.write(" ".join(sys.argv) + "\n\n");
  
     data_dir = args.results_dir + "/" + args.data_dir
     if not os.path.exists(data_dir):
@@ -692,7 +691,7 @@ if __name__ == "__main__":
     jobs = []
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        jobs += [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+        jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                             raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
