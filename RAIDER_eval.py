@@ -60,7 +60,20 @@ def file_dir(file):
     return file.rstrip(file_base(file)).rstrip("/")
 
 
-
+def convert_seed(seed):
+    """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011" """
+    i = 0
+    while (i < len(seed)-1):
+        if seed[i+1] == '^':
+            j = i+2
+            assert seed[j] == "{"
+            k = j+1
+            while seed[k] != '}':
+                k += 1
+            n = int(seed[j+1:k])
+            seed = seed[:i] + seed[i]*n + seed[k+1:]
+        i += 1
+    return seed
 
 def parse_params(args):
     """Parse command line arguments using the argparse library"""
@@ -80,6 +93,7 @@ def parse_params(args):
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--A2', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
@@ -171,12 +185,15 @@ def parse_params(args):
     global show_progress
     show_progress = arg_return.show_progress
 
-    if arg_return.all_tools:
+    if arg_return.all_tools or arg_return.all_tools2:
         arg_return.run_raider = True
-        arg_return.run_araider = True
         arg_return.run_repscout = True
         arg_return.run_bigfoot = True
         arg_return.run_piler = True
+
+    if arg_areturn.all_tools:
+        arg_return.run_araider = True
+
 
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
@@ -681,9 +698,10 @@ if __name__ == "__main__":
 
     if args.run_araider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        jobs += [run_araider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+        jobs += [run_araider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                             araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
+
     if args.run_repscout:
         jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
 
