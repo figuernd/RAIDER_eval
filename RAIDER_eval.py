@@ -14,7 +14,8 @@ import perform_stats
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
-time_limit = "4:00:00"
+time_limit = "8:00:00"
+rm_time_limit = "20:00:00"
 
 #################################################################
 
@@ -138,7 +139,7 @@ def parse_params(args):
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
+    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 4)
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -188,11 +189,11 @@ def parse_params(args):
     if arg_return.all_tools or arg_return.all_tools2:
         arg_return.run_raider = True
         arg_return.run_repscout = True
-        arg_return.run_bigfoot = True
         arg_return.run_piler = True
 
     if arg_return.all_tools:
         arg_return.run_araider = True
+        arg_return.run_bigfoot = True
 
 
     #### The following is to set the global debugging variables 
@@ -570,7 +571,7 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir, walltime = time_limit);
+                       output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
