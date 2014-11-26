@@ -772,7 +772,7 @@ if __name__ == "__main__":
                     Stats = [round(x,5) for x in Stats]
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
                 else:
-                    fp.write("\t".join([key, p.seed_num if hasattr(p, "seed_num") else "NA"]))
+                    fp.write("\t".join([key, p.seed_num if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
         # for i in range(len(J)):
         #     if RAIDER_JOBS:
