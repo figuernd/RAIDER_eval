@@ -767,9 +767,12 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
-                Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
-                Stats = [round(x,5) for x in Stats]
-                fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                if os.path.exists(p.rm_output):
+                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                    Stats = [round(x,5) for x in Stats]
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                else:
+                    fp.write("\t".join([key, p.seed_num if hasattr(p, "seed_num") else "NA"]))
 
         # for i in range(len(J)):
         #     if RAIDER_JOBS:
