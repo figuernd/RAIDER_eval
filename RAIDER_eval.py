@@ -559,7 +559,7 @@ def run_repeat_masker(p, num_processors):
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
-    output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
+    output_dir = file_dir(p.lib_file) + "/" + lib_file.upper() + ".RM"
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
