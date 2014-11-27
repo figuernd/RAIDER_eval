@@ -1,0 +1,26 @@
+RepeatMasker version open-3.3.0
+Search Engine: NCBI/RMBLAST
+Master RepeatMasker Database: /software/RepeatMasker/3.3.0/RepeatMasker/Libraries/RepeatMaskerLib.embl ( Complete Database: 20110419 )
+Custom Repeat Library: EVAL/RAIDER/elegans.ChrI.sim.0.s0.raider_consensus.fa
+
+
+
+analyzing file EVAL/SOURCE_DATA/elegans.ChrI.sim.0.fa
+
+Checking for E. coli insertion elements
+
+Checking for E. coli insertion elements
+
+Checking for E. coli insertion elements
+
+Checking for E. coli insertion elements
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 1 of 6
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 4 of 6
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 2 of 6
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 3 of 6
+
+Checking for E. coli insertion elements
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 5 of 6
+
+Checking for E. coli insertion elements
+identifying matches to elegans.ChrI.sim.0.s0.raider_consensus.fa sequences in batch 6 of 6
