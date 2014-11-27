@@ -14,8 +14,10 @@ import perform_stats
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
-time_limit = "8:00:00"
-rm_time_limit = "20:00:00"
+default_time_limit = "10:00:00"
+rm_time_limit = "25:00:00"
+
+time_limit = default_time_limit
 
 #################################################################
 
@@ -95,7 +97,7 @@ def parse_params(args):
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
+    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -767,12 +769,14 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
-                if os.path.exists(p.rm_output):
+                progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
+                try:
                     Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
-                else:
-                    fp.write("\t".join([key, p.seed_num if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+                except Exception as E:
+                    progress_fp.write("performance Exception: " + str(E) + "\n");
+                    fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
         # for i in range(len(J)):
         #     if RAIDER_JOBS:
