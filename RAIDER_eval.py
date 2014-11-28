@@ -10,6 +10,7 @@ import tempfile
 import re
 import perform_stats
 
+
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
