@@ -38,6 +38,7 @@ def get_consensus(family_num, R, genome_string, wp):
     return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num), description = "")
 
 def main(seq,elements,output,fa_output):  
+    open("STARTED.TXT", "w").write("STARTED")
     genomeFile = seq
     genome_string = next(SeqIO.parse(genomeFile, "fasta"))
     
