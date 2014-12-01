@@ -10,11 +10,15 @@ import tempfile
 import re
 import perform_stats
 
+
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
-time_limit = "4:00:00"
+default_time_limit = "10:00:00"
+rm_time_limit = "25:00:00"
+
+time_limit = default_time_limit
 
 #################################################################
 
@@ -93,8 +97,8 @@ def parse_params(args):
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--A2', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
+    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -138,7 +142,7 @@ def parse_params(args):
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
+    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 4)
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -188,11 +192,11 @@ def parse_params(args):
     if arg_return.all_tools or arg_return.all_tools2:
         arg_return.run_raider = True
         arg_return.run_repscout = True
-        arg_return.run_bigfoot = True
         arg_return.run_piler = True
 
-    if arg_areturn.all_tools:
+    if arg_return.all_tools:
         arg_return.run_araider = True
+        arg_return.run_bigfoot = True
 
 
     #### The following is to set the global debugging variables 
@@ -202,7 +206,6 @@ def parse_params(args):
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
         arg_return.run_piler = False
-
 
 
     return arg_return
@@ -557,7 +560,10 @@ def run_repeat_masker(p, num_processors):
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
-    output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
+    output_dir = file_dir(p.lib_file) + "/" + file_base(p.lib_file).upper() + ".RM"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
@@ -571,7 +577,7 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir, walltime = time_limit);
+                       output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
@@ -651,7 +657,7 @@ if __name__ == "__main__":
 
     ### Set up the debugging log file (if needed)
     progress_fp = open(args.results_dir + "/debug.txt", "w")
-
+    progress_fp.write(" ".join(sys.argv) + "\n\n");
  
     data_dir = args.results_dir + "/" + args.data_dir
     if not os.path.exists(data_dir):
@@ -692,7 +698,7 @@ if __name__ == "__main__":
     jobs = []
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        jobs += [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+        jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                             raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
@@ -767,9 +773,14 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
-                Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
-                Stats = [round(x,5) for x in Stats]
-                fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
+                try:
+                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                    Stats = [round(x,5) for x in Stats]
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                except Exception as E:
+                    progress_fp.write("performance Exception: " + str(E) + "\n");
+                    fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
         # for i in range(len(J)):
         #     if RAIDER_JOBS:
