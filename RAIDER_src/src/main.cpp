@@ -328,7 +328,7 @@ int main(int argc, char const ** argv) {
 	parseCommandLine(options, argc, argv);
 	printArgs(options);
 
-// Load sequences into master sequence, mark where each sequence ID begins within the master
+	// Load sequences into master sequence, mark where each sequence ID begins within the master
 	vector<idThreshold> thresholds;
 	seqan::Dna5String sequence;
 	if (getSequence(options.sequence_file, sequence, thresholds, options.verbosity) == false) {

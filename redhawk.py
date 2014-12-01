@@ -485,7 +485,11 @@ class pbsJobHandler:
             if self.suppress_pbs:
                 self.resources = [-1, -1, -1, -1]
             else:
-                fp = self.rfile_handle()
+                try:
+                    fp = self.rfile_handle()
+                except:
+                    self.resources = (-1, -1, -1, -1)
+                    return None
 
                 for line in fp:
                     if line.startswith("Resources Used:"):

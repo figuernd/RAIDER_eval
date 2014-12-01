@@ -559,7 +559,7 @@ def run_repeat_masker(p, num_processors):
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
-    output_dir = file_dir(p.lib_file) + "/" + p.lib_file.upper() + ".RM"
+    output_dir = file_dir(p.lib_file) + "/" + file_base(p.lib_file).upper() + ".RM"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
