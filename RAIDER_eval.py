@@ -29,6 +29,7 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'filter_stage-1':'/usr/local/RepeatScout/filter-stage-1.prl',
                 'filter_stage-2':'/usr/local/RepeatScout/filter-stage-2.prl',
                 'raider':'./raider',
+                'raider_pre':'./raider_pre',
                 'bigfoot':'./bigfoot',
                 'python':'python3.4',
                 'araider':'./araider'}
@@ -37,6 +38,7 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'filter_stage-1':'./filter-stage-1.prl',
                     'filter_stage-2':'./filter-stage-2.prl',
                     'raider':'./raider',
+                    'raider_pre':'./raider_pre',
                     'bigfoot':'./bigfoot',
                     'python':'python3.3',
                     'araider':'./araider'}
@@ -121,6 +123,7 @@ def parse_params(args):
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
+    raider_argument.add_argument('--pre', action = store_true, help = "Use pre-scan version of raider", default = None)
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
@@ -274,7 +277,8 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd1 = "{raider} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider = Locations['raider'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+
+    cmd1 = "{raider} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider = Locations['raider', f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
     out_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.txt"
     lib_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.fa"
@@ -697,6 +701,8 @@ if __name__ == "__main__":
     ############## First: Launch tools
     jobs = []
     if args.run_raider:
+        if args.pre_scan:
+            Location['raider'] = Location['raider_pre']
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
         jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                             raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
