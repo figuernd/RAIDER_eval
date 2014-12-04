@@ -90,9 +90,9 @@ void setLmers(seqan::Dna5String &sequence, const uint seqLength, const seqan::Ch
                     continue;
                 }
                 if (index < sectorMax || counts.count(seed) > 0) {
-                    if(counts.count(seed) == 0){
+                    //if(counts.count(seed) == 0){
                         //counts[seed] = new vector<int>();//make_pair(index, 1);
-                    }
+                    //}
                     counts[seed].push_back(index);
                 }
             }
@@ -101,12 +101,15 @@ void setLmers(seqan::Dna5String &sequence, const uint seqLength, const seqan::Ch
         for (auto kv : counts) {
             // if frequency count is greater than min and not already in lmers
             if (kv.second.size() >= MIN){
+                //LmerVector *v = new LmerVector(kv.first,kv.second);
+                //lmers.push(v);
                 lmers.push(new LmerVector(kv.first, kv.second)); //[kv.first] = new LmerVector();
-                seeds.insert(kv.first);
+            //    seeds.insert(kv.first);
             }
         }
         counts.clear();
     }
+    
 }
 
 bool hasConflict(vector<Family*> &families, const uint L, LmerVector *u){
@@ -118,9 +121,14 @@ bool hasConflict(vector<Family*> &families, const uint L, LmerVector *u){
     return false;
 }
 
-bool extend(Family* fam, LmerVector *u){
-    LmerVector *v = fam->getLast();
+bool extend(Family* fam, LmerVector* u, const uint L){
+    LmerVector* v = fam->getLast();
+    
     uint offset = u->front() - v->front();
+    //cout <<"Offset: "<< offset << endl;
+    if(offset > L){
+        return false;
+    }
     for(uint i = 1; i < v->size(); i++){
         if((*u)[i] - (*v)[i] != offset){
             return false;
@@ -128,6 +136,7 @@ bool extend(Family* fam, LmerVector *u){
     }
     fam->adopt(u);
     fam->extendRepeatLength(offset);
+    cout <<"Extending Lmer Length by "<< offset << endl;
     return true;
 }
 
@@ -136,22 +145,34 @@ bool extend(Family* fam, LmerVector *u){
 void createNewFamily(LmerHeap &lmers, const uint L, vector<Family*> &families){
     LmerVector* v = lmers.top();
     lmers.pop();
-    if(hasConflict(families,L,v)){
-        return;
-    }
+    // if(hasConflict(families,L,v)){
+    //     return;
+    // }
     uint currFreq = v->size();
-    uint currLoc = v->front();
+    //uint currLoc = v->front();
     Family* fam = new Family(L,v);
+    vector<LmerVector*> toReinsert;
     // while next lmer occurs with same frequency and is within L of current lmer
-    while(!lmers.empty() && lmers.top()->size() == currFreq && lmers.top()->front() < currLoc + L){
+    while(!lmers.empty() && lmers.top()->size() == currFreq && lmers.top()->front() < fam->getLast()->front() + L){
+        // cout << lmers.top()->front() << "\t" << fam->getLast()->front() << endl;
         LmerVector* u = lmers.top();
         lmers.pop();
-        if(hasConflict(families,L,u)){
-            break;
+        // if(hasConflict(families,L,u)){
+        //     break;
+        // }
+        // Check to see if u can be used to extend length of current family
+        if(!extend(fam, u, L)){
+            toReinsert.push_back(u);
+            // currLoc = fam->getLast()->front();
         }
-        extend(fam,lmers.top());
-        lmers.pop();
-        currLoc = fam->getLast()->front();
+        //else{
+        //    toReinsert.push_back(u);
+        //}
+        //lmers.pop();
+        //currLoc = fam->getLast()->front();
+    }
+    for(vector<LmerVector*>::iterator it = toReinsert.begin(); it != toReinsert.end(); ++it) {
+        lmers.push(*it);
     }
     families.push_back(fam);
 }
@@ -174,6 +195,16 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
 
     // add any lmer that meets minimum for freq to lmers
     setLmers(sequence, seqLength, mask, MIN, L, lmers);
+    //vector<LmerVector*> toReinsert;
+    //for(int i = 0; i < 10; i++){
+    //    cout << lmers.top()->size() << "\t" << lmers.top()->front() << endl;
+    //    LmerVector* u = lmers.top();
+    //    lmers.pop();
+    //    toReinsert.push_back(u);
+    //}
+    //for(vector<LmerVector*>::iterator it = toReinsert.begin(); it != toReinsert.end(); ++it) {
+    //    lmers.push(*it);
+    //}
 
     cout <<"Finding elementary repeat families..." <<endl;
 
