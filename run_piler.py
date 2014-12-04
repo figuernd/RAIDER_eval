@@ -35,8 +35,8 @@ if __name__ == "__main__":
     cmd3 = "./piler2 -trs2fasta {piler_dir}/{fam_dir}/{trs_file} -seq {seq_file} -path {piler_dir}/{fam_dir}"
     cmd = "; ".join([cmd1, cmd2, cmd3]).format(seq_file=seq_file, gff_file=gff_file, trs_file = trs_file, fam_dir=fam_dir, piler_dir=piler_dir)
 
-    #print("\n".join(cmd.split("; ")))
-    #exit(1)
+    print("\n".join(cmd.split("; ")))
+    exit(1)
     subprocess.call(cmd, shell = True)
 
     cmd = ""

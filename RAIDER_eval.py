@@ -93,7 +93,7 @@ def parse_params(args):
 
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
-    parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
     parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
@@ -123,7 +123,8 @@ def parse_params(args):
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
-    raider_argument.add_argument('--pre', action = 'store_true', help = "Use pre-scan version of raider", default = None)
+    raider_argument.add_argument('--pre', '--pre_scan', action = 'store_true', help = "Use pre-scan version of raider", default = False)
+    raider_argument.add_argument('--mem', action = 'store_true', help = "Use large memory-nodes", default = False);
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
@@ -252,7 +253,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir, walltime = time_limit)
+                      output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
     p.submit()
 
     p.output_file = output_file
@@ -267,7 +268,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 #    on the newly generated chromosome output file"""
 #    p.wait()
 #    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
-def run_raider(seed, seed_num, f, m, input_file, raider_dir):
+def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -296,7 +297,7 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir, walltime = time_limit)
+                      output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1)
 
     p.submit()
     p.tool_resources = [0]*4
@@ -579,7 +580,7 @@ def run_repeat_masker(p, num_processors):
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
     #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = num_processors//4, ppn = 2*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
@@ -647,6 +648,7 @@ if __name__ == "__main__":
         Locations = MacLocations
     elif os.path.exists(RedhawkLocations['RptScout']):
         Locations = RedhawkLocations
+        assert 1 <= args.pa <= 4, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
     else:
         assert False, "Could not determine host."
     ###
@@ -705,7 +707,7 @@ if __name__ == "__main__":
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
         jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                            raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
+                            raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
     if args.run_araider:

@@ -8,16 +8,12 @@
 #include "Family.h"
 #include <unordered_map>
 #include <ctime>
-#include <unistd.h>  // For debugging
-#include <string>    // For debugging
 
 using namespace std;
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
 
 int p = getpid();
-string dst = string("RAIDER_DEBUG.") + to_string(p) + string(".txt");
-static ofstream dfp(dst.c_str());    // DEBUGGING
 
 
 size_t baseToInt(char b) {
@@ -193,21 +189,9 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
 	LmerMap lmers;
 	Family* fam = nullptr;
 
-	dfp << "SeqLength: " << seqLength << endl;
-	clock_t c = clock();
-	time_t t;
-	time_t t2;
-	time(&t);
 	while (getNextSeed(sequence, ++index, seqLength, MAX_L, unmasked)) {
 	  
 		size_t seed = seedToInt(unmasked, mask);
-		if (index % 100000 == 0) {
-		  clock_t d = clock();
-		  time(&t2);
-		  dfp << "getElementaryFamilies: " << index << " " << " " << t2 - t << " " << (d - c)/float(CLOCKS_PER_SEC) << endl;
-		  c = d;
-		  t = t2;
-		}
 		LmerVector* v = getAndInsert(lmers, seed, index);
 
 		if (v->size() == 2) {
@@ -226,7 +210,6 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
 			}
 		}
 	}
-	dfp << "tieLooseEnds: " << (clock() - c)/float(CLOCKS_PER_SEC) << endl;
 	tieLooseEnds(families);
 }
 
