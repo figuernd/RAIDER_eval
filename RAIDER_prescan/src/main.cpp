@@ -344,7 +344,7 @@ int main(int argc, char const ** argv) {
 	vector<seqan::CharString> masks;
 	masks.push_back(options.mask);
 
-	getElementaryFamilies(sequence, masks, options.min, families);
+	getElementaryFamilies(sequence, masks, options.count, families);
 
 	if (options.verbosity > 0) {
 		cout << "Writing results elements..." << endl;

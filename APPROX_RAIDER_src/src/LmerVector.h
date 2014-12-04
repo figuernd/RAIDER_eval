@@ -27,9 +27,12 @@ public:
 	LmerVector(uint mask, vector<uint> positions) {
 		family = nullptr;
 		seed = mask;
+        //cout << "New Lmer Vector\t";
 		for(vector<uint>::iterator it = positions.begin(); it != positions.end(); ++it) {
 			push_back(*it);
+            //cout << (*it) << "\t";
 		}
+        //cout << endl << endl;
 	}
 
 	void push_back(uint val) {
@@ -48,11 +51,11 @@ public:
 		return lmers.back();
 	}
 
-	uint front() {
+	uint front() const {
 		return lmers.front();
 	}
 
-	uint size() {
+	uint size() const {
 		return lmers.size();
 	}
 
