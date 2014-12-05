@@ -146,7 +146,7 @@ class pbsJobHandler:
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
         if self.mem:
-            s += ":128"
+            s += ":m128"
         if self.arch_type:
             s += ":" + ":".join(arch_type)
         s += "\n"

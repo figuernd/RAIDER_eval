@@ -146,7 +146,7 @@ def parse_params(args):
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 4)
+    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 2)
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -298,7 +298,6 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
                       output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1)
-
     p.submit()
     p.tool_resources = [0]*4
 
@@ -579,8 +578,8 @@ def run_repeat_masker(p, num_processors):
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
-    #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = num_processors//4, ppn = 2*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    #print("Sim batch: " + batch_name + "\n"
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = 4*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
@@ -648,7 +647,7 @@ if __name__ == "__main__":
         Locations = MacLocations
     elif os.path.exists(RedhawkLocations['RptScout']):
         Locations = RedhawkLocations
-        assert 1 <= args.pa <= 4, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
+        assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
     else:
         assert False, "Could not determine host."
     ###
