@@ -86,7 +86,7 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.
@@ -110,6 +110,7 @@ class pbsJobHandler:
                            possible (specifically: if qstat can be run on the machine)
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
+           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem, 
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
@@ -140,9 +141,15 @@ class pbsJobHandler:
         self.walltime = walltime
         self.modules = RHmodules if not self.suppress_pbs else None
         self.output_location = output_location if output_location else "."
+        self.arch_type = arch_type if arch_type else []
 
         s="#PBS -N " + self.jobname + "\n"
-        s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)+(":m128" if self.mem else "") + "\n"
+        s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
+        if self.mem:
+            s += ":m128"
+        if self.arch_type:
+            s += ":" + ":".join(arch_type)
+        s += "\n"
         f.write(s)
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)
@@ -626,7 +633,7 @@ if __name__ == "__main__":
     settings.add_argument('-c', '--create', action = "store_true", dest = "create", help = "Create the batch file and quit.", default = False)
     settings.add_argument('-n', '--nodes', action = "store", type = int, dest = "nodes", help = "Number of nodes", default = 1)
     settings.add_argument('-p', '--ppn', action = "store", type = int, dest = "ppn", help = "Number of processors per node", default = 1)
-    settings.add_argument('--big_mem', action = "store_true", dest = "mem", help = "Use 128Gb machine", default = False)
+    settings.add_argument('--big_mem', '--mem', action = "store_true", dest = "mem", help = "Use 128Gb machine", default = False)
     settings.add_argument('-w', '--walltime', action = "store", type = str, dest = "walltime", help = "Reserved walltime", default = "10:00:00")
     settings.add_argument('-m', '--modules', action = "store", type = str, nargs = "+", dest = "RHmodules", help = "required redhawk modules", default = None)
     settings.add_argument('-O', '--output_location', action = "store", type = str, dest = "output_location", help = "Output location", default = None)

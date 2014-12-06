@@ -231,8 +231,8 @@ void writeFamilies(vector<Family*> &families, AppOptions &options) {
 	ofile << "#  fam\tnum_copies\tcopy_length" << endl;
 	for (uint i = 0; i < families.size(); i++) {
 		Family* fam = families[i];
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
-			ofile << i << "\t" << fam->size() << "\t" << fam->repeatLength(options.min) << endl;
+		if (fam->getRepeatLength() >= options.min && fam->size() >= options.count) {
+			ofile << i << "\t" << fam->size() << "\t" << fam->getRepeatLength() << endl;
 		}
 	}
 }
@@ -255,7 +255,7 @@ void writeRepeats(vector<Family*> &families, vector<idThreshold> &thresholds, Ap
 	for (uint i = 0; i < families.size(); i++) {
 		Family* fam = families[i];
 
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+		if (fam->getRepeatLength() >= options.min && fam->size() >= options.count) {
 			int famId = i;
 			int repId = repCount;
 			repCount += fam->size();
@@ -265,7 +265,7 @@ void writeRepeats(vector<Family*> &families, vector<idThreshold> &thresholds, Ap
 				repId++;
 				uint index = (*prefix)[i];
 				uint trueIndex = getSeqIndex(index, thresholds);
-				uint length = fam->repeatLength(options.min);
+				uint length = fam->getRepeatLength();
 				ofile << famId << "\t" << repId << "\t" << "1" << "\t" << getSeqId(index, thresholds) << "\t"
 						<< trueIndex << "\t" << trueIndex + length << endl;
 			}
@@ -294,17 +294,22 @@ void writeSummary(vector<Family*> &families, AppOptions &options) {
 
 	for (uint i = 0; i < families.size(); i++) {
 		Family* fam = families[i];
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+		if (fam->getRepeatLength() >= options.min && fam->size() >= options.count) {
 			famCount++;
 			repCount += fam->size();
 
-			if (fam->size() > maxSize) {
-				maxSecondSize = maxSize;
-				maxSize = fam->size();
+			if (fam->size() > maxSecondSize) {
+                if(fam->size() > maxSize){
+				    maxSecondSize = maxSize;
+				    maxSize = fam->size();
+                }
+                else{
+                    maxSecondSize = fam->size();
+                }
 			}
 
-			if (fam->repeatLength(options.min) > maxLen) {
-				maxLen = fam->repeatLength(options.min);
+			if (fam->getRepeatLength() > maxLen) {
+				maxLen = fam->getRepeatLength();
 			}
 		}
 	}
@@ -349,7 +354,7 @@ int main(int argc, char const ** argv) {
 	vector<seqan::CharString> masks;
 	masks.push_back(options.mask);
 
-	getElementaryFamilies(sequence, masks, options.min, families);
+	getElementaryFamilies(sequence, masks, options.count, families);
 
 	if (options.verbosity > 0) {
 		cout << "Writing results elements..." << endl;

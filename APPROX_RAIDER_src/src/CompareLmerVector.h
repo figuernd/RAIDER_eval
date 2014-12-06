@@ -10,10 +10,10 @@ typedef unsigned int uint;
 
 class CompareLmerVector{
     public:
-    bool operator()(LmerVector* l1, LmerVector* l2)
+    bool operator()(const LmerVector* l1, const LmerVector* l2) const
     {
-       if (l1->size() > l2->size()) return true;
-       if (l1->size() == l2-> size() && l1->front() < l2->front()) return true;
+       if (l1->size() < l2->size()) return true;
+       if (l1->size() == l2-> size() && l1->front() > l2->front()) return true;
        return false;
     }
 };
