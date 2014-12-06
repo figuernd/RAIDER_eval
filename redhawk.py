@@ -110,7 +110,7 @@ class pbsJobHandler:
                            possible (specifically: if qstat can be run on the machine)
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
-           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem, 
+           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem), 
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)

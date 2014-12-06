@@ -297,7 +297,8 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1)
+                      output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1, 
+                      arch_type = ['bigmem'])
     p.submit()
     p.tool_resources = [0]*4
 
@@ -500,7 +501,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir, walltime = time_limit)
+                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
 
     p.submit()
     p.description = "rep_scout"
