@@ -97,7 +97,7 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
             if sim_type == 1:
                 rpt_seq = re.sub("-", "", ancestor_seq)
             elif sim_type == 2:
-                rpt_seq = "".join([m for a,m in zip(ancestor_seq,modern_seq) if '-' not in (a,m)])
+                rpt_seq = "".join([m if m != '-' else a for a,m in zip(ancestor_seq,modern_seq) if a != '-'])
             else:  # sim_type == 3
                 rpt_seq = "".join([a if a != '-' else m for a,m in zip(ancestor_seq,modern_seq) if m != '-'])
 
