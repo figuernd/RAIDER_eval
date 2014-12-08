@@ -217,7 +217,7 @@ def parse_params(args):
 
 ############################################################
 # Main functions 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity, sim_type):
+def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity, sim_type):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -232,15 +232,19 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     retain_n = "--rn" if retain_n else ""
     num_repeats = ("--nr %d" % (num_repeats)) if num_repeats else ""
     low_complexity = "--lc" if low_complexity else ""
-    sim_type = "--st %d" % (sim_type)
-    seq_arg = chromosome
-    repeat_arg = repeat
+    seq_arg = chromosome_file
+    repeat_arg = chromosome_file + ".out"
 
-    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), file_base(chromosome)))
+    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), file_base(chromosome_file)))
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "{python} chromosome_simulator.py {sim_type} {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {output}".format(python = Locations['python'], sim_type = sim_type, mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, repeat=repeat_arg, output=output_path)
+
+    if sim_type == 0 and os.path.isfile(repeat_arg):
+        cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
+    else:
+        sim_type = "--st %d" % (sim_type)
+        cmd = "{python} chromosome_simulator2.py {sim_type} {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {output}".format(python = Locations['python'], sim_type = sim_type, mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq=seq_arg, output=output_path)
 
 
     if show_progress:
@@ -677,7 +681,7 @@ if __name__ == "__main__":
     if args.subparser_name == "chrom_sim":
         # Launch the jobs
 
-        f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.chromosome + ".out",
+        f = lambda i: simulate_chromosome(chromosome_file = args.chromosome, 
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
