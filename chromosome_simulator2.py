@@ -101,6 +101,8 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
             else:  # sim_type == 3
                 rpt_seq = "".join([a if a != '-' else m for a,m in zip(ancestor_seq,modern_seq) if m != '-'])
 
+            rpt_seq = "".join([a if a.upper() in {'A', 'C', 'T', 'G'} else 'N' for a in rpt_seq])
+
             s.append(rpt_seq.lower() if mask else rpt_seq.upper())
             new_finish = start + len(rpt_seq)
             
