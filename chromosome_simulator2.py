@@ -11,6 +11,9 @@ from RMfileReader import *
 
 import markov_gen
 
+# We are going to replace each ambiguity code with an arbitrary base.
+ambiguity2base = {'A':'A', 'C':'C', 'G':'G', 'T':'T', 'K':'G', 'M':'A', 'R':'A', 'Y':'C', 'S':'C', 'W':'A', 'B':'T', 'V':'G', 'H':'A', 'D':'G', 'X':'C', 'N':'T'}
+
 
 def parse_params(args):
     parser = argparse.ArgumentParser(description = "Generate simulated chromosome, replacing repeats with ancestral sequences")
