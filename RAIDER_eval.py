@@ -114,6 +114,7 @@ def parse_params(args):
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
+    parser_tools.add_argument('--hj', '--hooke_jeeves', dest = 'hooke_jeeves', action = 'store_true', help = 'Simply print the tp+tn statistics counts', default = False)
 
     
     # RAIDER ARGUMENTS
@@ -792,6 +793,8 @@ if __name__ == "__main__":
                 try:
                     Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
+                    if hooke_jeeves:
+                        print(Counts.tp + Counts.tn)
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");
