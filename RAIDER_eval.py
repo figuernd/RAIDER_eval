@@ -261,7 +261,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
                       output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
-    p.submit()
+    p.submit(preserve=True)
 
     p.output_file = output_file
     p.seq_file = file_base(output_file)
@@ -305,8 +305,9 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
                       output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1, 
-                      arch_type = ['bigmem'])
-    p.submit()
+                      arch_type = ['n09'])
+    p.submit(preserve=True)
+
     p.tool_resources = [0]*4
 
     p.description = "raider"
@@ -341,7 +342,8 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
                       stdout_file = input_base + ".comFinder.stdout", stderr_file = input_base + ".comFinder.stderr",
                       output_location = output_dir, walltime = time_limit)
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.description = "composites.finder"
     p.elementsFile = elements_file
     p.seqFile = seq_file
@@ -378,7 +380,8 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
                       stdout_file = input_base + ".araider.stdout", stderr_file = input_base + ".araider.stderr",
                       output_location = output_dir)
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.tool_resources = [0]*4
 
     p.description = "araider"
@@ -421,7 +424,8 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
                       output_location = output_dir, walltime = time_limit)    
 
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.description = "bigfoot"
     p.tool_resources = [0]*4
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
@@ -453,7 +457,8 @@ def run_piler(input_file, piler_dir):
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = piler_dir, walltime = time_limit)
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.description = "piler"
     p.tool_resources = [0]*4
     p.seq_file = input_file
@@ -469,7 +474,7 @@ def run_piler(input_file, piler_dir):
 #     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
 #     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
 #     if show_progress:
-#     p2.submit()
+#     p2.submit(preserve=True)
 #     p2.seq_file = p.seq_file
 #     p2.output = output
 #     return p2
@@ -510,7 +515,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
 
-    p.submit()
+    p.submit(preserve=True)
     p.description = "rep_scout"
     p.tool_resources = [0,0,0,0]
 
@@ -525,7 +530,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     # cmd = "./RunRepeatScout.sh {sequence} {length} {output} {min}".format(sequence=input_file, length=m, output=output_path, min=f)
     # print(cmd)
     # p = pbsJobHandler(batch_file = "%s.batch" % output_file, executable = cmd)
-    # p.submit()
+    # p.submit(preserve=True)
     # p.seq_file = input_file
     # p.scout_output = output_path
     # p.curr_dir = curr_dir
@@ -552,9 +557,9 @@ def scout_second_filter(p, min_freq):
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
 
-    p2.submit()
+    p2.submit(preserve=True)
     p2.description = "rep_scout"
-    p2.time_resources = p.time_resources + p.getResources()
+    p2.time_resources = p.time_resources + p.getResources(cleanup=False)
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
@@ -589,7 +594,6 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n"
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = 4*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
@@ -743,6 +747,10 @@ if __name__ == "__main__":
     ############## Second: Launch repeatmasker jobs
     job_set = {j for j in jobs}
     RM_jobs = set()
+<<<<<<< variant A
+
+>>>>>>> variant B
+======= end
     while job_set:
         finished_jobs = set()
         for j in job_set:
@@ -793,9 +801,13 @@ if __name__ == "__main__":
                 try:
                     Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
+<<<<<<< variant A
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
+>>>>>>> variant B
                     if hooke_jeeves:
                         print(Counts.tp + Counts.tn)
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+======= end
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
