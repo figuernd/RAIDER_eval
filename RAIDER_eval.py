@@ -594,6 +594,7 @@ def run_repeat_masker(p, num_processors):
     #print("Sim batch: " + batch_name + "\n"
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = 4*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
+                       output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
