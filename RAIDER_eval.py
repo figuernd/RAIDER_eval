@@ -747,10 +747,6 @@ if __name__ == "__main__":
     ############## Second: Launch repeatmasker jobs
     job_set = {j for j in jobs}
     RM_jobs = set()
-<<<<<<< variant A
-
->>>>>>> variant B
-======= end
     while job_set:
         finished_jobs = set()
         for j in job_set:
@@ -801,39 +797,16 @@ if __name__ == "__main__":
                 try:
                     Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                     Stats = [round(x,5) for x in Stats]
-<<<<<<< variant A
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
->>>>>>> variant B
-                    if hooke_jeeves:
+                       
+                    if args.hooke_jeeves:
                         print(Counts.tp + Counts.tn)
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
-======= end
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
+
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
-        # for i in range(len(J)):
-        #     if RAIDER_JOBS:
-        #         for j in range(len(RAIDER_JOBS[i])):
-        #             p = RAIDER_JOBS[i][j]
-        #             Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #             Stats = [round(x,5) for x in Stats]
-        #             fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
-        #     if SCOUT_JOBS:
-        #         p = SCOUT_JOBS[i]
-        #         CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsSJ = [round(x,5) for x in StatsSJ]
-        #         fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + list(p.tool_resources) + list(p.getResources()))))
-        #     if BIGFOOT_JOBS:
-        #         p = BIGFOOT_JOBS[i]
-        #         CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsBF = [round(x,5) for x in StatsBF]
-        #         fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
-        #     if PILER_JOBS:
-        #         p = PILER_JOBS[i]
-        #         CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsP = [round(x,5) for x in StatsP]
-        #         fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
                             
 
             
