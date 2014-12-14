@@ -801,7 +801,6 @@ if __name__ == "__main__":
                        
                     if args.hooke_jeeves:
                         print(Counts.tp + Counts.tn)
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
 
                 except Exception as E:
