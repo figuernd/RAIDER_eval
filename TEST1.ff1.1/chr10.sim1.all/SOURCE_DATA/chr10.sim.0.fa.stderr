@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "chromosome_simulator2.py", line 201, in <module>
+    sim_type = args.sim_type)
+  File "chromosome_simulator2.py", line 188, in create_chromosome_file
+    simulated_sequence, fa_out = generate_chromosome(seq = template_seq, markov_list = markov_list, coord_adjust = coord_adjust, rpt_gen = rpt_gen, mask = mask, max_interval = max_interval, num_repeats = num_repeats, max_length = max_length, sim_type = sim_type)
+  File "chromosome_simulator2.py", line 86, in generate_chromosome
+    for chr, start, finish, strand, family, rpt_class, rpt_id, ancestor_seq, modern_seq in rpt_gen:
+  File "chromosome_simulator2.py", line 48, in nextRepeat
+    for r in G:
+  File "/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RMfileReader.py", line 764, in prm_generator
+    fp = open(fileName, 'rb')
+FileNotFoundError: [Errno 2] No such file or directory: 'data/chr10.3.prm'
+Redhawk Epilogue Args:
+Job ID: 3561314.mualhpcp01.local
+User ID: karroje
+Group ID: karroje
+Job Name: simulation.0
+Session ID: 27358
+Resource List: epilogue=/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/redhawk_epilogue.py,neednodes=1:ppn=1,nodes=1:ppn=1,walltime=10:00:00
+Resources Used: cput=00:00:04,mem=207020kb,vmem=604852kb,walltime=00:00:06
+Queue Name: serial
+Account String: 
+

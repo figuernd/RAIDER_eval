@@ -1,0 +1,8 @@
+#!/bin/bash -l
+#PBS -N simulation.0
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=10:00:00
+#PBS -o TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa.stdout
+#PBS -e TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa.stderr
+cd $PBS_O_WORKDIR
+python3.3 chromosome_simulator2.py --st 1 --mi 1000   -k 5   -f ff1.txt   --lc data/chr10.fa TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa

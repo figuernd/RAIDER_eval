@@ -1,0 +1,8 @@
+#!/bin/bash -l
+#PBS -N raider.29
+#PBS -l nodes=1:ppn=8:m128:n09
+#PBS -l walltime=10:00:00
+#PBS -o TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.s29/chr10.sim.0.raider.stdout
+#PBS -e TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.s29/chr10.sim.0.raider.stderr
+cd $PBS_O_WORKDIR
+./raider -q -c 2  111111111111111111111111111111111111111111111111111111111111 TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.s29; python3.3 consensus_seq.py -s TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa -e TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.s29/elements TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s29.raider_consensus.txt TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s29.raider_consensus.fa

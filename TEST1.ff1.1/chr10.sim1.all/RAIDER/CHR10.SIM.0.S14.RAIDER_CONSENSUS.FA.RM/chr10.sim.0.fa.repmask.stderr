@@ -1,0 +1,12 @@
+RepeatMasker::setspecies: Could not find user specified library TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s14.raider_consensus.fa.
+Redhawk Epilogue Args:
+Job ID: 3561391.mualhpcp01.local
+User ID: karroje
+Group ID: karroje
+Job Name: repmask.14
+Session ID: 11811
+Resource List: epilogue=/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/redhawk_epilogue.py,neednodes=1:ppn=4,nodes=1:ppn=4,walltime=25:00:00
+Resources Used: cput=00:00:01,mem=312232kb,vmem=665640kb,walltime=00:00:02
+Queue Name: serial
+Account String: 
+
