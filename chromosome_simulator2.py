@@ -54,9 +54,8 @@ def nextRepeat(seq_file, use_negative = True, S = {}, E = {}):
         rep_class = r.matchRepeat
         rep_id = r.ID
 
-        if (strand == '+' or use_negative) and (rep_fam in S or not S) and not (rep_class in E):
+        if (strand == '+' or use_negative) and (rep_class in S or not S) and not (rep_fam in E):
             yield chr, start, finish, strand, rep_fam, rep_class, int(rep_id), r.ancestor_seq(), r.modern_seq()
-
 
 # fa_out_header: The fixed header lines for the .fa.out file
 fa_out_header = "\tSW\tperc\tperc\tperc\tquery\tposition in query\tmatching\trepeat\tposition in  repeat\n\tscore\tdiv.\tdel.\tins.\tsequence\tbegin\tend\t(left)\trepeat\tclass/family\tbegin\tend (left)\tID\n"
