@@ -800,7 +800,7 @@ if __name__ == "__main__":
                     Stats = [round(x,5) for x in Stats]
                        
                     if args.hooke_jeeves:
-                        print(Counts.tp + Counts.tn)
+                        print(Counts[0]+Counts[1])
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
 
                 except Exception as E:
