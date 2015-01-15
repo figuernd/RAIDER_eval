@@ -32,7 +32,8 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'raider_pre':'./raider_pre',
                 'bigfoot':'./bigfoot',
                 'python':'python3.4',
-                'araider':'./araider'}
+                'araider':'./araider',
+                'raider2': './raiderv2'}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -41,7 +42,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'raider_pre':'./raider_pre',
                     'bigfoot':'./bigfoot',
                     'python':'python3.3',
-                    'araider':'./araider'}
+                    'araider':'./araider',
+                    'raider2':'./raiderv2'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 #########
@@ -94,6 +96,7 @@ def parse_params(args):
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
+    parser_tools.add_argument('--R2', '--raider2_on', dest = 'run_raider2', action = 'store_true', help = 'Turn RAIDERV2 on', default = False)
     parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
     parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
@@ -110,6 +113,7 @@ def parse_params(args):
     parser_io.add_argument('--nuke', dest ='nuke', action = "store_true", help = "Nuke the results directory", default = False)
     parser_io.add_argument('--rd', '--raider_dir', dest = "raider_dir", help = "Subdirectory containing raider results", default = "RAIDER")
     parser_io.add_argument('--ard', '--araider_dir', dest = "araider_dir", help = "Subdirectory containing araider results", default = "ARAIDER")
+    parser_io.add_argument('--r2d', '--raider2_dir', dest = "raider2_dir", help = "Subdirectory containing araider results", default = "RAIDERV2")
     parser_io.add_argument('--rsd', '--rptscout_dir', dest = 'rptscout_dir', help = "Subdirectory containing rpt scout results", default = "RPT_SCT")
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
@@ -201,6 +205,7 @@ def parse_params(args):
 
     if arg_return.all_tools:
         arg_return.run_araider = True
+        arg_return.run_raider2 = True
         arg_return.run_bigfoot = True
 
 
@@ -208,6 +213,7 @@ def parse_params(args):
     if arg_return.simulate_only:    # Set to supress all tools
         arg_return.run_raider = False
         arg_return.run_araider = False
+        arg_return.run_raider2 = False
         arg_return.run_repscout = False
         arg_return.run_bigfoot = False
         arg_return.run_piler = False
@@ -350,6 +356,48 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir):
+    """Given raider parameters and an input file, run RAIDER and put the output into
+    the directory specified in output_dir (creating a random name is none is
+    specified."""
+
+    input_base = file_base(input_file).rstrip(".fa")
+    output_dir = raider2_dir + "/" + input_base.upper() + ".s" + str(seed_num)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    min_arg = "-m %d" % (m) if m else ""
+    cmd1 = "{raider2} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+
+    out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
+    lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
+
+    cmd2 = "{python} consensus_seq.py -s {seq_file} -e {elements_dir}/elements {output_file} {fa_file}".format(python = Locations['python'], seq_file = input_file, elements_dir = output_dir, output_file = out_file, fa_file = lib_file)
+
+    if show_progress:
+        sys.stderr.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.flush()
+
+    batch_name = raider2_dir + "/" + input_base + ".raider2.batch"
+    job_name = "raider2.%d" % get_job_index("raider2")
+    #progress_fp.write("Sim batch: " + batch_name + "\n")
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
+                      stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
+                      output_location = output_dir)
+
+    p.submit(preserve=True)
+
+    p.tool_resources = [0]*4
+
+    p.description = "raider2"
+    p.tools_resources = [0]*4
+    p.seed = seed
+    p.seed_num = seed_num
+    p.seq_file = input_file
+    p.lib_file = lib_file
+
+    return p
 def run_araider(seed, seed_num, f, m, input_file, araider_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
@@ -647,7 +695,7 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
 
 
 
-test_tools = ["raider", "bigfoot", "piler", "rep_scout", "araider"]  # List of implemented tools 
+test_tools = ["raider", "bigfoot", "piler", "rep_scout", "araider", "raider2"]  # List of implemented tools 
 ############################################################################################
 if __name__ == "__main__":
     args = parse_params(sys.argv[1:])
@@ -729,6 +777,11 @@ if __name__ == "__main__":
                             araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
+    if args.run_raider2:
+        seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
+        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+                            raider2_dir = args.results_dir + "/" + args.raider2_dir) for i,seed in enumerate(seed_list)
+                 for file in file_list]
     if args.run_repscout:
         jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
 
@@ -765,7 +818,7 @@ if __name__ == "__main__":
         job_dic[j.tool_description].append(j)
     job_dic['raider'].sort(key = lambda x: x.seed_num)
     job_dic['araider'].sort(key = lambda x: x.seed_num)
-        
+    job_dic['raider2'].sort(key = lambda x: x.seed_num)
 
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
@@ -786,6 +839,9 @@ if __name__ == "__main__":
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
 
+    if job_dic['raider2']:
+        with open(args.results_dir + "/seed_file.txt", "w") as fp:
+            fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
     ######
     # Calculate statistics (not bothering with parallelization yet)
     print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
