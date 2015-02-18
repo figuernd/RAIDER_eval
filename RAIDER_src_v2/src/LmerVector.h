@@ -19,6 +19,9 @@ public:
 		family = nullptr;
 		push_back(position);
 	}
+    
+    ~LmerVector() {
+    }
 
 	void push_back(uint val) {
         if(lmers.size() > 0){
@@ -47,6 +50,13 @@ public:
 		return lmers.front();
 	}
 
+    uint getPosition() const {
+        return position;
+    }
+    
+    void setPosition(uint i) {
+        position = i;
+    }
 
 	uint size() const {
 		return lmers.size();
@@ -61,13 +71,14 @@ public:
 	}
 
     friend ostream &operator<<( ostream &output, const LmerVector &L) { 
-        output << "(\tFront:\t" << L.front() << "\tBack:\t" << L.back() << "\tSize:\t" << L.size() <<"\t)";
+        output << "(\tFront:\t" << L.front() << "\tBack:\t" << L.back() << "\tSize:\t" << L.size() << "\tPosition In Family\t" << L.getPosition() << "\tFamily:\t" << L.getFamily() << "\t)";
         return output;            
     }
 
 	vector<uint> lmers;
 	Family* family;
     uint previous;
+    uint position;
 };
 
 #endif //LMER_VECTOR

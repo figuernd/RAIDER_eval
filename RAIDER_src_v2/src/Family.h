@@ -19,20 +19,24 @@ public:
 
     void adopt(LmerVector *v, uint L){
         v->setFamily(this);
+        v->setPosition(vectors.size());
         //cout << L << endl;
         if (vectors.size() > 0){
             uint off = v->front() - vectors.back()->front();
-            addToOffset(off - 1);
+            addToOffset(off);
             setRepeatLength(getRepeatLength() + off);
         }
         else{
-            setRepeatLength(L);
             setOffset(0);
+            setRepeatLength(L);
+            v->setPosition(0);
         }
         vectors.push_back(v);
         setLast(v);
         setExpectedEnd(v->back() + L);
+    
     }
+
 
 	uint size() const {
 		if (vectors.size() == 0) {
@@ -135,5 +139,7 @@ public:
     uint offset;
     vector<LmerVector*> vectors;
 };
+
+
 
 #endif //SCANER_FAMILY

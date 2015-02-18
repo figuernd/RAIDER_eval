@@ -42,12 +42,14 @@ struct AppOptions {
 	// Minimum number of repeats to be significant
 	uint count;
 
+    bool overlap;
+
 	seqan::CharString mask;
 	seqan::CharString sequence_file;
 	seqan::CharString output_directory;
 
 	AppOptions() :
-			verbosity(1) {
+            verbosity(1) {
 	}
 };
 
@@ -63,8 +65,8 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 	seqan::ArgumentParser parser("RAIDER");
 	// Set short description, version, and date.
 	setShortDescription(parser, "RAIDER - Rapid Ab Initio Detection of Elementary Repeats");
-	setVersion(parser, "1.0");
-	setDate(parser, "April 2013");
+	setVersion(parser, "2.0");
+	setDate(parser, "January 2015");
 
 	// Define usage line and long description.
 	addUsageLine(parser, "[\\fIOPTIONS\\fP] \"\\fIMASK_FILE\\fP\" \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
@@ -85,6 +87,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 			parser,
 			seqan::ArgParseOption("c", "count", "Minimum number of repeats in a family. Defaults to 2.",
 					seqan::ArgParseOption::INTEGER));
+	addOption(parser, seqan::ArgParseOption("o", "overlap", "Allow for there to be masked Lmers which occur in multiple families."));
 	addOption(parser, seqan::ArgParseOption("q", "quiet", "Set verbosity to a minimum."));
 	addOption(parser, seqan::ArgParseOption("v", "verbose", "Enable verbose output."));
 	addOption(parser, seqan::ArgParseOption("a", "verbose+", "Enable extremely verbose output."));
@@ -122,6 +125,11 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 		seqan::getOptionValue(options.count, parser, "count");
 	else
 		options.count = 2;
+
+    if (isSet(parser, "overlap"))
+        options.overlap = true;
+    else
+        options.overlap = false;
 
 	// Ensure a trailing /
 	if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {
@@ -212,6 +220,7 @@ void printArgs(AppOptions &options) {
 	if (options.verbosity > 0) {
 		cout << "__ARGUMENTS____________________________________________________________________" << endl
 				<< "VERBOSITY\t" << options.verbosity << endl
+                << "OVERLAP\t" << options.overlap << endl
 				<< "MIN_LENGTH\t" << options.min << endl
 				<< "MIN_COUNT\t" << options.count << endl
 				<< "SPACED_SEED     \t" << options.mask <<endl
@@ -347,7 +356,7 @@ int main(int argc, char const ** argv) {
 	vector<seqan::CharString> masks;
 	masks.push_back(options.mask);
 
-	getElementaryFamilies(sequence, masks, families, options.verbosity);
+	getElementaryFamilies(sequence, masks, families, options.verbosity, options.overlap);
 
 	if (options.verbosity > 0) {
 		cout << "Writing results elements..." << endl;
