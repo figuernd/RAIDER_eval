@@ -450,7 +450,7 @@ void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity) {
     }
 }
 
-void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, uint verbosity) {
+void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, uint verbosity, bool overlap) {
 	const uint seqLength = seqan::length(sequence);
 	const seqan::CharString mask = masks.front();
 	const uint L = seqan::length(mask);
