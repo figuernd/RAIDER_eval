@@ -88,7 +88,7 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, preemptee=False):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.
@@ -114,17 +114,6 @@ class pbsJobHandler:
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
            * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem), 
         """
-        if not pbsJobHandler.logger:
-            pbsJobHandler.logger = logging.getLogger('reval.redhawk')
-            pbsJobHandler.logger.setLevel(logging.DEBUG)
-            fh = logging.FileHandler('redhawk.log', mode='w')
-            f = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
-            fh.setLevel(logging.DEBUG)
-            fh.setFormatter(f)
-            pbsJobHandler.logger.addHandler(fh)
-        self.logger = pbsJobHandler.logger
-        self.preserve = False 
-        self.is_timing = False
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
         
@@ -132,7 +121,6 @@ class pbsJobHandler:
         if use_pid:
             self.batch_file_name = self.batch_file_name + "." + str(os.getpid())
         
-        self.logger.debug("Initializing new job with batch file name : " + self.batch_file_name)
         
         self.cmd = executable
         self.jobname = job_name if job_name else batch_file
@@ -159,6 +147,21 @@ class pbsJobHandler:
         self.output_location = output_location if output_location else "."
         self.arch_type = arch_type if arch_type else []
 
+        if not pbsJobHandler.logger:
+            pbsJobHandler.logger = logging.getLogger('reval.redhawk')
+            pbsJobHandler.logger.setLevel(logging.DEBUG)
+            lfp = self.output_location + 'redhawk.log'# + self.batch_file_name
+            lfh = logging.FileHandler(lfp, mode='w')
+            lfm = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+            lfh.setLevel(logging.DEBUG)
+            lfh.setFormatter(lfm)
+            pbsJobHandler.logger.addHandler(lfh)
+        self.logger = pbsJobHandler.logger
+        self.preserve = False
+        self.always_outputs = always_outputs
+        self.is_timing = False
+        self.logger.debug("Initializing new job with batch file name : " + self.batch_file_name)
+        
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
         if self.mem:
@@ -200,10 +203,6 @@ class pbsJobHandler:
 
         if mail:
             s="#PBS -m "+mail+"\n"
-            f.write(s)
-
-        if preemptee:
-            s="#PBS -l qos=preemptee\n#PBS -r y\n";
             f.write(s)
 
         if chdir:
@@ -256,7 +255,8 @@ class pbsJobHandler:
             
     def delete_job_from_queue(self, jobid):
         self.logger.info("Deleting job with ID {j} from queue".format(j=jobid))
-        retry=600
+        retry=60
+        always_retry=600
         sleepTimeBetweenRetry=10
         trial=1;
         cmd = "qdel " + jobid #optionalFlag + " " + self.batch_file_name
@@ -268,10 +268,22 @@ class pbsJobHandler:
             trial = trial + 1
         if trial == retry:
             return -1
+
+        #if self.always_outputs:
+        trial = 1
         while not(self.efile_exists() and self.ofile_exists()):
-            #self.logger.debug("Job {j}:\tOfile exists?\t{exo}.\tEfile exists?\t{exe}.".format(j=self.jobid, exo=self.ofile_exists(), exe=self.efile_exists()))
+            if (not self.always_outputs and trial >= retry) or trial >= always_retry:
+                break
+            trial = trial + 1
+            time.sleep(sleepTimeBetweenRetry)
             pass
+        #else:
+        #    if(self.efile_exists() or self.ofile_exists()):
+        #        time.sleep(5)
+        #        self.erase_files()
         self.erase_files()
+        #self.ofile = None
+        #self.efile = None
         return self
         
 
@@ -378,7 +390,7 @@ class pbsJobHandler:
 ### Prereq is jobid must be a submitted job
     def isJobRunning(self, numTrials = 3, delay = 5, increase_amount=1.5):
         """Query of the object represented by the job is still running."""
-        self.logger.info("Job {j}:\tChecking isJobRunning".format(j=self.jobid))
+        #self.logger.info("Job {j}:\tChecking isJobRunning".format(j=self.jobid))
         if self.status == "finished":
             self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
             return False
@@ -412,7 +424,7 @@ class pbsJobHandler:
             magicString = 'Unknown Job ID'
             (output, error) = [x.decode() for x in subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()]
             if redhawkInQueueRe.search(output):
-                self.logger.debug("Job {j}:\tStill running.".format(j=self.jobid))
+                #self.logger.debug("Job {j}:\tStill running.".format(j=self.jobid))
                 return True
 
             #time.sleep(delay)
@@ -459,7 +471,7 @@ class pbsJobHandler:
             return False
         t_elapsed = time.time() - self.start_time
         time_left = self.parse_redhawk_time() - self.safety_margin - (t_elapsed)# - self.parse_redhawk_time() - self.safety_margin
-        self.logger.debug("Job {j}:\tRedhawk:\t{redt}\t\tElapsed:\t{elapsedt}\t\tTime Left:\t{leftt}".format(j = self.jobid, redt=self.parse_redhawk_time(), elapsedt=t_elapsed, leftt=time_left))
+        #self.logger.debug("Job {j}:\tRedhawk:\t{redt}\t\tElapsed:\t{elapsedt}\t\tTime Left:\t{leftt}".format(j = self.jobid, redt=self.parse_redhawk_time(), elapsedt=t_elapsed, leftt=time_left))
         return time_left < 0
 
     def parse_redhawk_time(self):

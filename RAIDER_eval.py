@@ -17,8 +17,8 @@ import pickle
 show_progress = False
 stats_only = False
 job_index = {}
-#default_time_limit = "2:00:00"
-default_time_limit = "00:20:00"
+default_time_limit = "2:00:00"
+#default_time_limit = "00:20:00"
 #rm_time_limit = "25:00:00"
 rm_time_limit = "2:00:00"
 
@@ -448,7 +448,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd1 = "{raider2} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -466,8 +466,8 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
-    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2.batch"
-    job_name = "raider2.%d" % get_job_index("raider2")
+    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2." + str(age) + ".batch"
+    job_name = "raider2.%d.%d" % (age, get_job_index("raider2.%d" % age))
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
@@ -754,9 +754,10 @@ def run_repeat_masker(p, num_processors):
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
     #print("Sim batch: " + batch_name + "\n"
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = 4*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    ppn_arg = 4*num_processors if num_processors != 1 else num_processors
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = ppn_arg, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir, walltime = rm_time_limit);
+                       output_location = output_dir, walltime = rm_time_limit, always_outputs=False);
     if not timing_jobs:
         p2.submit(preserve=True)
     else:
@@ -1117,7 +1118,7 @@ if __name__ == "__main__":
         #elif args.age == 2:
         #    Locations['raider2'] = Locations['raider2_oldest']
         if args.run_raider2:
-            ages = [0,2]
+            ages = [0,1,2]
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             if args.all_ages:
                 jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 

@@ -410,7 +410,7 @@ void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, bool excisi
 
 void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, int verbosity, int age) {
     const bool family_array = age < 2 ? true : false;
-    const bool excising = age < 2 ? true : false;
+    const bool excising = age < 3 ? true : false;
 	const uint seqLength = seqan::length(sequence);
 	const seqan::CharString mask = masks.front();
 	const uint L = seqan::length(mask);
