@@ -7,19 +7,20 @@ from Bio import SeqIO
 import time
 import os
 
-def createDatabase(db_file):
+def createDatabase(db_file, force = True):
     """Create BLAST db out of elements file"""
-    if not os.path.isfile(db_file + ".nhr"):
+    if force or not os.path.isfile(db_file + ".nhr"):
         cmd = "makeblastdb -in %s -dbtype nucl" % (db_file)
         p = subprocess.Popen(re.split("\s+", cmd), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         output, err = p.communicate()
         if err:
             sys.stderr("madkeblastdb error:\n" + err.decode() + "\n")
-            print('-------------------------')
+            sys.stderr('-------------------------')
 
 
 def invokeBlast(query_file, db_file, out_file = None, e_val = 0.0001):
     """Blast each ancestor against the elements database; return name of output file"""
+    print("HERE1")
     output = out_file if out_file else query_file + ".xml"
     blastn_cline = NcbiblastnCommandline(query=query_file, db=db_file, outfmt=5, out=out_file if out_file else query_file + ".xml", evalue = e_val)
     stdout, stderr = blastn_cline()
@@ -28,9 +29,11 @@ def invokeBlast(query_file, db_file, out_file = None, e_val = 0.0001):
 
     return output
 
-def coverageBLAST(query_file, target_file, e_val = 0.0001):
+def coverageBLAST(query_file, target_file, e_val = 0.0001, isRerun = False):
     """
     INPUT: Two fasta files: query and target
+           isRerun: Assume the files already exist and skip rerunning blast.  
+                    (Intended for debugging.)
     OUTPUT: Two dictionaries
     * First dictionary: map each sequence id in the query file to x, where
       x is the fraction of bases in the sequence that are part of at least one
@@ -47,23 +50,24 @@ def coverageBLAST(query_file, target_file, e_val = 0.0001):
 
     
     # 1) Create blast database
-    createDatabase(target_file)
+    if not isRerun:
+        createDatabase(target_file)
 
     # 2) blast query sequence against database
-    output_file = invokeBlast(query_file, target_file)
-
+    output_file = invokeBlast(query_file, target_file) if not isRerun else (query_file + ".xml")
 
     # 3) Check covereage of each sequence
     fp = open(output_file)
     blast_records = NCBIXML.parse(fp)
 
     for blast_obj in blast_records:
-        query_id = blast_obj.query[:blast_obj.query.find(" ")]
+        query_id = re.match("(\w+)", blast_obj.query).group(1)
         if not query_id in query_map:
             query_map[query_id] = set()
 
         for align_obj in blast_obj.alignments:
-            target_id = align_obj.title[align_obj.title.rfind(" ")+1:]
+            target_id = re.match("\S+\s+(\S+)", align_obj.title).group(1)
+
             if not target_id in target_map:
                 target_map[target_id] = set()
 

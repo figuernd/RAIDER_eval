@@ -1,12 +1,8 @@
-RepeatMasker::setspecies: Could not find user specified library TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s24.raider_consensus.fa.
-Redhawk Epilogue Args:
-Job ID: 3561401.mualhpcp01.local
-User ID: karroje
-Group ID: karroje
-Job Name: repmask.23
-Session ID: 14196
-Resource List: epilogue=/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/redhawk_epilogue.py,neednodes=1:ppn=4,nodes=1:ppn=4,walltime=25:00:00
-Resources Used: cput=00:00:01,mem=0kb,vmem=0kb,walltime=00:00:02
-Queue Name: serial
-Account String: 
-
+sh: line 1:  7236 Floating point exception/software/RMBlast/rmblast-1.2-ncbi-blast-2.2.23+/bin/rmblastn -db /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_741.MonDec221355352014/chr10.sim.0.s24.raider_consensus.fa -query /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_741.MonDec221355352014/chr10.sim.0.fa_batch-66.masked -gapopen 24 -gapextend 6 -mask_level 90 -complexity_adjust -word_size 9 -xdrop_ungap 450 -xdrop_gap_final 225 -xdrop_gap 112 -min_raw_gapped_score 225 -dust no -num_threads 4 -matrix 20p45g.matrix 2> /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_741.MonDec221355352014/ncResults-1419276863.err
+WARNING: Comparison failed. Retrying with larger minmatch (10)
+processing output: 
+cycle 1 ....................................................................................................................................................................................................................................................................................................................................................................................................
+cycle 2 ....................................................................................................................................................................................................................................................................................................................................................................................................
+Generating output... ....................................................................................................................................................................................................................................................................................................................................................................................................
+masking
+done

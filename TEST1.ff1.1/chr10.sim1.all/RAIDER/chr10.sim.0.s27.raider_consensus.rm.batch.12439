@@ -1,8 +1,0 @@
-#!/bin/bash -l
-#PBS -N repmask.28
-#PBS -l nodes=1:ppn=4
-#PBS -l walltime=25:00:00
-#PBS -o TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.S27.RAIDER_CONSENSUS.FA.RM/chr10.sim.0.fa.repmask.stdout
-#PBS -e TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.S27.RAIDER_CONSENSUS.FA.RM/chr10.sim.0.fa.repmask.stderr
-cd $PBS_O_WORKDIR
-module load RepeatMasker; module load python-3.3.3; RepeatMasker -nolow -lib TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s27.raider_consensus.fa -pa 1 -dir TEST1.ff1.1/chr10.sim1.all/RAIDER/CHR10.SIM.0.S27.RAIDER_CONSENSUS.FA.RM TEST1.ff1.1/chr10.sim1.all/SOURCE_DATA/chr10.sim.0.fa

@@ -26,7 +26,7 @@ def collect_stats(results_dir, seed_list):
             fp.readline()
             for line in fp:
                 A = re.split("\s+", line.rstrip())
-                if len(A) != 3:
+                if len(A) != 3 and A[1] != 'NA':
                     # tool, seed_index, seed_list, "tpr, tnr, ppv, npv, fpr, fdr, cpu, mem, rm_cpu, rm_mem
                     results.append({'chr':chr, 'tool':A[0], 'seed_index':int(A[1]), 'seed':seed_list[int(A[1])], 
                                     'tpr':float(A[6]), 'tnr':float(A[7]), 'ppv':float(A[8]), 'npv':float(A[9]), 
