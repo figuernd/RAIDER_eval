@@ -16,6 +16,7 @@ Input:
 * sequence file
 * .fa.out file
 """
+isRerun = False    # Only set True for debugging purposes
 
 def create_query(consensus_file): 
     L = []
@@ -43,10 +44,11 @@ def create_target(seq_file, rm_file):
                 A = re.split("\s+", line.strip())
                 start = int(A[5])
                 stop = int(A[6]) - 1
-                id = "{class_name}.{family}".format(class_name=A[9], family=A[10])
+                location = "{chr}:{start}-{stop}".format(chr=A[4], start=start, stop=stop)
+                id = "{class_name}|{family}|{location}".format(class_name=A[9], family=A[10], location=location)
                 D[id] = 0 if id not in D else D[id] + 1
-                id += "." + str(D[id])
-                description = "{chr:}:{start}-{stop}".format(chr=A[4], start=start, stop=stop)
+                id += " " + str(D[id])
+                description = ""
                 R = SeqRecord(seq = chr_seq[start:stop], id = id, description=description)
                 L.append(R)
         SeqIO.write(L, target_file, "fasta")
@@ -66,21 +68,37 @@ def main(consensus_file, seq_file, rm_file, e_val = 0.0001):
 
 
     # target_file is assignd a file name; Rpts is a sequene record generator of the known repeats
+    target_file = "seq.out.fa"
     target_file, Rpts = create_target(seq_file, rm_file);
     RPD = {r.id:str(r.seq).upper() for r in Rpts}
     
 
     # Run blast
-    qc, tc = coverageBLAST(consensus_file, target_file, e_val);
+    qc, tc = coverageBLAST(consensus_file, target_file, e_val, isRerun = isRerun);
 
     print("qc:\n")
+    sum, total = 0,0
     for k,v in qc.items():
-        print(k, v)
+        f = v[0]/v[1] if v[1] > 0 else -1
+        sum += f
+        total += 1
+        print("{er}: {covered}, {length}, {frac}".format(er = k, covered = v[0], length = v[1], frac = round(f,4)))
+    print("Average coverage: {avg}".format(avg = round(sum / total, 4)))
+
     print("-"*50)
     print("tc:\n")
-    for k,v in tc.items():
-        print(k,v)
+    D = {}
+    for k,v in sorted(tc.items()):
+        fam = k[:k.find("|")]
+        f = v[0]/v[1] if v[1] > 0 else -1
+        if fam not in D:
+            D[fam] = (0,0)
+        print("{rpt}: {covered}, {length}, {frac}".format(rpt = k, covered = v[0], length = v[1], frac = round(f,4)))
+        D[fam] = D[fam][0] + f, D[fam][1] + 1
 
+    print("-"*50)
+    for fam,T in sorted(D.items()):
+        print("{fam}: {avg}".format(fam=fam, avg=round(T[0]/T[1] if T[1] > 0 else -1,4)))
     
 
 

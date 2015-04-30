@@ -500,7 +500,7 @@ class pbsJobHandler:
 
                 for line in fp:
                     if line.startswith("Resources Used:"):
-                        r = re.search("cput=(\d\d):(\d\d):(\d\d),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d\d):(\d\d):(\d\d)", line)
+                        r = re.search("cput=(\d+):(\d+):(\d+),mem=(\d+)kb,vmem=(\d+)kb,walltime=(\d+):(\d+):(\d+)", line)
                         if not r:
                             raise PBSError("Bad resource line: " + line)
                         cpu_time = 60*int(r.group(1)) + 3600*int(r.group(2)) + int(r.group(3))

@@ -1,12 +1,15 @@
-RepeatMasker::setspecies: Could not find user specified library TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s8.raider_consensus.fa.
+sh: line 1: 21014 Floating point exception/software/RMBlast/rmblast-1.2-ncbi-blast-2.2.23+/bin/rmblastn -db /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_14970.MonDec221211222014/chr10.sim.0.s8.raider_consensus.fa -query /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_14970.MonDec221211222014/chr10.sim.0.fa_batch-71.masked -gapopen 24 -gapextend 6 -mask_level 90 -complexity_adjust -word_size 9 -xdrop_ungap 450 -xdrop_gap_final 225 -xdrop_gap 112 -min_raw_gapped_score 225 -dust no -num_threads 4 -matrix 20p45g.matrix 2> /mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/RM_14970.MonDec221211222014/ncResults-1419270398.err
+WARNING: Comparison failed. Retrying with larger minmatch (10)
+processing output: 
+cycle 1 ......................................................................................................................................................................................................................................................................................................................................................................................................................................................................=>> PBS: job killed: walltime 90033 exceeded limit 90000
 Redhawk Epilogue Args:
-Job ID: 3561386.mualhpcp01.local
+Job ID: 3564071.mualhpcp01.local
 User ID: karroje
 Group ID: karroje
-Job Name: repmask.9
-Session ID: 17369
+Job Name: repmask.7
+Session ID: 14732
 Resource List: epilogue=/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/redhawk_epilogue.py,neednodes=1:ppn=4,nodes=1:ppn=4,walltime=25:00:00
-Resources Used: cput=00:00:02,mem=0kb,vmem=0kb,walltime=00:00:03
+Resources Used: cput=29:15:59,mem=1792724kb,vmem=2285064kb,walltime=25:00:33
 Queue Name: serial
 Account String: 
 

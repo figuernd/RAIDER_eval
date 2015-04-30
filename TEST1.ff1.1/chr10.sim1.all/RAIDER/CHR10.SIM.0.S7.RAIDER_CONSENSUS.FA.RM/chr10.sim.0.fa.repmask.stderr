@@ -1,12 +1,13 @@
-RepeatMasker::setspecies: Could not find user specified library TEST1.ff1.1/chr10.sim1.all/RAIDER/chr10.sim.0.s7.raider_consensus.fa.
+processing output: 
+cycle 1 ..........................................................................................................................................................................................................................................................................................................................................................................................................................................=>> PBS: job killed: walltime 90020 exceeded limit 90000
 Redhawk Epilogue Args:
-Job ID: 3561384.mualhpcp01.local
+Job ID: 3564070.mualhpcp01.local
 User ID: karroje
 Group ID: karroje
-Job Name: repmask.7
-Session ID: 16924
+Job Name: repmask.6
+Session ID: 14256
 Resource List: epilogue=/mnt/gluster/HPCHome/karroje/research.d/RAIDER_eval/redhawk_epilogue.py,neednodes=1:ppn=4,nodes=1:ppn=4,walltime=25:00:00
-Resources Used: cput=00:00:02,mem=0kb,vmem=0kb,walltime=00:00:03
+Resources Used: cput=29:36:42,mem=1837964kb,vmem=2331052kb,walltime=25:00:21
 Queue Name: serial
 Account String: 
 
