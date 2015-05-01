@@ -82,6 +82,7 @@ bool getNextSeed(seqan::Dna5String &sequence, uint &index, uint seqLength, uint 
 	return seed[L - 1];
 }
 
+// NOT IN OLDEST (func)
 uint getFamilyIndex(LmerVector* v, Family* curr_fams[], int curr_index, int L) {
 	assert(!v->getFamily());
     for(int i = 0; i < L; i++){ 
@@ -154,6 +155,7 @@ LmerVector* getAndInsert(LmerMap &lmers, size_t seed, uint index) {
 	return v;
 }
 
+// NOT IN OLDEST (func)
 Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) {
 	uint tabbing = 1;
     if(verbosity > 2){
@@ -172,61 +174,36 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) 
     vector<LmerVector*> *toKeep = new vector<LmerVector*>;
 
 	for (uint i = 0; i < oldLength; i++) {
-        //cout << i << endl;
 		LmerVector *u = lmers->at(i);
-		//cout << "\t\tU:\t" << *u << endl;
         if (u == v) {
-            //cout << "U is this Lmer" << endl;
-			// CS: commented out because seems wrong...
             assert(i != 0);
 			offset = i;
             newFam->adopt(u, L);
             numRemoved++;
-			//if (verbosity > 2){
-            //    cout << "\t\tNew fam adopts:\t" << *u << endl;
-            //}
 		}
 		if (i > offset){
             if (u->size() == v->size() - 1 && u->back() <= newFam->getLast()->back() + L ) {
-			    //if (verbosity > 2){
-                //    cout << "\t\tNew fam adopts:\t" << *u << endl;
-                //}
-                //cout << "New family adopt Lmer" << *u << endl;
                 newFam->adopt(u, L);
                 numRemoved++;
             }
             else {
-                //u->setPosition(u->getPosition() - numRemoved);
-			    //if (verbosity > 2){
-                //    cout << "\t\tOld fam keeps:\t" << *u << endl;
-                //}
                 toKeep->push_back(u);
             }
 		}
 	}
-    //if (verbosity > 2){
-    //    cout << "\tNew family excised at offset" << endl;
-    //}
-    //cout << "\tLmers size:\t" << lmers->size() << endl;
-    
     //lmers->erase(lmers->begin() + offset, lmers->begin() + offset + newFam->getLmers()->size());
     //cout << "\tResize to size\t" << offset;
-	//cout << "Resizing" << endl;
     //for (uint i = oldLength - 1; i >= offset; i--){
     //    cout << i <<"\t\t" << *fam << endl;
     //    lmers->pop_back();
     //}
     
     lmers->resize(offset);
-    //cout << "\tand shrink to fit";
     lmers->shrink_to_fit();
-    //cout << " then add back anything in toKeep (size=" << toKeep->size() << ")" << endl;
     for(uint i = 0; i < toKeep->size(); i++){
         fam->adopt(toKeep->at(i), L);
     }
-    //cout << "\tSet last to:\t" << currLast << endl;
     fam->setLast(currLast);
-    //cout << "\tSet expected end to:\t" << fam->getPrefix()->back() + fam->repeatLength(L) << endl;
     fam->setExpectedEnd(fam->getPrefix()->back() + fam->repeatLength(L));
     fam->setOffset(fam->getSuffix()->front() - fam->getPrefix()->front());
     fam->setRepeatLength(L + fam->getOffset());
@@ -243,7 +220,7 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) 
 
 }
 
-Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint verbosity) {
+Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint verbosity, bool excising) {
 	uint tabbing = 1;
     if(verbosity > 2){
         prettyPrintTabbing(tabbing);
@@ -262,11 +239,10 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
 		LmerVector *u = lmers->at(i);
 		if (u == v) {
 			// CS: commented out because seems wrong...
-            assert(i != 0);
+            assert(i != 0); // so prefix never split?
 			offset = i;
 		}
 		if ((!keepV && i >= offset) || i > offset) {
-			//cout << "adopt" << endl;
             newFam->adopt(u, L);
 		}
 	}
@@ -275,9 +251,11 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
 
 	fam->setLast(fam->getSuffix());
 	fam->setExpectedEnd(fam->getSuffix()->back() + L);
-    fam->setOffset(fam->getSuffix()->front() - fam->getPrefix()->front());
-    fam->setRepeatLength(L + fam->getOffset());
-    
+    // NOT IN OLDEST (2)
+    if (excising) {
+        fam->setOffset(fam->getSuffix()->front() - fam->getPrefix()->front());
+        fam->setRepeatLength(L + fam->getOffset());
+    }
 	if (!keepV) {
 		newFam->setLast(v);
         // set end to the last location of v + length of repeats
@@ -290,7 +268,7 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
     return newFam;
 }
 
-bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity) {
+bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity, bool excising) {
     uint tabbing = 1;
     if(verbosity > 2){
         prettyPrintTabbing(tabbing);
@@ -301,44 +279,35 @@ bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity) {
     const uint index = v->back(); 
 	const uint length = fam->repeatLength(1);
 	uint dist_to_end = fam->getExpectedEnd() - index;
-    //if (verbosity > 2){
-    //    cout << "Dist to End " << dist_to_end << endl;
-    //}
     if (index > fam->getExpectedEnd() || dist_to_end > length) {
         if (verbosity > 2){
 		    prettyPrintTabbing(tabbing + 1);
             cout << "Last location of lmer is too far past the expected end of family OR the distance to end is greater than repeat length" << endl;
-            //cout << "REPEATEXPECTS: FALSE." << endl << endl;
         }
         return false;
 	}
-    // else if (v->prev() < fam->getLastIndex()){
-    //     if (verbosity > 2){
-    //         cout << "The previous location of lmer is before the last index of the family." << endl;
-    //         cout << "REPEATEXPECTS: FALSE." << endl << endl;
-    //     }
-    //     return false;
-    // }
-	const int pos = v->getPosition(); //length - dist_to_end - L;
-    //if (verbosity > 2){
-	//    cout << "Position: " << pos << endl;
-    //}
+    // IN OLDEST (else)
+    else if (excising && v->prev() < fam->getLastIndex()){
+        if (verbosity > 2){
+            prettyPrintTabbing(tabbing + 1);
+            cout << "The previous location of lmer is before the last index of the family." << endl;
+        }
+        return false;
+    }
+	// pos based on whether excising (OLD) or not excising (OLDEST)
+    const int pos = excising? v->getPosition() : length - dist_to_end - L;
     if (pos >= 0 && pos < (int) length && fam->at(pos) == v) {
         if (verbosity > 2){
             prettyPrintTabbing(tabbing + 1);
             cout << "The lmer matches family lmer at position " << pos << endl;
-            //cout << "REPEATEXPECTS: TRUE." << endl << endl;
 		}
         return true;
 	}
-    //if (verbosity > 2){
-    //    cout << "REPEATEXPECTS: FALSE." << endl << endl;
-	//}
     return false;
 }
 
 
-bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbosity) {
+bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbosity, bool excising) {
     Family* fam = v->getFamily();
     assert(fam);
     uint tabbing = 0;
@@ -348,23 +317,19 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbos
         prettyPrintLmer(tabbing + 1, v);
         prettyPrintFamily(tabbing + 1, fam, false, false);
     }
-    // if starting new repeat instance
     if (fam->lastRepeatComplete()) {
-        //if (verbosity > 2){
-		//    cout << "\tLast Repeat Complete." << endl;
-        //}
+        // if starting new repeat instance
         if (v != fam->getPrefix()) {
+            // if starting new repeat instance but lmer is not family prefix
             if (verbosity > 2){
                 prettyPrintTabbing(tabbing + 1);
                 cout << "Last Repeat Complete but Lmer is not Family Prefix." << endl;
 			}
-            Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity);
+            Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
 			families.push_back(newFam);
-            //if (verbosity > 2){
-			//    cout << "\tFRAGMENTSPLIT: TRUE." << endl << endl;
-            //}
             return true;
 		}
+        // NOT IN OLD or OLDEST(else)
         //else if (v->prev() < fam->getLast()->prev() && v->size() != fam->getLast()->size() + 1) {
         //    if ( verbosity > 2){
         //        prettyPrintTabbing(tabbing + 1);
@@ -381,45 +346,38 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbos
             prettyPrintTabbing(tabbing + 1);
             cout << "The last location of the lmer is over L (" << L << ") past the last index of family." << endl;
 	    }	
-        Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity);
+        Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity, excising);
 		families.push_back(newFam);
-        //Family* newFam2 = splitRepeatsByLmer(newFam, newFam->getLast(), false, L, verbosity);
+        //NOT IN OLD OR OLDEST
+        //Family* newFam2 = splitRepeatsByLmer(newFam, newFam->getLast(), false, L, verbosity, excising);
         //families.push_back(newFam2);
-        //if (verbosity > 2){
-		//    cout << "FRAGMENTSPLIT: TRUE." << endl << endl;
-		//}
         return true;
     }
+    
     // if it was previously skipped in forming a family instance 
-    else if (v->prev() < fam->getLast()->prev() && v->size() < fam->size() ) {
+    else if (excising && v->prev() < fam->getLast()->prev() && v->size() < fam->size() ) {
         if (verbosity > 2){
             prettyPrintTabbing(tabbing + 1);
             cout << "The lmer was skipped in a previous iteration" << endl;
         }
+        // OLDEST (1): 
+        // Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
         Family* newFam = exciseRepeatsByLmer(fam, v, L, verbosity);
         families.push_back(newFam);
-        //if (verbosity > 2){
-        //    cout << "FRAGMENTSPLIT: TRUE." << endl << endl;
-        //}
         return true;
     }
 
+    // OLDEST
     // if it occurs before it is supposed to
-    // should always happen.. don't do this.
-    // else if (v->prev() < fam->getLastIndex()) {
-    //     if (verbosity > 2){
-    //         cout << "\tThe previous location of the lmer is before the last index of the family." << endl;
-    //     }
-    //     Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity);
-    //     families.push_back(newFam);
-    //     if (verbosity > 2){
-	// 	    cout << "FRAGMENTSPLIT: TRUE." << endl << endl;
-    //     }
-    //     return true;
-    // }
-    //if (verbosity > 2){
-	//    cout << "FRAGMENTSPLIT: FALSE" << endl << endl;
-	//}
+    else if (!excising && v->prev() < fam->getLastIndex()) {
+        if (verbosity > 2){
+            prettyPrintTabbing(tabbing + 1);
+            cout << "The previous location of the lmer is before the last index of the family." << endl;
+        }
+        Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
+        families.push_back(newFam);
+        return true;
+    }
     return false;
 }
 
@@ -438,19 +396,21 @@ bool isPrefix(LmerVector *v) {
 	return v->getFamily()->getPrefix() == v;
 }
 
-void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity) {
+void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, bool excising) {
     if (verbosity > 2){
         cout << "--- Tying Loose Ends ---" << endl;
     }
     for (auto fam : families) {
         if (!fam->lastRepeatComplete()) {
-            Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity);
+            Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity, excising);
             families.push_back(newFam);
         }
     }
 }
 
-void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, uint verbosity) {
+void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, int verbosity, int age) {
+    const bool family_array = age < 2 ? true : false;
+    const bool excising = age < 3 ? true : false;
 	const uint seqLength = seqan::length(sequence);
 	const seqan::CharString mask = masks.front();
 	const uint L = seqan::length(mask);
@@ -460,52 +420,52 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
 	char unmasked[MAX_L];
 	LmerMap lmers;
 	Family* fam = nullptr;
-    Family* curr_families[L];
-    for(uint i = 0; i < L; i++){
-        curr_families[i] = NULL;
-    }
-    int curr_fam = 0;
-	int signed_L = seqan::length(mask);
+    // OLD
+    //if (family_array) {
+        Family* curr_families[L];
+        for(uint i = 0; i < L; i++){
+            curr_families[i] = NULL;
+        }
+        int curr_fam = 0;
+	    int signed_L = seqan::length(mask);
+    //}
     while (getNextSeed(sequence, ++index, seqLength, MAX_L, unmasked)) {
 		size_t seed = seedToInt(unmasked, mask);
 		LmerVector* v = getAndInsert(lmers, seed, index);
 		if (v->size() == 2) {
-            cout << "Current family: " << curr_fam << endl;
-            cout << "Get family index" << endl;
-            for(uint i = 0; i < L; i++){
-                cout << i << " " << !curr_families[i];
-                //if(curr_families[i]){
-                //    cout << *(curr_families[i]) << endl;
-                //}
-            }
-            cout << endl;
-            int fam_index = getFamilyIndex(v, curr_families, curr_fam, signed_L);
-            cout << "Family index: " << fam_index << endl;
-            // need to replace oldest family and update newest family
-            if (fam_index == signed_L){
-                fam = new Family();
-                curr_fam = (curr_fam + 1) % L;
-                cout << "*****Had to update current family: " << curr_fam << endl;
-                curr_families[curr_fam] = fam;
-                families.push_back(fam);
-            }
+            // OLD
+            if(family_array){
+                int fam_index = getFamilyIndex(v, curr_families, curr_fam, signed_L);
+                if (fam_index == signed_L){
+                    fam = new Family();
+                    curr_fam = (curr_fam + 1) % L;
+                    curr_families[curr_fam] = fam;
+                    families.push_back(fam);
+                }
+                else{
+                    fam = curr_families[fam_index];
+                }
+			}
+            // OLDEST
             else{
-                fam = curr_families[fam_index];
+                if (isNewFamily(fam, v)) {
+                    fam = new Family();
+                    families.push_back(fam);
+                }
             }
-			fam->adopt(v, L);
-			//curr_fam = curr_fam + 1 > L? 0: curr_fam + 1;
-		} else if (v->size() > 2 && !fragmentSplit(v, L, families, verbosity)) {
+            fam->adopt(v, L);
+		} else if (v->size() > 2 && !fragmentSplit(v, L, families, verbosity, excising)) {
             Family* fam = v->getFamily();
 			if (isPrefix(v)) {
                 fam->setLast(v);
                 // CS: modify expected end to include L
 				fam->setExpectedEnd(v->back() + fam->repeatLength(L));
-			} else if (repeatExpects(fam, v, L, verbosity)) {
+			} else if (repeatExpects(fam, v, L, verbosity, excising)) {
 				fam->setLast(v);
 			}
 		}
 	}
-	tieLooseEnds(families, L, verbosity);
+	tieLooseEnds(families, L, verbosity, excising);
 }
 
 #endif //SCANER_SEEDCHAIN

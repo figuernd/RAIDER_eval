@@ -35,6 +35,8 @@ const string OUTPUT_SUMMARY_FILENAME = "summary_info";
 
 // This struct stores the options from the command line.
 struct AppOptions {
+	// Age.  0 -- curr, 1 -- old, 2 -- oldest, 
+	int age;
 	// Verbosity level.  0 -- quiet, 1 -- normal, 2 -- verbose, 3 -- carly verbose
 	int verbosity;
 	// Minimum repeat length
@@ -42,14 +44,12 @@ struct AppOptions {
 	// Minimum number of repeats to be significant
 	uint count;
 
-
 	seqan::CharString mask;
 	seqan::CharString sequence_file;
 	seqan::CharString output_directory;
 
 	AppOptions() :
-            verbosity(1) {
-	}
+			verbosity(1) {}
 };
 
 // ==========================================================================
@@ -64,8 +64,8 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 	seqan::ArgumentParser parser("RAIDER");
 	// Set short description, version, and date.
 	setShortDescription(parser, "RAIDER - Rapid Ab Initio Detection of Elementary Repeats");
-	setVersion(parser, "2.0");
-	setDate(parser, "January 2015");
+	setVersion(parser, "1.0");
+	setDate(parser, "April 2013");
 
 	// Define usage line and long description.
 	addUsageLine(parser, "[\\fIOPTIONS\\fP] \"\\fIMASK_FILE\\fP\" \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
@@ -89,6 +89,10 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 	addOption(parser, seqan::ArgParseOption("q", "quiet", "Set verbosity to a minimum."));
 	addOption(parser, seqan::ArgParseOption("v", "verbose", "Enable verbose output."));
 	addOption(parser, seqan::ArgParseOption("a", "verbose+", "Enable extremely verbose output."));
+	addOption(
+			parser,
+			seqan::ArgParseOption("g", "age", "Age of raiderv2. Defaults to 0.",
+					seqan::ArgParseOption::INTEGER));
 
 	// Add Examples Section.
 	addTextSection(parser, "Examples");
@@ -124,6 +128,10 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 	else
 		options.count = 2;
 
+	if (isSet(parser, "age"))
+		seqan::getOptionValue(options.age, parser, "age");
+	else
+		options.age = 0;
 	// Ensure a trailing /
 	if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {
 		seqan::append(options.output_directory, "/");
@@ -348,7 +356,7 @@ int main(int argc, char const ** argv) {
 	vector<seqan::CharString> masks;
 	masks.push_back(options.mask);
 
-	getElementaryFamilies(sequence, masks, families, options.verbosity);
+	getElementaryFamilies(sequence, masks, families, options.verbosity, options.age);
 
 	if (options.verbosity > 0) {
 		cout << "Writing results elements..." << endl;
