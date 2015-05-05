@@ -210,6 +210,10 @@ def parse_params(args):
     # SEQUENCE FILE OPTION ARGUMENTS
     parser_seqs = subparsers.add_parser("seq_files")
     parser_seqs.add_argument('seq_files', nargs = '+', help = "Use files directly (no simulation)", default = None)
+
+    # ANALYSIS 
+    parser_analysis = subparsers.analysis("Analysis options")
+    parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'PRA', action = 'store_true', help = 'Turn off pre-RM stats. analysis', default = False) 
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
@@ -988,9 +992,10 @@ if __name__ == "__main__":
     quit_time = prog_walltime + start_time - safety_margin if prog_walltime else None 
 
     ####
-    # Currently: We check for the RepeatScout executable at the location on my Mac; if found, we
-    # assume we are running on the Mac.  If not, we check for in the Redhawk location, and if found
-    # assume we are running on redhawk.  Otherwise we print and error and quit.
+    # Currently: We check for the RepeatScout executable at the location on my Mac; if 
+    # found, we assume we are running on the Mac.  If not, we check for in the Redhawk 
+    # location, and if found assume we are running on redhawk.  Otherwise we print and 
+    # error and quit.
     if os.path.exists(MacLocations["RptScout"]):
         Locations = MacLocations
     elif os.path.exists(RedhawkLocations['RptScout']):
