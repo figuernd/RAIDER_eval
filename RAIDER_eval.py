@@ -815,6 +815,8 @@ def performance_sum(stats_jobs, stats_dir, curr_dir, test):
 
 
 def have_time_for_another_run(last_run_time):
+    """If we submitted the evaluation as a PBS job with a set walltime, check the amount
+    of time left and see if we can fit in another time interval of length at least 'last_run_time'"""
     time_left = quit_time - time.time() - last_run_time
     if quit_time - time.time() - last_run_time >= 0:
         return True
@@ -823,14 +825,20 @@ def have_time_for_another_run(last_run_time):
         return False
 
 def exit_now():
+    """If we submitted the evaluation as a PBS job with a set walltime, use this to write to the logging
+    file an indicator that the evalation program has not yet completed, then exit the program"""
     logging_fp.write("CONTINUE\n")
     sys.exit(0)
 
 def flush_files():
+    """If we submitted the evaluation as a PBS job with a set walltime, call this as a debug measure
+    to ensure that get updated log files if program quits unexpectedly"""
     logging_fp.flush()
     checkpoint_fp.flush()
 
 def write_flist_to_checkpoint(flist):
+    """If we submitted the evaluation as a PBS job with a set walltime, write list of files (either supplied seq
+    files or generated chromosome files) to checkpoint file for access upon next run"""
     logging_fp.write("Writing file list to new checkpoint file\n")
     checkpoint_fp.write(flist_start+"\n")
     for f in flist:
@@ -839,6 +847,9 @@ def write_flist_to_checkpoint(flist):
     flush_files()
 
 def write_jobs_to_checkpoint(jobs, start_id, end_id):
+    """If we submitted the evaluation as a PBS job with a set walltime, pickle PBS jobs and store the path
+    to the pickle file name in checkpoint file for unpickling upon next run. Note: start_id and end_id are
+    indicators when parsing checkpoint file to tell program what kind of object was stored at a location"""
     logging_fp.write("Writing jobs to new checkpoint file\n")
     checkpoint_fp.write(start_id+"\n")
     for ufj in jobs:
@@ -849,6 +860,9 @@ def write_jobs_to_checkpoint(jobs, start_id, end_id):
     flush_files()
 
 def write_job_dict_to_checkpoint(job_dic, results_dir): #job_dic_pick_fname):
+    """If we submitted the evaluation as a PBS job with a set walltime, pickle list of PBS jobs for each
+    type of tool being evaluated and store path to pickle file name in checkpoint file for unpickling
+    upon next run."""
     logging_fp.write("Writing job dict to new checkpoint file\n")
     checkpoint_fp.write(jobdic_start + "\n")
     for tool in job_dic:
@@ -862,6 +876,9 @@ def write_job_dict_to_checkpoint(job_dic, results_dir): #job_dic_pick_fname):
     flush_files()
     
 def save_timed_chrom_sim_jobs(jobs, finished_jobs, flist):
+    """If we submitted the evaluation as a PBS job with a set walltime, write list of simulated
+    chromosome files that were completed to checkpoint file, and pickle any unfinished 
+    chromosome simulation PBS jobs and store paths to pickle file names in checkpoint file"""
     flist.extend([x.sim_output for x in finished_jobs])
     write_flist_to_checkpoint(flist)#[x.sim_output for x in finished_jobs])
     write_jobs_to_checkpoint(jobs - finished_jobs, csjobs_start, csjobs_end)
@@ -869,6 +886,15 @@ def save_timed_chrom_sim_jobs(jobs, finished_jobs, flist):
 
 
 def run_timed_chrom_sim_jobs(jobs, flist=[]):
+    """Given a set of chromosome simulation jobs and a list of paths to finished simulation files. 
+    Three cases: 
+        (1) If we submitted the evaluation as a PBS job with a set walltime, keep checking to
+            see if we have reached point to save work and exit.
+        2) If we are 'timing_jobs', keep calling timed_wait on each job until all have finished.
+            This ensures that if a job is running out of time it will resubmit with a longer
+            walltime (all work for this is done in redhawk.py)
+        3) Otherwise, call wait() as usual. 
+    if/when all jobs complete, returns list of paths to resulting simulation files.""" 
     chrom_job_set = {j for j in jobs}
     finished_jobs = set()
     #while chrom_job_set:
@@ -897,12 +923,21 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
     return [j.sim_output for j in finished_jobs]
 
 def save_timed_tool_jobs(jobs, RM_jobs):
+    """Helper method. Given a list of jobs and repeat masker jobs, pickle jobs and write
+    pickled file paths to checkpoint for unpickling upon next run."""
     write_jobs_to_checkpoint(jobs, tjobs_start, tjobs_end)
     write_jobs_to_checkpoint(RM_jobs, rmjobs_start, rmjobs_end)
     exit_now()
     
 
 def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
+    """Given a set of repeat finding tool jobs and repmask jobs (with pa info), keep track of
+    what tool jobs have completed and submit corresponding repmask job upon tool job completion.
+    We call isJobRunning on each tool job -- if we are 'timing_jobs', this information is saved
+    in the job object and redhawk.py will handle whether jobs need to be resubmitted with more time.
+    If/when all tool jobs complete, returns list of repmask jobs (some of which are still running). 
+    Note: If we submitted the evaluation as a PBS job with a set walltime, keep checking to
+    see if we have reached point to save work and exit."""
     job_set = {j for j in jobs}
     #RM_jobs = set()
     time_est = None
@@ -933,6 +968,8 @@ def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
     return RM_jobs
 
 def save_timed_RM_jobs(jobs, results_dir, job_dic):
+    """Helper method. Given a list of jobs and job dictionary, pickle jobs and job dict,
+    and write pickled file paths to checkpoint for unpickling upon next run."""
     write_jobs_to_checkpoint(jobs, rmjobs_start, rmjobs_end)
     write_job_dict_to_checkpoint(job_dic, results_dir)
     exit_now()
@@ -940,6 +977,13 @@ def save_timed_RM_jobs(jobs, results_dir, job_dic):
 
 test_tools = ["raider", "bigfoot", "piler", "rep_scout", "araider", "raider2", "raider2.0", "raider2.1", "raider2.2"]  # List of implemented tools 
 def run_timed_RM_jobs(RM_jobs, results_dir, job_dic=None):
+    """Given a set of repmask jobs and a working job dictionary, keep track of what repmask jobs 
+    have completed and add completed jobs to job dictionary under appropriate tool name.
+    We call isJobRunning on each repmask job -- if we are 'timing_jobs', this information is saved
+    in the job object and redhawk.py will handle whether jobs need to be resubmitted with more time.
+    If/when all repmask jobs complete, returns job dict to compute statistics on results. 
+    Note: If we submitted the evaluation as a PBS job with a set walltime, keep checking to
+    see if we have reached point to save work and exit."""
     job_dic = job_dic if job_dic else {tool:[] for tool in test_tools}
     for tool in test_tools:
         if tool not in job_dic.keys():
