@@ -150,7 +150,7 @@ class pbsJobHandler:
         if not pbsJobHandler.logger:
             pbsJobHandler.logger = logging.getLogger('reval.redhawk')
             pbsJobHandler.logger.setLevel(logging.DEBUG)
-            lfp = self.output_location + 'redhawk.log'# + self.batch_file_name
+            lfp = self.output_location + '/redhawk.log'# + self.batch_file_name
             lfh = logging.FileHandler(lfp, mode='w')
             lfm = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
             lfh.setLevel(logging.DEBUG)
