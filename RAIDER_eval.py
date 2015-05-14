@@ -198,6 +198,13 @@ def parse_params(args):
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
+    ### KARRO: New switches
+    # ANALYSIS 
+    parser_analysis = parser.add_argument_group("Analysis options")
+    parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
+    ### KARRO END
+
+
     # CONTINUE PREVIOUS RUN ARGUMENTS
     cont_group = parser.add_argument_group(title = "continuing previous")
     cont_group.add_argument('--timing_jobs', dest = 'timing_jobs', action = 'store_true', help = "Set up timed jobs", default = False)
@@ -211,9 +218,6 @@ def parse_params(args):
     parser_seqs = subparsers.add_parser("seq_files")
     parser_seqs.add_argument('seq_files', nargs = '+', help = "Use files directly (no simulation)", default = None)
 
-    # ANALYSIS 
-    parser_analysis = subparsers.analysis("Analysis options")
-    parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'PRA', action = 'store_true', help = 'Turn off pre-RM stats. analysis', default = False) 
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
@@ -930,6 +934,37 @@ def save_timed_tool_jobs(jobs, RM_jobs):
     exit_now()
     
 
+### KARRO
+def run_pre_analysis(jobs, BLAST_DATABASE):
+    """This takes a list of the jobs, and a list of the BLAST_DATABASE jobs.  For each 
+    it makes sure the BLAST_DATABASE job is done for the corresponding datafile, then launches 
+    the analysis tool.  Returns a list of the analysis tool jobs.  RepeatMasker is NOT dependent
+    on these jobs -- it can be launched immediately."""
+
+    cmd = "{python} blast_consensus.py {consensus_file} {rm_fa_file} {database_file} {output_file}"
+    for j in jobs:
+        o = BLAST_DATABASE[j.seq_file]  # This is the create_database job that was launched on this sequence file.
+        o.wait()    # Wait until the DATABASE file has been created.  
+                    # (This should be parallilzed, but probably not worth the effort)
+
+        analysis_cmd = cmd.format(python = Locations["python"], consensus_file = j.lib_file, 
+                                  rm_fa_file = o.rm_seq_file, database_file = o.rm_seq_file, 
+                                  output_file = j.lib_file.rstrip(".fa") + ".pra.txt")
+        
+        if show_progress:
+            sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
+            sys.stderr.flush()
+        progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+        progress_fp.flush()
+
+        batch_name = j.lib_file.strip(".fa") + ".pra.batch"
+        job_name = "pra.%d" % get_job_index("pra")
+        p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
+                          stdout_file = batch_name.rstrip(".batch") + ".stdout", stderr_file = batch_name.rstrip(".batch") + ".stderr",
+                          output_location = file_dir(j.seq_file), walltime = time_limit, RHmodules = ["blast+"]);
+        p.submit()
+### KARRO END
+
 def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
     """Given a set of repeat finding tool jobs and repmask jobs (with pa info), keep track of
     what tool jobs have completed and submit corresponding repmask job upon tool job completion.
@@ -1024,6 +1059,7 @@ def run_timed_RM_jobs(RM_jobs, results_dir, job_dic=None):
     job_dic['araider'].sort(key = lambda x: x.seed_num)
     job_dic['raider2'].sort(key = lambda x: x.seed_num)
     return job_dic
+
 
 
 
@@ -1146,7 +1182,43 @@ if __name__ == "__main__":
         ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
         ### rm_output job.
 
-        ############## First: Launch tools
+        ### KARRO -- have not made any attempt to check-point this.
+        # First: Launch the create_database.py tool on each chromosome.  (Needed for pre-RM result analysis; not needed for any tool.)
+        # DATABASE will be a dictionary mapping the (simulated) chromosome to the pbs object
+
+        file = file_list[0].rstrip(".fa")
+        BLAST_DATABASE = {}
+        if args.pra:
+            blast_database_command = "{python} ./create_database.py {seq_file} {rm_file} {out_file}"
+            for i,file_name in enumerate(file_list):
+                file = file_name.rstrip(".fa")
+                seq_file = file_name
+                rm_file = file + ".fa.out"
+                rm_seq_file = file + ".rptseq.fa"
+                cmd = blast_database_command.format(python = Locations['python'], seq_file = seq_file, rm_file = rm_file, out_file = rm_seq_file)
+
+                if show_progress:
+                    sys.stderr.write("\nLaunching create_database: %s\n\n" % (cmd))
+                    sys.stderr.flush()
+                    progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
+                    progress_fp.flush()
+
+                batch_name = file + "blast_db.batch"
+                job_name = "create_db.%d" % (i)
+
+                o =  pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                                   walltime = "00:20:00", RHmodules = ["blast+"])
+                o.seq_file = seq_file
+                o.rm_file = rm_file
+                o.rm_seq_file = rm_seq_file
+
+                BLAST_DATABASE[file_name] = o
+
+            for o in BLAST_DATABASE.values():
+                o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
+
+
+        ############## Second: Launch tools
 
         jobs = []
         if args.pre:
@@ -1193,9 +1265,21 @@ if __name__ == "__main__":
                 os.makedirs(piler_dir)
             jobs +=[run_piler(input_file = file, piler_dir = piler_dir) for file in file_list]
 
-
-        ############## Second: Launch repeatmasker jobs
+            
+        ############## Third: Launch repeatmasker jobs
         job_set = {j for j in jobs}
+
+        ### KARRO: This is where we run the pre-rm analysis tool.  I'm setting this up
+        ### so that run_timed_tool_jobs won't be started until all these jobs are launched.
+        ### Technically this is unnecessary.  But its higly unlikely to matter, and a lot
+        ### less code this way. 
+        ### Have not done anything for check-pointing.
+        if args.pra:
+            run_pre_analysis(jobs, BLAST_DATABASE) 
+
+        exit(1)
+        ### KARRO_END
+
         RM_jobs = run_timed_tool_jobs(jobs, args.pa)
 
     else:
