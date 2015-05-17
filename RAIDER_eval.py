@@ -941,8 +941,11 @@ def run_pre_analysis(jobs, BLAST_DATABASE):
     the analysis tool.  Returns a list of the analysis tool jobs.  RepeatMasker is NOT dependent
     on these jobs -- it can be launched immediately."""
 
+    submitted_jobs =[]
+
     cmd = "{python} blast_consensus.py {consensus_file} {rm_fa_file} {database_file} {output_file}"
     for j in jobs:
+        j.wait()
         o = BLAST_DATABASE[j.seq_file]  # This is the create_database job that was launched on this sequence file.
         o.wait()    # Wait until the DATABASE file has been created.  
                     # (This should be parallilzed, but probably not worth the effort)
@@ -957,12 +960,21 @@ def run_pre_analysis(jobs, BLAST_DATABASE):
         progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
         progress_fp.flush()
 
-        batch_name = j.lib_file.strip(".fa") + ".pra.batch"
         job_name = "pra.%d" % get_job_index("pra")
+
+        base_name = file_base(j.lib_file)[:-3] + ".pra"
+        batch_name = base_name + ".batch"
+        stdout_file = base_name + ".stdout"
+        stderr_file = base_name + ".stderr"
+        location = file_dir(j.lib_file)
+        print("Y: " + base_name + " " + batch_name + " " + job_name + " " + stdout_file + " " + stderr_file + " " + analysis_cmd)
         p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
-                          stdout_file = batch_name.rstrip(".batch") + ".stdout", stderr_file = batch_name.rstrip(".batch") + ".stderr",
-                          output_location = file_dir(j.seq_file), walltime = time_limit, RHmodules = ["blast+"]);
-        p.submit()
+                          stdout_file = stdout_file, stderr_file = stderr_file,
+                          output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
+        p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
+        submitted_jobs.append(p)
+
+    return submitted_jobs
 ### KARRO END
 
 def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
@@ -1274,10 +1286,9 @@ if __name__ == "__main__":
         ### Technically this is unnecessary.  But its higly unlikely to matter, and a lot
         ### less code this way. 
         ### Have not done anything for check-pointing.
-        if args.pra:
-            run_pre_analysis(jobs, BLAST_DATABASE) 
+        pra_jobs = run_pre_analysis(jobs, BLAST_DATABASE) if args.pra else []  # pra_jobs will be the list pf pre-rm analysis jobs that 
+                                                                               # are running and need to complete.
 
-        exit(1)
         ### KARRO_END
 
         RM_jobs = run_timed_tool_jobs(jobs, args.pa)
@@ -1381,6 +1392,11 @@ if __name__ == "__main__":
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
+    ### KARRO
+    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
+    for p in pra_jobs:
+        p.wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
+    ### KARRO END
                             
 
             
