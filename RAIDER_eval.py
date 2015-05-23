@@ -1079,7 +1079,10 @@ if __name__ == "__main__":
                                               retain_n = args.retain_n, num_repeats = args.num_repeats, low_complexity = args.low_complexity, 
                                               sim_type = args.sim_type)
             J = [f(i) for i in range(args.num_sims)]
-
+            if args.family_file:
+                family_list = [fam for line in open(args.family_file) for fam in re.split("\s+", line.rstrip()) if fam]
+                with open(args.results_dir + "/family_file.txt", "w") as fp:
+                    fp.write("\n".join(["{fam}".format(fam=f) for f in family_list]) + "\n")
             # Get the list of simulated file names
             file_list = run_timed_chrom_sim_jobs(J) #[j.sim_output for j in J]
 
@@ -1277,11 +1280,12 @@ if __name__ == "__main__":
     print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
         fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem"))
+        
         for key in test_tools:
             for p in job_dic[key]:
                 progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
                 try:
-                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None) # args.family_file)
                     Stats = [round(x,5) for x in Stats]
                        
                     if args.hooke_jeeves:
