@@ -42,7 +42,7 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
     consensus_map = {}
     rpt_map = {}
     for blast_obj in blast_records:
-        consensus_id = re.match("(\w+)", blast_obj.query).group(1)
+        consensus_id = re.match("(\S+)", blast_obj.query).group(1)
         if not consensus_id in consensus_map:
             consensus_map[consensus_id] = set()
 
