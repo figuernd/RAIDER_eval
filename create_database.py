@@ -38,8 +38,8 @@ def create_target(seq_file, rm_file, out_file):
             start = int(A[5])
             stop = int(A[6]) - 1
             location = "{chr}:{start}-{stop}".format(chr=A[4], start=start, stop=stop)
-            if any([x in A[10] for x in filter_words]):
-                continue
+            #if any([x in A[10] for x in filter_words]):
+            #    continue
             id = "{class_name}|{family}|{location}".format(class_name=A[9], family=A[10], location=location)
             D[id] = 0 if id not in D else D[id] + 1
             id += " " + str(D[id])

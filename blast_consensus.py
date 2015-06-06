@@ -1,24 +1,20 @@
-from Bio.Blast.Applications import NcbiblastxCommandline
 import sys
 import re
-from Bio.Blast import NCBIXML
+import subprocess
+import os.path
+import interval_list
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Blast.Applications import NcbiblastnCommandline
-import subprocess
-import os.path
 
 e_val = 0.0001   # Needed constant for blast invocation.  Specifies the expected number of false positive matches.
 
-
+blast_cmd = 'blastn -out {output} -outfmt "6 qseqid sseqid qstart qend sstart send" -query {query} -db {db_file} -evalue {evalue}' 
 def invokeBlast(query_file, db_file, output):
     """Blast each ancestor against the elements database; return name of output file"""
-    blastn_cline = NcbiblastnCommandline(query=query_file, db=db_file, outfmt="6 qseqid sseqid sstart send", out=output, evalue = e_val)
-    print("BLAST: " + str(blastn_cline))
-    stdout, stderr = blastn_cline()
-
-    #assert not stderr, "BLAST: " + stderr
+    cmd = blast_cmd.format(output=output, query=query_file, db_file=db_file, evalue=e_val)
+    print("BLAST: " + cmd)
+    subprocess.call(cmd, shell=True)
 
     return output
 
@@ -31,7 +27,7 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
     * Output_file: Where to put the output.
     """
     #### First: run blast
-    blast_output_file = invokeBlast(consensus_file, database_file, consensus_file.rstrip(".fa") + ".blast.6.txt", 6)
+    blast_output_file = invokeBlast(consensus_file, database_file, consensus_file.rstrip(".fa") + ".blast.6.txt")
 
     #### Second: Check coverage of each seqeunce
     fp = open(blast_output_file)
@@ -43,13 +39,13 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
         consensus_id = A[0]
         if not consensus_id in consensus_map:
             consensus_map[consensus_id] = interval_list.IntervalList()
-        consensus_map[consensus_id].add(sorted(int(A[2]), int(A[3])))
+        consensus_map[consensus_id].add(sorted([int(A[2]), int(A[3])]))
         
 
         repeat_id = A[1]
-        if not repeat_if in rpt_map:
+        if not repeat_id in rpt_map:
             rpt_map[repeat_id] = interval_list.IntervalList()
-        rpt_map[repeat_id]=add(sorted(int(A[4]), int(A[5]))
+        rpt_map[repeat_id].add(sorted([int(A[4]), int(A[5])]))
         
     #### Third: Calculate coverage of consensus sequences.
     #### At the end, for each consensus_sequence id, we will have a tuple (c,l), where
@@ -57,7 +53,7 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
     consensus_coverage = {}
     for seq_record in SeqIO.parse(consensus_file, 'fasta'):
         if seq_record.id in consensus_map:
-            consensus_coverage[seq_record.id] = len(consensus_map[seq_record.id]), float(len(seq_record))
+            consensus_coverage[seq_record.id] = consensus_map[seq_record.id].coverage(), float(len(seq_record))
         else:
             consensus_coverage[seq_record.id] = 0, float(len(seq_record))
 
@@ -67,7 +63,7 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
     rpt_coverage = {}
     for seq_record in SeqIO.parse(rm_fa_file, 'fasta'):
         if seq_record.id in rpt_map:
-            rpt_coverage[seq_record.id] = len(rpt_map[seq_record.id]), float(len(seq_record))
+            rpt_coverage[seq_record.id] = rpt_map[seq_record.id].coverage(), float(len(seq_record))
         else:
             rpt_coverage[seq_record.id] = 0, float(len(seq_record))
 
