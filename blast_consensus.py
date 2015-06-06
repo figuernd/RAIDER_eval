@@ -8,21 +8,19 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Blast.Applications import NcbiblastnCommandline
 import subprocess
 import os.path
-from coverageBLAST import coverageBLAST
 
 e_val = 0.0001   # Needed constant for blast invocation.  Specifies the expected number of false positive matches.
 
 
-def invokeBlast(query_file, db_file, out_file = None):
+def invokeBlast(query_file, db_file, output):
     """Blast each ancestor against the elements database; return name of output file"""
-    output = out_file if out_file else query_file + ".xml"
-    blastn_cline = NcbiblastnCommandline(query=query_file, db=db_file, outfmt=5, out=out_file if out_file else query_file + ".xml", evalue = e_val)
+    blastn_cline = NcbiblastnCommandline(query=query_file, db=db_file, outfmt="6 qseqid sseqid sstart send", out=output, evalue = e_val)
+    print("BLAST: " + str(blastn_cline))
     stdout, stderr = blastn_cline()
 
     #assert not stderr, "BLAST: " + stderr
 
     return output
-
 
 
 def main(consensus_file, rm_fa_file, database_file, output_file):
@@ -33,38 +31,26 @@ def main(consensus_file, rm_fa_file, database_file, output_file):
     * Output_file: Where to put the output.
     """
     #### First: run blast
-    blast_output_file = invokeBlast(consensus_file, database_file, consensus_file.rstrip(".fa") + ".blast.xml")
+    blast_output_file = invokeBlast(consensus_file, database_file, consensus_file.rstrip(".fa") + ".blast.6.txt", 6)
 
     #### Second: Check coverage of each seqeunce
     fp = open(blast_output_file)
-    blast_records = NCBIXML.parse(fp)
 
     consensus_map = {}
     rpt_map = {}
-    for blast_obj in blast_records:
-        consensus_id = re.match("(\S+)", blast_obj.query).group(1)
+    for line in fp:
+        A = re.split("\s+", line)
+        consensus_id = A[0]
         if not consensus_id in consensus_map:
-            consensus_map[consensus_id] = set()
+            consensus_map[consensus_id] = interval_list.IntervalList()
+        consensus_map[consensus_id].add(sorted(int(A[2]), int(A[3])))
+        
 
-        for align_obj in blast_obj.alignments:
-            rpt_id = re.match("\S+\s+(\S+)", align_obj.title).group(1)
-
-            if not rpt_id in rpt_map:
-                rpt_map[rpt_id] = set()
-
-            for hsp_obj in align_obj.hsps:
-                consensus_start = hsp_obj.query_start
-                consensus_finish = hsp_obj.query_end
-                if consensus_finish < consensus_start:
-                    consensus_start, consensus_finish = consensus_finish, consensus_start
-                consensus_map[consensus_id] |= set(range(consensus_start-1, consensus_finish))
-
-                subject_start = hsp_obj.sbjct_start
-                subject_finish = hsp_obj.sbjct_end
-                if subject_finish < subject_start:
-                    subject_finish, subject_start = subject_start, subject_finish
-                rpt_map[rpt_id] |= set(range(subject_start-1,subject_finish))
-
+        repeat_id = A[1]
+        if not repeat_if in rpt_map:
+            rpt_map[repeat_id] = interval_list.IntervalList()
+        rpt_map[repeat_id]=add(sorted(int(A[4]), int(A[5]))
+        
     #### Third: Calculate coverage of consensus sequences.
     #### At the end, for each consensus_sequence id, we will have a tuple (c,l), where
     #### c is the number of bases covered, and l is the number of bases.

@@ -8,15 +8,18 @@ class IntervalList:
     def __str__(self):
         return " ".join([str(x) for x in self.ilist])
 
+    def __repr__(self):
+        return str(self)
+
     def add(self,I):        
         """Merge a new inerval with existing overlapping intervals, or
         add it in if it doesn't overlap. 
         Optimization: if necessary, we can improve this to a binary
         search, but didn't seem worth the effort not."""
 
-        i = 0
-        while i < len(self.ilist) and I[0] >= self.ilist[i][1]:
-            i += 1
+        i = len(self.ilist)
+        while i > 0 and self.ilist[i-1][1] > I[0]:
+            i -= 1
 
         if i == len(self.ilist):
             self.ilist.append(I)
