@@ -78,6 +78,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'araider':'./araider',
                     'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
+raider2_ages = [0,1]
+
 
 #########
 # Utility functions
@@ -173,7 +175,7 @@ def parse_params(args):
    
     # RAIDER2 ARGUMENTS
     raider2_argument = parser.add_argument_group("RAIDER2 parameters")
-    raider2_argument.add_argument('--age', type = int, help="Use older version of raider", default=0) 
+    raider2_argument.add_argument('--age', type = int, help="Use older version of raider2", default=1) 
     raider2_argument.add_argument('--aa', '--all_ages', dest="all_ages", action="store_true", help="Run all ages of raider2", default=False) # type = int, help="Use older version of raider", default=0)
 
     # REPSCOUT ARGUMENTS
@@ -465,7 +467,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} -s {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -792,39 +794,6 @@ def run_repeat_masker(p, num_processors):
     return p2
 
 
-def performance_sum(stats_jobs, stats_dir, curr_dir, test):
-    """Given a list of all of the statistics jobs, uses the statistics output files to
-    generate a summary file indicative of overall performance. Put results in stats_dir
-    (Current dir if unspecified)"""
-    tps = 0
-    tns = 0
-    fps = 0
-    fns = 0
-    for p in stats_jobs:
-        sf = open(p.stats_output, "r")
-        tps += int(re.split("\s+", sf.readline().rstrip())[1])
-        fps += int(re.split("\s+", sf.readline().rstrip())[1])
-        tns += int(re.split("\s+", sf.readline().rstrip())[1])
-        fns += int(re.split("\s+", sf.readline().rstrip())[1])
-        sf.close()
-    stats_file = "summary.%s.stats" % (test)
-    smry_path = "%s/%s" % (stats_dir, stats_file) if stats_dir else "%s/%s" %(curr_dir, stats_file) if curr_dir else stats_file
-    
-    smry = open(smry_path, 'w')
-    smry.write("Evaluation completed.\n")
-    smry.write("True Positives (TP): \t %d \n" % (tps))
-    smry.write("False Positives (FP): \t %d \n" % (fps))
-    smry.write("True Negatives (TN): \t %d \n" % (tns))
-    smry.write("False Negatives (FN): \t %d \n" % (fns))
-    smry.write("\nPerformance of Repeat Classification Tool\n")
-    smry.write("Sensitivity (TPR): \t\t %f %%\n" % (tps/(tps + fns)))
-    smry.write("Specificity (TNR): \t\t %f %%\n" % (tns/(fps + tns)))
-    smry.write("Precision (PPV): \t\t %f %%\n" % (tps/(tps + fps)))
-    smry.write("Neg. Pred. Val. (NPV): \t %f %%\n" % (tns/(tns + fns)))
-    smry.write("Fall-Out (FPR): \t\t %f %%\n" % (fps/(fps + tns)))
-    smry.write("False Disc. Rate (FDR): \t  %f %%\n" % (fps/(tps + fps)))
-    smry.close()
-
 
 def run_perform_stats(p, exclusion_file = None):
     """Given the pbs object used to start a consensus sequence job as well as
@@ -869,6 +838,71 @@ def run_perform_stats(p, exclusion_file = None):
     p2.tool_description = p.tool_description
     return p2
     
+
+#def performance_sum(job_dic, PRA_jobs):
+#    """Given a list of all of the statistics jobs, uses the statistics output files to
+#    generate a summary file indicative of overall performance. Put results in stats_dir
+#    (Current dir if unspecified)"""
+#    ######
+#    # Calculate statistics (not bothering with parallelization yet)
+#    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "\n"
+#    stats_jobs = set()
+#    for key in test_tools:
+#        for p in job_dic[key]:
+#            stats_jobs.add(run_perform_stats(p))
+#
+#
+#    with open(args.results_dir + "/" + args.stats_file, "w") as fp:
+#        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "coverage"))
+#        
+#        for key in test_tools:
+#            for p in job_dic[key]:
+#                try:
+#                
+#                    s = run_perform_stats(p)
+#
+#                except Exception as E:
+#                    progress_fp.write("performance Exception: " + str(E) + "\n");
+#                    fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+#
+#    ### KARRO
+#    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
+#    for p in PRA_jobs:
+#        p.timed_wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
+#    ### KARRO END
+#    regex = re.compile("(?<=\# Average consensus coverage: )\d+.\d+")
+#    >>> m = regex.findall(text)
+#    >>> m
+#    ['0.0063']
+#
+#    tps = 0
+#    tns = 0
+#    fps = 0
+#    fns = 0
+#    for p in stats_jobs:
+#        sf = open(p.stats_output, "r")
+#        tps += int(re.split("\s+", sf.readline().rstrip())[1])
+#        fps += int(re.split("\s+", sf.readline().rstrip())[1])
+#        tns += int(re.split("\s+", sf.readline().rstrip())[1])
+#        fns += int(re.split("\s+", sf.readline().rstrip())[1])
+#        sf.close()
+#    stats_file = "summary.%s.stats" % (test)
+#    smry_path = "%s/%s" % (stats_dir, stats_file) if stats_dir else "%s/%s" %(curr_dir, stats_file) if curr_dir else stats_file
+#    
+#    smry = open(smry_path, 'w')
+#    smry.write("Evaluation completed.\n")
+#    smry.write("True Positives (TP): \t %d \n" % (tps))
+#    smry.write("False Positives (FP): \t %d \n" % (fps))
+#    smry.write("True Negatives (TN): \t %d \n" % (tns))
+#    smry.write("False Negatives (FN): \t %d \n" % (fns))
+#    smry.write("\nPerformance of Repeat Classification Tool\n")
+#    smry.write("Sensitivity (TPR): \t\t %f %%\n" % (tps/(tps + fns)))
+#    smry.write("Specificity (TNR): \t\t %f %%\n" % (tns/(fps + tns)))
+#    smry.write("Precision (PPV): \t\t %f %%\n" % (tps/(tps + fps)))
+#    smry.write("Neg. Pred. Val. (NPV): \t %f %%\n" % (tns/(tns + fns)))
+#    smry.write("Fall-Out (FPR): \t\t %f %%\n" % (fps/(fps + tns)))
+#    smry.write("False Disc. Rate (FDR): \t  %f %%\n" % (fps/(tps + fps)))
+#    smry.close()
 
 # def run_pra_analysis(jobs, BLAST_DATABASE):
 #     """This takes a list of the jobs, and a list of the BLAST_DATABASE jobs.  For each 
@@ -941,7 +975,11 @@ def create_blast_db(file_list):
         BLAST_DATABASE[file_name] = o
 
     for o in BLAST_DATABASE.values():
-        o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
+        #o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
+        if not timing_jobs:
+            o.submit(preserve=True)
+        else:
+            o.submit_timed_job(preserve=True)
 
     return BLAST_DATABASE
 
@@ -978,8 +1016,20 @@ def run_pra_analysis(tool_job, database_job):
     p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
-    p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
+    #p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
+    if not timing_jobs:
+        p.submit(preserve=True)
+    else:
+        p.submit_timed_job(preserve=True)
 
+    p.description = "PraAnalysis"
+    p.seed = tool_job.seed if hasattr(tool_job, "seed") else "NA"
+    p.seed_num = tool_job.seed_num if hasattr(tool_job, "seed_num") else "NA"
+    p.lib_file = tool_job.lib_file
+    p.seq_file = tool_job.seq_file
+    p.pra_output = tool_job.lib_file.rstrip(".fa") + ".pra.txt"
+    p.tool_resources = tool_job.resources
+    p.tool_description = tool_job.description
     return p
 ### KARRO END
 
@@ -1047,7 +1097,7 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
     If/when all tool jobs complete, returns list of repmask jobs (some of which are still running). 
     Note: If we submitted the evaluation as a PBS job with a set walltime, keep checking to
     see if we have reached point to save work and exit."""
-
+    
     job_set = {j for j in jobs}
     if not RM_jobs:
         RM_jobs = set()
@@ -1060,10 +1110,19 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
         for j in job_set:
             if not j.isJobRunning():
                 finished_jobs.add(j)
+                rm_job = None
+                pra_job = None
                 if run_rm:
-                    RM_jobs.add(run_repeat_masker(j, pa))
+                    rm_job = run_repeat_masker(j,pa)
+                    RM_jobs.add(rm_job)
                 if run_pra:
-                    PRA_jobs.add(run_pra_analysis(j, blast_db[j.seq_file]))
+                    pra_job = run_pra_analysis(j, blast_db[j.seq_file])
+                    PRA_jobs.add(pra_job)
+                if rm_job:
+                    rm_job.pra_job = pra_job if pra_job else None
+                if pra_job:
+                    pra_job.rm_job = rm_job if rm_job else None
+                
         job_set = job_set - finished_jobs
         time_est = time.time() - t1
         if timing and not have_time_for_another_run(time_est):
@@ -1092,7 +1151,7 @@ def run_timed_analysis_jobs(RM_jobs, PRA_jobs, results_dir, stats_jobs=None, job
         pra_job_set = {j for j in PRA_jobs}
         rm_job_set = {j for j in RM_jobs}
         #finished_jobs = set()
-        while rm_job_set:
+        while rm_job_set or pra_job_set:
             finished_rm_jobs = set()
             finished_pra_jobs = set()
             time_est = None
@@ -1115,9 +1174,6 @@ def run_timed_analysis_jobs(RM_jobs, PRA_jobs, results_dir, stats_jobs=None, job
                 exit_now()
             pra_job_set = pra_job_set - finished_pra_jobs
             rm_job_set = rm_job_set-finished_rm_jobs
-    job_dic['raider'].sort(key = lambda x: x.seed_num)
-    job_dic['araider'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2'].sort(key = lambda x: x.seed_num)
     return job_dic, stats_jobs, pra_job_set
 
 
@@ -1237,7 +1293,7 @@ if __name__ == "__main__":
 
 
     if not continue_prev or next_step == '':
-        BLAST_DATABASE = create_blast_db(file_list) if args.pa else {} #CARLY: Moved this into a method to make main method (slightly) easier to follow
+        BLAST_DATABASE = create_blast_db(file_list) if args.pra else {} #CARLY: Moved this into a method to make main method (slightly) easier to follow
         if timing:
             write_blast_db_to_checkpoint(BLAST_DATABASE, args.results_dir)
     
@@ -1280,11 +1336,10 @@ if __name__ == "__main__":
                      for file in file_list]
         
         if args.run_raider2:
-            ages = [0,1,2]
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             if args.all_ages:
                 jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in ages
+                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
                      for file in file_list]
 
             else:
@@ -1415,7 +1470,13 @@ if __name__ == "__main__":
             job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir, stats_jobs)
             #job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir)    
 
-
+    
+    job_dic['raider'].sort(key = lambda x: x.seed_num)
+    job_dic['araider'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.0'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.1'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.2'].sort(key = lambda x: x.seed_num)
+    
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
         for i in range(len(file_list)):
@@ -1431,12 +1492,19 @@ if __name__ == "__main__":
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
+    ### KARRO
+    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
+    #for p in PRA_jobs:
+    #    p.timed_wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
+    ### KARRO END
 
+    regex = re.compile("(?<=\# Average consensus coverage: )\d+.\d+")
+    
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "cc"))
         
         for key in test_tools:
             for p in job_dic[key]:
@@ -1444,20 +1512,21 @@ if __name__ == "__main__":
                 try:
                     Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None) # args.family_file)
                     Stats = [round(x,5) for x in Stats]
-                       
+                    Coverage = "NA"
+                    if p.pra_job:
+                        try:
+                            Coverage = regex.findall(open(p.pra_job.pra_output, "r").read()).group(0)
+                        except Exception as E:
+                            progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
+
                     if args.hooke_jeeves:
                         print(Counts[1]+Counts[2])
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)) + list(Coverage))))
 
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
-    ### KARRO
-    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
-    for p in PRA_jobs:
-        p.timed_wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
-    ### KARRO END
                             
 
             
