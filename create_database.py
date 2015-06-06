@@ -9,6 +9,8 @@ import os
 import sys
 import re
 
+filter_words = {'Simple', 'Satellite', 'complexity', 'telo'}
+
 def createDatabase(db_file, force = True):
     """Create BLAST db out of elements file"""
     if force or not os.path.isfile(db_file + ".nhr"):
@@ -36,12 +38,15 @@ def create_target(seq_file, rm_file, out_file):
             start = int(A[5])
             stop = int(A[6]) - 1
             location = "{chr}:{start}-{stop}".format(chr=A[4], start=start, stop=stop)
+            if any([x in A[10] for x in filter_words]):
+                continue
             id = "{class_name}|{family}|{location}".format(class_name=A[9], family=A[10], location=location)
             D[id] = 0 if id not in D else D[id] + 1
             id += " " + str(D[id])
             description = ""
             R = SeqRecord(seq = chr_seq[start:stop], id = id, description=description)
             L.append(R)
+
     SeqIO.write(L, out_file, "fasta")
 
 if __name__ == "__main__":
