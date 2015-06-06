@@ -1,7 +1,8 @@
 // ==========================================================================
-//                               	RAIDER
+//                               	RAIDER2
 // ==========================================================================
-// Author: Nathan Figueroa <figuernd@miamioh.edu>
+// Author: Charlotte Schaeffer <schaefce@miamioh.edu>
+// Based off of original RAIDER by Nathan Figueroa
 // ==========================================================================
 
 #include <seqan/basic.h>
@@ -44,7 +45,7 @@ struct AppOptions {
 	// Minimum number of repeats to be significant
 	uint count;
 
-	seqan::CharString mask;
+	seqan::CharString seed;
 	seqan::CharString sequence_file;
 	seqan::CharString output_directory;
 
@@ -61,22 +62,27 @@ struct AppOptions {
 // --------------------------------------------------------------------------
 seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int argc, char const ** argv) {
 	// Setup ArgumentParser.
-	seqan::ArgumentParser parser("RAIDER");
+	seqan::ArgumentParser parser("RAIDER2");
 	// Set short description, version, and date.
 	setShortDescription(parser, "RAIDER - Rapid Ab Initio Detection of Elementary Repeats");
-	setVersion(parser, "1.0");
-	setDate(parser, "April 2013");
+	setVersion(parser, "2.0");
+	setDate(parser, "June 2015");
 
 	// Define usage line and long description.
-	addUsageLine(parser, "[\\fIOPTIONS\\fP] \"\\fIMASK_FILE\\fP\" \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
+	addUsageLine(parser, "[\\fIOPTIONS\\fP]  \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
 	addDescription(
 			parser,
-			"RIADER parses the given sequence file using the supplied mask (spaced seed) to identify de novo repeats. Minimum repeat size and other options can be configured as described below.");
+			"RAIDER2 parses the given sequence file using the supplied mask (spaced seed) to identify de novo repeats. Minimum repeat size and other options can be configured as described below.");
 
 	// We require two arguments.
-	addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "MASK"));
+	//addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "MASK"));
 	addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "SEQUENCE_FILE"));
 	addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "OUTPUT_DIRECTORY"));
+	
+    addOption(
+			parser,
+			seqan::ArgParseOption("s", "seed", "Spaced seed/mask to use. Defaults to 111110011111110001111111000000000000011111.",
+					seqan::ArgParseOption::STRING));
 
 	addOption(
 			parser,
@@ -84,7 +90,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 					seqan::ArgParseOption::INTEGER));
 	addOption(
 			parser,
-			seqan::ArgParseOption("c", "count", "Minimum number of repeats in a family. Defaults to 2.",
+			seqan::ArgParseOption("c", "count", "Minimum number of repeats in a family. Defaults to 5.",
 					seqan::ArgParseOption::INTEGER));
 	addOption(parser, seqan::ArgParseOption("q", "quiet", "Set verbosity to a minimum."));
 	addOption(parser, seqan::ArgParseOption("v", "verbose", "Enable verbose output."));
@@ -96,7 +102,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 
 	// Add Examples Section.
 	addTextSection(parser, "Examples");
-	addListItem(parser, "\\fBraider\\fP \\fB-v\\fP \\fI1110110111\\fP \\fIchr23.fasta\\fP \"\\fIchr23_out\\fP\"",
+	addListItem(parser, "\\fBraider\\fP \\fB-v\\fB -s \\fI1110110111\\fP \\fIchr23.fasta\\fP \"\\fIchr23_out\\fP\"",
 			"Call with mask \"1110110111\" and verbose output.");
 
 	// Parse command line.
@@ -114,21 +120,27 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
     if (isSet(parser, "verbose+"))
         options.verbosity = 3;
 
-	seqan::getArgumentValue(options.mask, parser, 0);
-	seqan::getArgumentValue(options.sequence_file, parser, 1);
-	seqan::getArgumentValue(options.output_directory, parser, 2);
+	//seqan::getArgumentValue(options.seed, parser, 0);
+	seqan::getArgumentValue(options.sequence_file, parser, 0);
+	seqan::getArgumentValue(options.output_directory, parser, 1);
 
-	if (isSet(parser, "min"))
-		seqan::getOptionValue(options.min, parser, "min");
-	else
-		options.min = seqan::length(options.mask);
 
 	if (isSet(parser, "count"))
 		seqan::getOptionValue(options.count, parser, "count");
 	else
-		options.count = 2;
+		options.count = 5;
 
-	if (isSet(parser, "age"))
+    if (isSet(parser, "seed"))
+        seqan::getOptionValue(options.seed, parser, "seed");
+    else
+        options.seed = "111110011111110001111111000000000000011111";
+
+	if (isSet(parser, "min"))
+		seqan::getOptionValue(options.min, parser, "min");
+	else
+		options.min = seqan::length(options.seed);
+	
+    if (isSet(parser, "age"))
 		seqan::getOptionValue(options.age, parser, "age");
 	else
 		options.age = 0;
@@ -223,7 +235,7 @@ void printArgs(AppOptions &options) {
 				<< "VERBOSITY\t" << options.verbosity << endl
 				<< "MIN_LENGTH\t" << options.min << endl
 				<< "MIN_COUNT\t" << options.count << endl
-				<< "SPACED_SEED     \t" << options.mask <<endl
+				<< "SPACED_SEED     \t" << options.seed <<endl
 				<< "SEQUENCE_FILE\t" << options.sequence_file << endl
 				<< "OUTPUT_DIRECTORY\t" << options.output_directory << endl;
 	}
@@ -353,10 +365,10 @@ int main(int argc, char const ** argv) {
 	}
 
 	vector<Family*> families;
-	vector<seqan::CharString> masks;
-	masks.push_back(options.mask);
+	vector<seqan::CharString> seeds;
+	seeds.push_back(options.seed);
 
-	getElementaryFamilies(sequence, masks, families, options.verbosity, options.age);
+	getElementaryFamilies(sequence, seeds, families, options.verbosity, options.age);
 
 	if (options.verbosity > 0) {
 		cout << "Writing results elements..." << endl;
