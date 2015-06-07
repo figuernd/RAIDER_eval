@@ -251,6 +251,7 @@ def parse_params(args):
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
 
 
+
     arg_return =  parser.parse_args(args)
 
     global time_limit
@@ -336,7 +337,9 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
 
     mc = "--mc %s" % mc_file if mc_file else ""
 
-    if sim_type == 0 and os.path.isfile(repeat_arg):
+    if k == 0:  # Really only for debugging
+        cmd = "{python} chromosome_simulator3.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
+    elif sim_type == 0 and os.path.isfile(repeat_arg):
         cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
     else:
         sim_type = "--st %d" % (sim_type)
