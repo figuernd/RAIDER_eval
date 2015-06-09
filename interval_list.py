@@ -17,10 +17,25 @@ class IntervalList:
         Optimization: if necessary, we can improve this to a binary
         search, but didn't seem worth the effort not."""
 
-        i = len(self.ilist)
-        while i > 0 and self.ilist[i-1][1] > I[0]:
-            i -= 1
+        if len(self.ilist) == 0:
+            self.ilist.append(I)
+            return None
 
+        # Find: First i such that ilist[i][1] > I[0]
+        a = 0
+        b = len(self.ilist)
+
+        while a < b:
+            i = (a+b)//2
+            if self.ilist[i][1] < I[0]:
+                a = i+1
+            elif i > 0 and self.ilist[i-1][1] > I[0]:
+                b = i-1
+            else:
+                a = i
+                break
+
+        i = a
         if i == len(self.ilist):
             self.ilist.append(I)
             return None
@@ -39,3 +54,6 @@ class IntervalList:
                              
     def coverage(self):
         return sum([b-a for a,b in self.ilist])
+
+L = IntervalList()
+L.add([10,20])
