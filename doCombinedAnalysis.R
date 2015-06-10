@@ -11,7 +11,7 @@ option_list_2 = list(
         help="Directory to recursively search for stats files"),
     make_option(c("-o", "--output"), type="character", default=NA, 
         help="File to print output to"),
-    make_option(c("--formula"), type="character", default="~+tpr", 
+    make_option(c("--formula"), type="character", default="~-tpr", 
         help = "Sorting formula [default \"%(default)s\"]"),
     make_option(c("-a", "--auto_out"), action="store_true", default=FALSE,
         help="Automatically create output file in same directory."),
@@ -19,11 +19,11 @@ option_list_2 = list(
         help="Automatically add type info (sim vs seq_files)."),
     make_option(c("-c", "--add_chrom"), action="store_true", default=FALSE,
         help="Automatically add chrom info."),
-    make_option(c("-s", "--add_seeds"), action="store_true", default=FALSE,
-        help="Automatically add seed info."),
-    make_option(c("-i", "--more_info"), action="store_true", default=FALSE,
-        help="Include info about time and space"),
-    make_option(c("-m", "--even_more_info"), action="store_true", default=FALSE,
+    make_option(c("-s", "--suppress_seeds"), action="store_false", default=TRUE,
+        help="Do not include seed info."),
+    make_option(c("-i", "--suppress_complexity_info"), action="store_false", default=TRUE,
+        help="Do not include info about time and space complexity"),
+    make_option(c("-m", "--suppress_dir_info"), action="store_true", default=FALSE,
         help="Include directory name")
 )
 
@@ -48,6 +48,6 @@ combineAnalyze <- function(verbose, output, form, auto_out, dir, include.seeds, 
     getSorted(myData, verbose, output, formula(form), auto_out, dir, more_info)
 }
 
-combineAnalyze(args2$verbose, args2$output, args2$formula, args2$auto_out, args2$dir, args2$add_seeds, args2$add_type, args2$add_chrom, args2$more_info, args2$even_more_info)
+combineAnalyze(args2$verbose, args2$output, args2$formula, args2$auto_out, args2$dir, args2$suppress_seeds, args2$add_type, args2$add_chrom, args2$suppress_complexity_info, args2$suppress_dir_info)
  
 

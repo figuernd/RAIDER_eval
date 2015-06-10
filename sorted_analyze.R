@@ -40,6 +40,29 @@ numberOf <- function(seed, val){
     numOnes + length(unlist(getMatches(match.string, seed)))
 }
 
+toSeedString <- function(seed){
+    seed.string = ""
+    match.string <- "(?<=\\^\\{)[[:digit:]]+(?=\\})"
+    match.indices <- gregexpr(match.string,seed,perl=TRUE)[[1]]
+    match.values <- regmatches(seed,gregexpr(match.string,seed,perl=TRUE))[[1]]
+    j = 1
+    for( i in 1:length(match.indices)){
+        next.index <- match.indices[i]
+        next.val <- match.values[i]
+        seed.val.index = next.index - 3
+        if(seed.val.index > j + 1){
+            print( substring(seed, j, seed.val.index - 1))
+            seed.string <- paste(seed.string, substring(seed, j, seed.val.index - 1), sep="")
+        }
+        j = next.index + length(as.character(next.val)) + 1
+        seed.val <- substring(seed,seed.val.index, seed.val.index)
+        seed.string <- paste(seed.string, paste(replicate(next.val,as.character(seed.val)),collapse=""), sep="")
+    }
+    seed.string
+    
+
+}
+
 
 addInfo <- function(fname, include.seeds, include.type, include.chrom, include.dir){
     dat <- getDf(fname) #read.table(fname,header=TRUE,comment.char="")
@@ -64,6 +87,7 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
         seed.lengths <- rep(NA,nrow(dat))
         seed.widths <- rep(NA,nrow(dat))
         seed.wlRatios <- rep(NA,nrow(dat))
+        seed.strings <- rep(NA,nrow(dat))
         for (i in 1:nrow(dat)){
             s1.index <- dat[i,"seed"]
             #print(s1.index)
@@ -82,6 +106,7 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
                 seed.widths[i] <- w
                 seed.lengths[i] <- l
                 seed.wlRatios[i] <- w/l
+                seed.strings[i] <- toSeedString(seed)
             }
             else{
                 mylist[i] <- NA
@@ -92,11 +117,15 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
         dat$length <- seed.lengths
         dat$width <- seed.widths
         dat$wlRatio <- seed.wlRatios
+        dat$seedString <- seed.strings
         #drops <- c("seed")
         #dat <- dat[,!(names(dat) %in% drops)]
     }
     freq <- getMatches("(?<=F)[[:digit:]]+",dir.name)
     dat$freq <- rep(freq, nrow(dat))
+    if("cc" %in% names(dat)){
+        dat$cover <- dat[,"cc"]
+    }
     dat
 }
 
@@ -138,7 +167,7 @@ sortBy <- function(form,dat){
 
 
 removeExcess <-function(dat, more_info){
-    drops <- c()#c("tp","tn","fp","fn")
+    drops <- c("cc")#c("tp","tn","fp","fn")
     if(!more_info){
         drops2 <- c("ToolCpuTime","ToolWallTime","ToolMem","ToolVMem","RMCpuTime","RMWallTime","RMMem","RMVMem")
         drops <- c(drops, drops2)
