@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include "interval_list.h"
+#include <ctime>
 
 using namespace std;
 
@@ -20,9 +21,11 @@ int main(int argc, char** argv) {
   string output_file = argv[4];
   string blast_file = consensus_file.substr(0, consensus_file.rfind(".")) + ".blast.6.txt";
 
+  clock_t start_time = clock();
   string blast_format = "\"6 qseqid sseqid qstart qend qlen sstart send slen\"";
-  string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + rm_fa_file + " -db " + database_file + " -evalue 0.001";
+  string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + consensus_file + " -db " + database_file + " -evalue 0.001";
   int v = system(cmd.c_str());
+  clock_t blast_time = clock();
 
 
   ifstream fin(blast_file);
@@ -40,7 +43,8 @@ int main(int argc, char** argv) {
   si_map qmap;
   si_map tmap;
   unordered_map<string,int> lenmap;
-
+  
+  fout << "## Blast time: " << (blast_time - start_time)/CLOCKS_PER_SEC << endl;
   while (fin >> qid >> sid >> qstart >> qend >> qlen >> sstart >> send >> slen) {
     if (qend < qstart)
       std::swap(qstart, qend);
@@ -109,7 +113,8 @@ int main(int argc, char** argv) {
   for (auto i=D.begin(); i != D.end(); i++)
     fout << i->first << "\t" << i->second.first << "\t" << i->second.second << endl;
 
-
+  clock_t finish_time = clock();
+  fout << "## Process time: " << ((finish_time - blast_time) / CLOCKS_PER_SEC) << endl;
 
   return 0;
 }
