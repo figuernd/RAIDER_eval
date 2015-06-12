@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
   count = 0;
 
   unordered_map<string,pair<double,int>> D;
-  for (si_map::iterator i = tmap.begin(); i != qmap.end(); i++) {
+  for (si_map::iterator i = tmap.begin(); i != tmap.end(); i++) {
     string id = i->first;
     int len = lenmap[id];
     int covered = i->second.num_covered();
