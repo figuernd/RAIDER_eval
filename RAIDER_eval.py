@@ -994,7 +994,7 @@ def run_pra_analysis(tool_job, database_job):
     * database_job: the database job for the sequence on which tool_job was run.
     This function will wait on completion of both jobs."""
 
-    cmd = "{python} blast_consensus.py {consensus_file} {rm_fa_file} {database_file} {output_file}"
+    cmd = "{python} ./pra_analysis {consensus_file} {rm_fa_file} {database_file} {output_file}"
     #tool_job.wait()
     database_job.wait()
 
