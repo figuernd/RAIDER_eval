@@ -1,0 +1,1 @@
+Thrm: If there are only two copies of the instance, then families cannot overlap by more than l.
