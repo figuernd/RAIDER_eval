@@ -1,0 +1,54 @@
+AAAAAGTTTTT    AAAAACTTTTT     AAAAACTTTTT
+11*11          11*11           11*11
+                22*22           22*22
+		 22*22           22*22
+   11*11          11*11           11*11
+                   22*22           22*22
+		    22*22           22*22
+      11*11          11*11           11*11
+
+                        
+1: AA*AA*TT*TT
+2:  AAAACTTTT
+
+
+AACAAGTTCTT  AAGAACTTGTT
+11*11        11*11
+ 22*22        33*33
+  22*22        33*33
+   11*11        11*11
+    22*22        33*33
+     22*22        33*33
+      11*11        11*11
+
+
+AAAAACCCCC     AAAAACCCCC
+11*11          
+ 11*11
+  11*11
+   11*11
+    11*11
+     11*11
+
+
+AAAAAGGGGG
+11*11
+ 11*11
+  22*22
+   22*22
+    11*11
+     11*11
+
+AAAAAGGGGG
+  AAAGGG
+    
+
+
+GRE: Genomic regular expression.
+-- String: Alphabet over {A,C,G,T,*}
+
+
+
+Given a seed, we induce a GRE as follows:
+
+

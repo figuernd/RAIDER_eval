@@ -1,0 +1,118 @@
+Seed: 11011  (Stars denote base positions with at least one mismatch.)
+     *     *           *     *           *     *
+AAAAACTTTTTCGGGGG AAAAAGTTTTTAGGGGG AAAAAGTTTTTAGGGGG
+11*11             11*11             11111
+                   22*22             22222
+                    22222             22222
+   11*11             11111             11111
+                      22222             22222
+		       22222             22222
+      11*11             11111             11111
+                         22222             22222
+			  22222             22222
+	 11*11 		   11111             11111
+			    22222             22222
+                             22222             22222
+            11*11             11111             11111
+
+ER 1: AAAAA*TTTTT*GGGGG
+ER 2:  AAAAGTTTTTAGGGG
+Notice: these two ERs *match* by my definition of matching.  (If we line them up
+as shown, then for any base, there is at least one position where can put the seed
+that covers the base
+
+Question: if we merge them how to we retain the end bases?
+
+Notice: we can make the number of end-bases arbitrartily long.
+
+----------------------------------------
+Seed: 11011
+     *     *           *     *           *     *
+AAAAACTTTTTCGGGGG AAAAAGTTTTTCGGGGG AAAAAGTTTTTAGGGGG
+11111             11111             11111
+                   22222             22222
+                    22222             22222
+   11111             11111             11111
+                      22222             22222
+		       22222             22222
+      11111             11111             11111
+       33333             33333             
+	33333		  33333            
+	 11111 		   11111             11111
+	  33333	            33333
+           33333             33333
+            11111             11111             11111
+
+RE 1: AAAAA*TTTTT*GGGGG
+RE 2:  AAAAGTTTT
+RE 3:        TTTTCGGGG
+
+----------------------------------------
+Seed: 11011
+     *     *         *     *               *
+AAAAACTTTTTCGGG AAAAAGTTTTTAGGG AAAAAGTTTTTAGGG
+11111           11111           11111
+                 22222           22222
+		  22222           22222
+   11111	   11111           11111
+                    22222           22222
+		     22222           22222
+      11111           11111           11111
+                       22222           22222
+		        22222           22222
+	 11111		 11111           11111
+	                  22222           22222
+
+
+RE 1: AAAAA*TTTTT*GGG
+RE 2:  AAAAGTTTTTAGGG
+Question: How do we get an overlap without inclusion?
+
+----------------------------------------
+Seed: 11011
+     *     *           *     *                 *
+AAAAACTTTTTCGGGGG AAAAAGTTTTTAGGGTG AAAAAGTTTTTAGGGTG
+11111             11111             11111
+                   22222             22222
+                    22222             22222
+   11111             11111             11111
+                      22222             22222
+		       22222             22222
+      11111             11111             11111
+                         22222             22222
+			  22222             22222
+	 11111 		   11111             11111
+			    22222             22222
+                             22222             22222
+                              22222             22222
+
+RE1: AAAAA*TTTTT*GG
+RE2:  AAAAGTTTTTAGGGTG
+
+
+
+Claim: If two seeds 
+
+
+-----------------------------------
+AAAAAGGGGG     AAAAAGGGGG
+AA*AA          AA*AA       (1.1)
+ AA*AG          AA*AG      (1.2)
+  AA*GG          AA*GG     (2.1)
+   AA*GG          AA*GG    (2.1)
+    AG*GG          AG*GG   (1.3)
+     GG*GG          GG*GG  (1.4)
+
+AAAAAGGGGG
+AA*GG
+
+AAAGGGGG     AAAGGGGG
+AA*GG        AA*GG      (1.1)
+ AA*GG        AA*GG     (1.1)
+  AG*GG        AG*GG    (2.1)
+   GG*GG        GG*GG   (2.2)
+
+AA*GG
+AGGGGG
+
+  
