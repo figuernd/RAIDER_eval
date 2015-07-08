@@ -38,6 +38,7 @@ def get_consensus(family_num, R, genome_string, wp):
     return SeqRecord(Seq(rep_seq), id = "repeat" + str(family_num), description = "")
 
 def main(seq,elements,output,fa_output):  
+    open("STARTED.TXT", "w").write("STARTED")
     genomeFile = seq
     genome_string = next(SeqIO.parse(genomeFile, "fasta"))
     
@@ -48,10 +49,10 @@ def main(seq,elements,output,fa_output):
     elementFile = elements
     f = open(elementFile, 'r')
     f.readline()
-    current_family = 0
+    line = f.readline()
+    current_family = int(re.split("\s+", line)[0])
     R = []
     while True:
-        line = f.readline()
         if not line:
             records.append(get_consensus(current_family, R, genome_string, wp))
             break
@@ -61,6 +62,7 @@ def main(seq,elements,output,fa_output):
             R = []
             current_family = int(A[0])
         R.append((int(A[-3]), int(A[-2])))
+        line = f.readline();
 
     SeqIO.write(records, fa_output, "fasta")
         

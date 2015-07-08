@@ -212,7 +212,7 @@ def generate_output(output_file, print_reps, counts, stats, lists):
     stats -- tuple of classification statistics (TPR, TNR, PPV, NPV, FPR, FDR)
     lists -- tuple of lists of classified repeat bounds (TPs, FPs, FNs)
     """
-    f = open(output_file, 'w')
+    f = sys.stdout if output_file == "-" else open(output_file, 'w')
     f.write("TP: %d\nFP: %d\nTN: %d\nFN: %d\n" % (counts))
     f.write("TPR: %f\nTNR: %f\nPPV: %f\nNPV: %f\nFPR: %f\nFDR: %f\n\n" % (stats))
     if print_reps:

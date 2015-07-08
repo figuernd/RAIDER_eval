@@ -10,11 +10,15 @@ import tempfile
 import re
 import perform_stats
 
+
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
 job_index = {}
-time_limit = "4:00:00"
+default_time_limit = "10:00:00"
+rm_time_limit = "25:00:00"
+
+time_limit = default_time_limit
 
 #################################################################
 
@@ -25,6 +29,7 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'filter_stage-1':'/usr/local/RepeatScout/filter-stage-1.prl',
                 'filter_stage-2':'/usr/local/RepeatScout/filter-stage-2.prl',
                 'raider':'./raider',
+                'raider_pre':'./raider_pre',
                 'bigfoot':'./bigfoot',
                 'python':'python3.4',
                 'araider':'./araider'}
@@ -33,6 +38,7 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'filter_stage-1':'./filter-stage-1.prl',
                     'filter_stage-2':'./filter-stage-2.prl',
                     'raider':'./raider',
+                    'raider_pre':'./raider_pre',
                     'bigfoot':'./bigfoot',
                     'python':'python3.3',
                     'araider':'./araider'}
@@ -60,7 +66,20 @@ def file_dir(file):
     return file.rstrip(file_base(file)).rstrip("/")
 
 
-
+def convert_seed(seed):
+    """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011" """
+    i = 0
+    while (i < len(seed)-1):
+        if seed[i+1] == '^':
+            j = i+2
+            assert seed[j] == "{"
+            k = j+1
+            while seed[k] != '}':
+                k += 1
+            n = int(seed[j+1:k])
+            seed = seed[:i] + seed[i]*n + seed[k+1:]
+        i += 1
+    return seed
 
 def parse_params(args):
     """Parse command line arguments using the argparse library"""
@@ -74,13 +93,14 @@ def parse_params(args):
 
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
-    parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
     parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = "4:00:00")
+    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -94,6 +114,7 @@ def parse_params(args):
     parser_io.add_argument('--bfd', '--bigfoot_dir', dest = 'bigfoot_dir', help = "Subdirectory containing bigfoot results", default = "BIGFOOT")
     parser_io.add_argument('--pd', '--pilder_dir', dest = 'piler_dir', help = "Subdirectory containing piler results", default = "PILER")
     parser_io.add_argument('--dd', '--data_dir', dest = 'data_dir', help = "Directory containing the resulting simulated chromosome", default = "SOURCE_DATA")
+    parser_tools.add_argument('--hj', '--hooke_jeeves', dest = 'hooke_jeeves', action = 'store_true', help = 'Simply print the tp+tn statistics counts', default = False)
 
     
     # RAIDER ARGUMENTS
@@ -103,6 +124,8 @@ def parse_params(args):
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
     raider_argument.add_argument('--raider_min', '--raider_min', type = int, help = "Minimum repeat length. Defaults to pattern length.", default = None)
+    raider_argument.add_argument('--pre', '--pre_scan', action = 'store_true', help = "Use pre-scan version of raider", default = False)
+    raider_argument.add_argument('--mem', action = 'store_true', help = "Use large memory-nodes", default = False);
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
@@ -124,7 +147,7 @@ def parse_params(args):
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
-    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)
+    repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 2)
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
@@ -159,7 +182,7 @@ def parse_params(args):
     parser_chrom.add_argument('-o', '--output', help = "Output file (Default: replace chromosome file \".fa\" with \".sim.fa\")")
     parser_chrom.add_argument('-t', '--num_sims', type = int, dest = "num_sims", help ="Number of simulations", default = 1)
     parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
-
+    parser_chrom.add_argument('--st', '--sim_type', dest = 'sim_type', type = int, help = "0 = use mdern sequence exactly (default); 1 = use ancestor fragment; 2 = preserve mutations, but not indels; 3 = preserve indels, but not mutations", default = 0)
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
 
 
@@ -171,12 +194,15 @@ def parse_params(args):
     global show_progress
     show_progress = arg_return.show_progress
 
-    if arg_return.all_tools:
+    if arg_return.all_tools or arg_return.all_tools2:
         arg_return.run_raider = True
-        arg_return.run_araider = True
         arg_return.run_repscout = True
-        arg_return.run_bigfoot = True
         arg_return.run_piler = True
+
+    if arg_return.all_tools:
+        arg_return.run_araider = True
+        arg_return.run_bigfoot = True
+
 
     #### The following is to set the global debugging variables 
     if arg_return.simulate_only:    # Set to supress all tools
@@ -187,13 +213,12 @@ def parse_params(args):
         arg_return.run_piler = False
 
 
-
     return arg_return
 
 
 ############################################################
 # Main functions 
-def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity):
+def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file, data_dir, output_file, file_index, k, mc_file, mi, retain_n, num_repeats, low_complexity, sim_type):
     """Given chromosome file and repeat file and rng_seed, runs chromosome 
     simulator and then passes raider params (including path to new simulated chromosome 
     file) into run_raider"""
@@ -208,14 +233,20 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     retain_n = "--rn" if retain_n else ""
     num_repeats = ("--nr %d" % (num_repeats)) if num_repeats else ""
     low_complexity = "--lc" if low_complexity else ""
-    seq_arg = chromosome
-    repeat_arg = repeat
+    seq_arg = chromosome_file
+    repeat_arg = chromosome_file + ".out"
 
-    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), file_base(chromosome)))
+    output_file = (output_file if output_file else re.sub(".fa$", ".sim.%d.fa" % (file_index), file_base(chromosome_file)))
     output_path = "%s/%s" % (data_dir, output_file)
 
     mc = "--mc %s" % mc_file if mc_file else ""
-    cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {seq} {retain_n} {num_repeats} {lc} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, seq=seq_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, repeat=repeat_arg, output=output_path)
+
+    if sim_type == 0 and os.path.isfile(repeat_arg):
+        cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
+    else:
+        sim_type = "--st %d" % (sim_type)
+        cmd = "{python} chromosome_simulator2.py {sim_type} {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {output}".format(python = Locations['python'], sim_type = sim_type, mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq=seq_arg, output=output_path)
+
 
     if show_progress:
         sys.stderr.write("Creating simulation:\n%s\n" % (cmd))
@@ -229,8 +260,8 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
     #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir, walltime = time_limit)
-    p.submit()
+                      output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
+    p.submit(preserve=True)
 
     p.output_file = output_file
     p.seq_file = file_base(output_file)
@@ -244,7 +275,7 @@ def simulate_chromosome(chromosome, repeat, rng_seed, length, neg_strand, fam_fi
 #    on the newly generated chromosome output file"""
 #    p.wait()
 #    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
-def run_raider(seed, seed_num, f, m, input_file, raider_dir):
+def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -254,6 +285,7 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
+
     cmd1 = "{raider} -q -c {f} {min_arg} {seed} {input_file} {output_dir}".format(raider = Locations['raider'], f = f, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
     out_file = raider_dir + "/" + input_base + ".s" + str(seed_num) + ".raider_consensus.txt"
@@ -272,9 +304,10 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir, walltime = time_limit)
+                      output_location = output_dir, walltime = time_limit, mem = mem, ppn = 8 if mem else 1, 
+                      arch_type = ['n09'])
+    p.submit(preserve=True)
 
-    p.submit()
     p.tool_resources = [0]*4
 
     p.description = "raider"
@@ -283,6 +316,37 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir):
     p.seed_num = seed_num
     p.seq_file = input_file
     p.lib_file = lib_file
+
+    return p
+
+def run_composites_finder(elements_file, seq_file, compositesFinderDir):
+    input_base = file_base(elements_file)
+    output_dir = compositesFinderDir + "/" + input_base.upper()
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    compositesDiscover = compositesFinderDir + "/" + "CompositesDiscover"
+    slimComFinder = compositesFinderDir + "/" + "SlimComFinder.py"
+    cmd1 = "{compositesFinder} {input_file}".format(compositesFinder = compositesDiscover, input_file = elements_file)
+    cmd2 = "{python} {slim_composites_finder} {elements} {sequence_file} {output_file}".format(python = "python", slim_composites_finder = slimComFinder,
+                        elements = elements_file, sequence_file = seq_file, output_file = output_dir + "/" + "ConsensusSequences")
+
+    if show_progress:
+        sys.stderr.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.flush()
+
+    batch_name =  compositesFinderDir + "/" + input_base + ".composites finder.batch"
+    job_name = "composites finder.%d" % get_job_index("composites finder")
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
+                      stdout_file = input_base + ".comFinder.stdout", stderr_file = input_base + ".comFinder.stderr",
+                      output_location = output_dir, walltime = time_limit)
+
+    p.submit(preserve=True)
+
+    p.description = "composites.finder"
+    p.elementsFile = elements_file
+    p.seqFile = seq_file
 
     return p
 
@@ -316,7 +380,8 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
                       stdout_file = input_base + ".araider.stdout", stderr_file = input_base + ".araider.stderr",
                       output_location = output_dir)
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.tool_resources = [0]*4
 
     p.description = "araider"
@@ -359,7 +424,8 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
                       output_location = output_dir, walltime = time_limit)    
 
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.description = "bigfoot"
     p.tool_resources = [0]*4
     p.seq_file = input_file     # Required by run_repeat_masker -- uses this as the source sequence.
@@ -391,7 +457,8 @@ def run_piler(input_file, piler_dir):
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = piler_dir, walltime = time_limit)
 
-    p.submit()
+    p.submit(preserve=True)
+
     p.description = "piler"
     p.tool_resources = [0]*4
     p.seq_file = input_file
@@ -407,7 +474,7 @@ def run_piler(input_file, piler_dir):
 #     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
 #     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
 #     if show_progress:
-#     p2.submit()
+#     p2.submit(preserve=True)
 #     p2.seq_file = p.seq_file
 #     p2.output = output
 #     return p2
@@ -446,9 +513,9 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir, walltime = time_limit)
+                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
 
-    p.submit()
+    p.submit(preserve=True)
     p.description = "rep_scout"
     p.tool_resources = [0,0,0,0]
 
@@ -463,7 +530,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter):
     # cmd = "./RunRepeatScout.sh {sequence} {length} {output} {min}".format(sequence=input_file, length=m, output=output_path, min=f)
     # print(cmd)
     # p = pbsJobHandler(batch_file = "%s.batch" % output_file, executable = cmd)
-    # p.submit()
+    # p.submit(preserve=True)
     # p.seq_file = input_file
     # p.scout_output = output_path
     # p.curr_dir = curr_dir
@@ -490,9 +557,9 @@ def scout_second_filter(p, min_freq):
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
 
-    p2.submit()
+    p2.submit(preserve=True)
     p2.description = "rep_scout"
-    p2.time_resources = p.time_resources + p.getResources()
+    p2.time_resources = p.time_resources + p.getResources(cleanup=False)
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.lib_file = filter2_stage_output
@@ -510,7 +577,10 @@ def run_repeat_masker(p, num_processors):
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
 
-    output_dir = file_dir(p.lib_file)  # Output will fo in the same directory as the lib file
+    output_dir = file_dir(p.lib_file) + "/" + file_base(p.lib_file).upper() + ".RM"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
@@ -521,10 +591,10 @@ def run_repeat_masker(p, num_processors):
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
     job_name = "repmask.%d" % get_job_index("repmask")
-    #print("Sim batch: " + batch_name + "\n")
-    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, ppn = num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    #print("Sim batch: " + batch_name + "\n"
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = 4*num_processors, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
-                       output_location = output_dir, walltime = time_limit);
+                       output_location = output_dir, walltime = rm_time_limit);
     p2.submit(preserve=True)
 
     p2.description = "RptMasker"
@@ -590,6 +660,7 @@ if __name__ == "__main__":
         Locations = MacLocations
     elif os.path.exists(RedhawkLocations['RptScout']):
         Locations = RedhawkLocations
+        assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
     else:
         assert False, "Could not determine host."
     ###
@@ -604,7 +675,7 @@ if __name__ == "__main__":
 
     ### Set up the debugging log file (if needed)
     progress_fp = open(args.results_dir + "/debug.txt", "w")
-
+    progress_fp.write(" ".join(sys.argv) + "\n\n");
  
     data_dir = args.results_dir + "/" + args.data_dir
     if not os.path.exists(data_dir):
@@ -616,12 +687,13 @@ if __name__ == "__main__":
     if args.subparser_name == "chrom_sim":
         # Launch the jobs
 
-        f = lambda i: simulate_chromosome(chromosome = args.chromosome, repeat = args.chromosome + ".out",
+        f = lambda i: simulate_chromosome(chromosome_file = args.chromosome, 
                                           rng_seed = args.rng_seed, length = args.length, 
                                           neg_strand = args.negative_strand, fam_file = args.family_file, 
                                           data_dir = args.results_dir + "/" + args.data_dir, output_file = args.output, file_index = i, 
                                           k = args.k, mc_file = args.mc_file, mi = args.max_interval,
-                                          retain_n = args.retain_n, num_repeats = args.num_repeats, low_complexity = args.low_complexity)
+                                          retain_n = args.retain_n, num_repeats = args.num_repeats, low_complexity = args.low_complexity, 
+                                          sim_type = args.sim_type)
         J = [f(i) for i in range(args.num_sims)]
 
         # Run jobs to completion
@@ -643,17 +715,20 @@ if __name__ == "__main__":
 
     ############## First: Launch tools
     jobs = []
+    if args.pre:
+        Locations['raider'] = Locations['raider_pre']
     if args.run_raider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        jobs += [run_raider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                            raider_dir = args.results_dir + "/" + args.raider_dir) for i,seed in enumerate(seed_list)
+        jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+                            raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem) for i,seed in enumerate(seed_list)
                  for file in file_list]
 
     if args.run_araider:
         seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-        jobs += [run_araider(seed = seed, seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+        jobs += [run_araider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                             araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
                  for file in file_list]
+
     if args.run_repscout:
         jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
 
@@ -719,32 +794,20 @@ if __name__ == "__main__":
 
         for key in test_tools:
             for p in job_dic[key]:
-                Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
-                Stats = [round(x,5) for x in Stats]
-                fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
+                try:
+                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                    Stats = [round(x,5) for x in Stats]
+                       
+                    if args.hooke_jeeves:
+                        print(Counts.tp + Counts.tn)
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
 
-        # for i in range(len(J)):
-        #     if RAIDER_JOBS:
-        #         for j in range(len(RAIDER_JOBS[i])):
-        #             p = RAIDER_JOBS[i][j]
-        #             Counts, Stats, Sets = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #             Stats = [round(x,5) for x in Stats]
-        #             fp.write(print_str.format(*(["raider", p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources()))))
-        #     if SCOUT_JOBS:
-        #         p = SCOUT_JOBS[i]
-        #         CountSJ, StatsSJ, SetsSJ = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsSJ = [round(x,5) for x in StatsSJ]
-        #         fp.write(print_str.format(*(["repscout", "NA"] + list(CountSJ) + list(StatsSJ) + list(p.tool_resources) + list(p.getResources()))))
-        #     if BIGFOOT_JOBS:
-        #         p = BIGFOOT_JOBS[i]
-        #         CountBF, StatsBF, SetsBF = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsBF = [round(x,5) for x in StatsBF]
-        #         fp.write(print_str.format(*(["bigfoot", "NA"] + list(CountBF) + list(StatsBF) + list(p.tool_resources) + list(p.getResources()))))
-        #     if PILER_JOBS:
-        #         p = PILER_JOBS[i]
-        #         CountP, StatsP, SetsP = perform_stats.perform_stats(J[i].sim_output + ".out", p.rm_output, None)
-        #         StatsP = [round(x,5) for x in StatsP]
-        #         fp.write(print_str.format(*(["piler", "NA"] + list(CountP) + list(StatsP) + list(p.tool_resources) + list(p.getResources()))))
+                except Exception as E:
+                    progress_fp.write("performance Exception: " + str(E) + "\n");
+                    fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+
                             
 
             

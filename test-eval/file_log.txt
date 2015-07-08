@@ -1,0 +1,8 @@
+0 simulation_file EVAL/SOURCE_DATA/elegans.ChrI.sim.0.fa
+raider
+EVAL/RAIDER/elegans.ChrI.sim.0.fa.out
+EVAL/RAIDER/elegans.ChrI.sim.0.fa.out
+bigfoot
+piler
+rep_scout
+araider

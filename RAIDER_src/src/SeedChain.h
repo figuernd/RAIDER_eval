@@ -7,10 +7,14 @@
 #include <vector>
 #include "Family.h"
 #include <unordered_map>
+#include <ctime>
 
 using namespace std;
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
+
+int p = getpid();
+
 
 size_t baseToInt(char b) {
 	switch (toupper(b)) {
@@ -186,7 +190,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
 	Family* fam = nullptr;
 
 	while (getNextSeed(sequence, ++index, seqLength, MAX_L, unmasked)) {
-
+	  
 		size_t seed = seedToInt(unmasked, mask);
 		LmerVector* v = getAndInsert(lmers, seed, index);
 
