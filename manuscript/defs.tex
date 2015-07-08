@@ -104,17 +104,60 @@ within $|s|$ of each other.
  {\bf Comment:} I'm not sure if the $r \prec r'$ is the right
  relationship.  Maybe just straight substring?  Or perhaps the
  definition of $\prec$ isn't quite right?
+
+
+\begin{definition}
+Given the refd $r$ of an elementary repeat family with set $S$, we say
+that $r$ is {\it tight} if, for each $i$ such that $r_i = *$, there
+exists two sequences defined by $S$ that have different bases in
+position $i$.
+\end{definition}
+In other words: $r$ is tight if it only uses $*$ symbols where it must
+to match everything sequence defined by $S$.
+
+{\bf Comments:} I had it in mind that the algorithm would always
+return a tight refd.  But in Carly's defense she gave the example:
+s=11011, AAAAATCCCCC, AAGAATCCGCC, where ends up with AA*AA*AA*AA,
+which is not tight.  Interestingly, if we have AAAAATTCCCCC and
+AAGAATTCCGCC, then we get AA*AATTCC*CC -- to that extra T makes it
+tight.  Not sure if this is significant.
+
+\section{Algorithm}
+
+Let $s$ be a fixed spaced seed, $G$ be a fixed genomic sequence, and
+$f$ be a fixed integer $\geq 2$.  Let $f_s(i)$ be the sub-sequence at
+$G[i]$ inducted by the seed (with 0-matching characters removed).  So $s = 11011$ and
+the sequence at $G[i]$ is $AACGG$, the $f_s(i) = AAGG$.
+
+Let $H$ and $F$ be hash-tables mapping strings to integers:
+\begin{itemize}
+\item $H[f(i)]$ maps reduced sequences to counts.
+\item $F[f(i)]$ maps reduced sequences to family assignments.
+  (e.g. $f(i)$ is assigned to family $F[f(i)]$.
+
+Let $p(i)$ be the coorindate of $G$ the marks the beginning of the
+last instance of $f(i)$.  That is, if $s=11011$ and $G =
+ACCTCCAAACCTCC$, then $p(9) = 1$.  ($f(9) = CCCC$, and the largest
+$i < 9$ such that $f_s(i) = CCCC$ is $i=1$.  (Not all functions are
+pegged to a fixed $s$.)
  
+\begin{verbatim}
+num_fams <- 0 
+for i <- 0 to |G|:
+   seq = G[i:i+|s|]
+   H[seq] += 1
+   if H[seq] >= 2:
+      pseq = 
+
+\end{verbatim}
+
   
 \section{Random Lemmas}
 
 The following are things I wanted to try to prove that may or may not
 be useful.
 
-\begin{lemma}
-  Let $s$ be a seed, $r$ be a refd consistent with $s$,
-  and $r'$ be an refd consistent with $s$ such that $|r'| < |r|$.  
-\end{lemma}
+
 
 
 
