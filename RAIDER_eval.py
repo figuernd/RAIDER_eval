@@ -11,6 +11,7 @@ import re
 import perform_stats
 import time
 import pickle
+from checkpoint_jobs import *
 
 #################################################################
 # The following global variables are related to debugging issues.
@@ -42,8 +43,14 @@ tjobs_start = "START_TOOL_JOBS"
 tjobs_end = "END_TOOL_JOBS"
 rmjobs_start = "START_REPMASK_JOBS"
 rmjobs_end = "END_REPMASK_JOBS"
+prajobs_start = "START_PRA_JOBS"
+prajobs_end = "END_PRA_JOBS"
 jobdic_start = "START_JOB_DICT"
 jobdic_end = "END_JOB_DICT"
+blast_db_start = "START_BLAST_DB"
+blast_db_end = "END_BLAST_DB"
+stats_start = "START_STATS_JOBS"
+stats_end = "END_STATS_JOBS"
 
 
 #################################################################
@@ -71,6 +78,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'araider':'./araider',
                     'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
+raider2_ages = [0,1]
+
 
 #########
 # Utility functions
@@ -166,7 +175,7 @@ def parse_params(args):
    
     # RAIDER2 ARGUMENTS
     raider2_argument = parser.add_argument_group("RAIDER2 parameters")
-    raider2_argument.add_argument('--age', type = int, help="Use older version of raider", default=0) 
+    raider2_argument.add_argument('--age', type = int, help="Use older version of raider2", default=1) 
     raider2_argument.add_argument('--aa', '--all_ages', dest="all_ages", action="store_true", help="Run all ages of raider2", default=False) # type = int, help="Use older version of raider", default=0)
 
     # REPSCOUT ARGUMENTS
@@ -189,7 +198,8 @@ def parse_params(args):
 
     # STATISTICS ARGUMENT
     stats_group = parser.add_argument_group(title = "Statistics argument")
-    stats_group.add_argument('--stats_file', dest = 'stats_file', help = "Statistics output directory", default = "stats.txt")
+    stats_group.add_argument('--stats_dir', dest = 'stats_dir', help = "Statistics output directory", default = "STATS_OUTPUT")
+    stats_group.add_argument('--stats_file', dest = 'stats_file', help = "Statistics output file", default = "stats.txt")
     stats_group.add_argument('--stats_only', dest = 'stats_only', action = 'store_true', help = 'Remove files not involved in stats analysis', default = False)
     #stats_group.add_argument('--print_reps', action = "store_true", help = "Print out repeats in statistics file", default = False)
 
@@ -197,6 +207,14 @@ def parse_params(args):
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
+
+    ### KARRO: New switches
+    # ANALYSIS 
+    parser_analysis = parser.add_argument_group("Analysis options")
+    parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
+    parser_analysis.add_argument('--RA', '--rm_analysis_off', dest = 'repmask', action = 'store_false', help = 'Turn off RM stats. analysis', default = True) 
+    ### KARRO END
+
 
     # CONTINUE PREVIOUS RUN ARGUMENTS
     cont_group = parser.add_argument_group(title = "continuing previous")
@@ -210,6 +228,7 @@ def parse_params(args):
     # SEQUENCE FILE OPTION ARGUMENTS
     parser_seqs = subparsers.add_parser("seq_files")
     parser_seqs.add_argument('seq_files', nargs = '+', help = "Use files directly (no simulation)", default = None)
+
     
     # CHROMOSOME SIMULATION OPTION ARGUMENTS
     parser_chrom = subparsers.add_parser("chrom_sim")
@@ -230,6 +249,7 @@ def parse_params(args):
     parser_chrom.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
     parser_chrom.add_argument('--st', '--sim_type', dest = 'sim_type', type = int, help = "0 = use mdern sequence exactly (default); 1 = use ancestor fragment; 2 = preserve mutations, but not indels; 3 = preserve indels, but not mutations", default = 0)
     parser_chrom.add_argument('chromosome', help = "Template chromosome file")
+
 
 
     arg_return =  parser.parse_args(args)
@@ -317,7 +337,9 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
 
     mc = "--mc %s" % mc_file if mc_file else ""
 
-    if sim_type == 0 and os.path.isfile(repeat_arg):
+    if k == 0:  # Really only for debugging
+        cmd = "{python} chromosome_simulator3.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
+    elif sim_type == 0 and os.path.isfile(repeat_arg):
         cmd = "{python} chromosome_simulator.py {mi} {length} {mc} {k} {seed} {neg} {fam} {retain_n} {num_repeats} {lc} {seq} {repeat} {output}".format(python = Locations['python'], mi=mi, mc=mc, length=length_arg, k=k_arg, seed=seed_arg, neg=neg_arg, fam=fam_arg, retain_n=retain_n, num_repeats=num_repeats, lc=low_complexity, seq = seq_arg, repeat=repeat_arg, output=output_path)
     else:
         sim_type = "--st %d" % (sim_type)
@@ -448,7 +470,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     min_arg = "-m %d" % (m) if m else ""
-    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} -s {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -775,40 +797,251 @@ def run_repeat_masker(p, num_processors):
     return p2
 
 
-def performance_sum(stats_jobs, stats_dir, curr_dir, test):
-    """Given a list of all of the statistics jobs, uses the statistics output files to
-    generate a summary file indicative of overall performance. Put results in stats_dir
-    (Current dir if unspecified)"""
-    tps = 0
-    tns = 0
-    fps = 0
-    fns = 0
-    for p in stats_jobs:
-        sf = open(p.stats_output, "r")
-        tps += int(re.split("\s+", sf.readline().rstrip())[1])
-        fps += int(re.split("\s+", sf.readline().rstrip())[1])
-        tns += int(re.split("\s+", sf.readline().rstrip())[1])
-        fns += int(re.split("\s+", sf.readline().rstrip())[1])
-        sf.close()
-    stats_file = "summary.%s.stats" % (test)
-    smry_path = "%s/%s" % (stats_dir, stats_file) if stats_dir else "%s/%s" %(curr_dir, stats_file) if curr_dir else stats_file
+
+def run_perform_stats(p, exclusion_file = None):
+    """Given the pbs object used to start a consensus sequence job as well as
+    repeatmasker arguments, wait until the job is done and then call repeatmasker 
+    on the output and put results in masker_dir (current dir if unspecified)"""
+    p.wait()
+    p.loadResources()
+
+    input_base = file_base(p.seq_file)  # Base name of the file used for input
+
+    known_repeats = p.seq_file + ".out"
+    found_repeats = p.rm_output
+    output_dir = p.dir
+    output_path = output_dir + "/" + file_base(p.seq_file) + ".stats"
+    exclusion_part = "-e {exclude}".format(exclude = exclusion_file) if exclusion_file else ""
+    cmd = "python perform_stats.py {exclusions} {known} {found} {output}".format(exclusions=exclusion_part, known = known_repeats, found = found_repeats, output = output_path)
+
+    if show_progress:
+        sys.stderr.write("\nLaunch perform_stats: %s\n" % (cmd))
+        sys.stderr.flush()
+    progress_fp.write("\nLaunch perform_stats: %s\n" % (cmd))
+    progress_fp.flush()
+
+    batch_name = p.lib_file.rstrip(".fa") + ".stats.batch"
+    job_name = "stats.%d" % get_job_index("stats")
+    p2 = pbsJobHandler(batch_file = batch_name, executable = cmd,
+                       job_name = job_name, stdout_file = input_base + ".stats.stdout", stderr_file = input_base + ".stats.stderr",
+                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
+    if not timing_jobs:
+        p2.submit(preserve=True)
+    else:
+        p2.submit_timed_job(preserve=True)
+
+    p2.description = "Stats"
+    p2.seed = p.seed if hasattr(p, "seed") else "NA"
+    p2.seed_num = p.seed_num if hasattr(p, "seed_num") else "NA"
+    p2.dir = p.dir
+    p2.lib_file = p.lib_file
+    p2.seq_file = p.seq_file
+    p2.rm_output = p.rm_output #output_dir + "/" + file_base(p.seq_file) + ".out"
+    p2.tool_resources = p.tool_resources
+    p2.tool_description = p.tool_description
+    return p2
     
-    smry = open(smry_path, 'w')
-    smry.write("Evaluation completed.\n")
-    smry.write("True Positives (TP): \t %d \n" % (tps))
-    smry.write("False Positives (FP): \t %d \n" % (fps))
-    smry.write("True Negatives (TN): \t %d \n" % (tns))
-    smry.write("False Negatives (FN): \t %d \n" % (fns))
-    smry.write("\nPerformance of Repeat Classification Tool\n")
-    smry.write("Sensitivity (TPR): \t\t %f %%\n" % (tps/(tps + fns)))
-    smry.write("Specificity (TNR): \t\t %f %%\n" % (tns/(fps + tns)))
-    smry.write("Precision (PPV): \t\t %f %%\n" % (tps/(tps + fps)))
-    smry.write("Neg. Pred. Val. (NPV): \t %f %%\n" % (tns/(tns + fns)))
-    smry.write("Fall-Out (FPR): \t\t %f %%\n" % (fps/(fps + tns)))
-    smry.write("False Disc. Rate (FDR): \t  %f %%\n" % (fps/(tps + fps)))
-    smry.close()
+
+#def performance_sum(job_dic, PRA_jobs):
+#    """Given a list of all of the statistics jobs, uses the statistics output files to
+#    generate a summary file indicative of overall performance. Put results in stats_dir
+#    (Current dir if unspecified)"""
+#    ######
+#    # Calculate statistics (not bothering with parallelization yet)
+#    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "\n"
+#    stats_jobs = set()
+#    for key in test_tools:
+#        for p in job_dic[key]:
+#            stats_jobs.add(run_perform_stats(p))
+#
+#
+#    with open(args.results_dir + "/" + args.stats_file, "w") as fp:
+#        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "coverage"))
+#        
+#        for key in test_tools:
+#            for p in job_dic[key]:
+#                try:
+#                
+#                    s = run_perform_stats(p)
+#
+#                except Exception as E:
+#                    progress_fp.write("performance Exception: " + str(E) + "\n");
+#                    fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+#
+#    ### KARRO
+#    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
+#    for p in PRA_jobs:
+#        p.timed_wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
+#    ### KARRO END
+#    regex = re.compile("(?<=\# Average consensus coverage: )\d+.\d+")
+#    >>> m = regex.findall(text)
+#    >>> m
+#    ['0.0063']
+#
+#    tps = 0
+#    tns = 0
+#    fps = 0
+#    fns = 0
+#    for p in stats_jobs:
+#        sf = open(p.stats_output, "r")
+#        tps += int(re.split("\s+", sf.readline().rstrip())[1])
+#        fps += int(re.split("\s+", sf.readline().rstrip())[1])
+#        tns += int(re.split("\s+", sf.readline().rstrip())[1])
+#        fns += int(re.split("\s+", sf.readline().rstrip())[1])
+#        sf.close()
+#    stats_file = "summary.%s.stats" % (test)
+#    smry_path = "%s/%s" % (stats_dir, stats_file) if stats_dir else "%s/%s" %(curr_dir, stats_file) if curr_dir else stats_file
+#    
+#    smry = open(smry_path, 'w')
+#    smry.write("Evaluation completed.\n")
+#    smry.write("True Positives (TP): \t %d \n" % (tps))
+#    smry.write("False Positives (FP): \t %d \n" % (fps))
+#    smry.write("True Negatives (TN): \t %d \n" % (tns))
+#    smry.write("False Negatives (FN): \t %d \n" % (fns))
+#    smry.write("\nPerformance of Repeat Classification Tool\n")
+#    smry.write("Sensitivity (TPR): \t\t %f %%\n" % (tps/(tps + fns)))
+#    smry.write("Specificity (TNR): \t\t %f %%\n" % (tns/(fps + tns)))
+#    smry.write("Precision (PPV): \t\t %f %%\n" % (tps/(tps + fps)))
+#    smry.write("Neg. Pred. Val. (NPV): \t %f %%\n" % (tns/(tns + fns)))
+#    smry.write("Fall-Out (FPR): \t\t %f %%\n" % (fps/(fps + tns)))
+#    smry.write("False Disc. Rate (FDR): \t  %f %%\n" % (fps/(tps + fps)))
+#    smry.close()
+
+# def run_pra_analysis(jobs, BLAST_DATABASE):
+#     """This takes a list of the jobs, and a list of the BLAST_DATABASE jobs.  For each 
+#     it makes sure the BLAST_DATABASE job is done for the corresponding datafile, then launches 
+#     the analysis tool.  Returns a list of the analysis tool jobs.  RepeatMasker is NOT dependent
+#     on these jobs -- it can be launched immediately."""
+
+#     submitted_jobs =[]
+
+#     cmd = "{python} blast_consensus.py {consensus_file} {rm_fa_file} {database_file} {output_file}"
+#     for j in jobs:
+#         j.wait()
+#         o = BLAST_DATABASE[j.seq_file]  # This is the create_database job that was launched on this sequence file.
+#         o.wait()    # Wait until the DATABASE file has been created.  
+#                     # (This should be parallilzed, but probably not worth the effort)
+
+#         analysis_cmd = cmd.format(python = Locations["python"], consensus_file = j.lib_file, 
+#                                   rm_fa_file = o.rm_seq_file, database_file = o.rm_seq_file, 
+#                                   output_file = j.lib_file.rstrip(".fa") + ".pra.txt")
+        
+#         if show_progress:
+#             sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
+#             sys.stderr.flush()
+#         progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+#         progress_fp.flush()
+
+#         job_name = "pra.%d" % get_job_index("pra")
+
+#         base_name = file_base(j.lib_file)[:-3] + ".pra"
+#         batch_name = base_name + ".batch"
+#         stdout_file = base_name + ".stdout"
+#         stderr_file = base_name + ".stderr"
+#         location = file_dir(j.lib_file)
+#         print("Y: " + base_name + " " + batch_name + " " + job_name + " " + stdout_file + " " + stderr_file + " " + analysis_cmd)
+#         p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
+#                           stdout_file = stdout_file, stderr_file = stderr_file,
+#                           output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
+#         p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
+#         submitted_jobs.append(p)
+
+#     return submitted_jobs
+
+def create_blast_db(file_list):
+    # Launch the create_database.py tool on each chromosome.  (Needed for pre-RM result analysis; not needed for any tool.)
+    # BLAST_DATABASE will be a dictionary mapping the (simulated) chromosome to the pbs object
+    BLAST_DATABASE = {}
+    blast_database_command = "{python} ./create_database.py {seq_file} {rm_file} {out_file}"
+    for i,file_name in enumerate(file_list):
+        file = file_name.rstrip(".fa")
+        seq_file = file_name
+        rm_file = file + ".fa.out"
+        rm_seq_file = file + ".rptseq.fa"
+        cmd = blast_database_command.format(python = Locations['python'], seq_file = seq_file, rm_file = rm_file, out_file = rm_seq_file)
+
+        if show_progress:
+            sys.stderr.write("\nLaunching create_database: %s\n\n" % (cmd))
+            sys.stderr.flush()
+            progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
+            progress_fp.flush()
+
+        batch_name = file + "blast_db.batch"
+        job_name = "create_db.%d" % (i)
+
+        o =  pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
+                                   walltime = "00:20:00", RHmodules = ["blast+"])
+        o.seq_file = seq_file
+        o.rm_file = rm_file
+        o.rm_seq_file = rm_seq_file
+
+        BLAST_DATABASE[file_name] = o
+
+    for o in BLAST_DATABASE.values():
+        #o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
+        if not timing_jobs:
+            o.submit(preserve=True)
+        else:
+            o.submit_timed_job(preserve=True)
+
+    return BLAST_DATABASE
 
 
+### KARRO
+def run_pra_analysis(tool_job, database_job):
+    """This launchs a pra_analysis jobs and returns the job object.
+    * tool_job: the pbsJob for one of the de novo search tool.  This will use tool_job.lib file as the query sequence set.
+    * database_job: the database job for the sequence on which tool_job was run.
+    This function will wait on completion of both jobs."""
+
+    cmd = "./pra_analysis {consensus_file} {rm_fa_file} {database_file} {output_file}"
+    #tool_job.wait()
+    database_job.wait()
+
+
+    analysis_cmd = cmd.format(python = Locations["python"], consensus_file = tool_job.lib_file, 
+                              rm_fa_file = database_job.rm_seq_file, database_file = database_job.rm_seq_file, 
+                              output_file = tool_job.lib_file.rstrip(".fa") + ".pra.txt")
+        
+    if show_progress:
+        sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
+        sys.stderr.flush()
+    progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+    progress_fp.flush()
+
+    job_name = "pra.%d" % get_job_index("pra")
+
+    base_name = file_base(tool_job.lib_file)[:-3] + ".pra"
+    batch_name = base_name + ".batch"
+    stdout_file = base_name + ".stdout"
+    stderr_file = base_name + ".stderr"
+    location = file_dir(tool_job.lib_file)
+    p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
+                      stdout_file = stdout_file, stderr_file = stderr_file,
+                      output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
+    #p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
+    if not timing_jobs:
+        p.submit(preserve=True)
+    else:
+        p.submit_timed_job(preserve=True)
+
+    p.description = "PraAnalysis"
+    p.seed = tool_job.seed if hasattr(tool_job, "seed") else "NA"
+    p.seed_num = tool_job.seed_num if hasattr(tool_job, "seed_num") else "NA"
+    p.lib_file = tool_job.lib_file
+    p.seq_file = tool_job.seq_file
+    p.pra_output = tool_job.lib_file.rstrip(".fa") + ".pra.txt"
+    p.tool_resources = tool_job.resources
+    p.tool_description = tool_job.description
+    return p
+### KARRO END
+
+
+def exit_now():
+    """If we submitted the evaluation as a PBS job with a set walltime, use this to write to the logging
+    file an indicator that the evalation program has not yet completed, then exit the program"""
+    logging_fp.write("CONTINUE\n")
+    sys.exit(0)
 
 def have_time_for_another_run(last_run_time):
     """If we submitted the evaluation as a PBS job with a set walltime, check the amount
@@ -820,65 +1053,6 @@ def have_time_for_another_run(last_run_time):
         logging_fp.write("Running out of time. Only have {t} left. Dumping data to new checkpoint file\n".format(t=time_left))
         return False
 
-def exit_now():
-    """If we submitted the evaluation as a PBS job with a set walltime, use this to write to the logging
-    file an indicator that the evalation program has not yet completed, then exit the program"""
-    logging_fp.write("CONTINUE\n")
-    sys.exit(0)
-
-def flush_files():
-    """If we submitted the evaluation as a PBS job with a set walltime, call this as a debug measure
-    to ensure that get updated log files if program quits unexpectedly"""
-    logging_fp.flush()
-    checkpoint_fp.flush()
-
-def write_flist_to_checkpoint(flist):
-    """If we submitted the evaluation as a PBS job with a set walltime, write list of files (either supplied seq
-    files or generated chromosome files) to checkpoint file for access upon next run"""
-    logging_fp.write("Writing file list to new checkpoint file\n")
-    checkpoint_fp.write(flist_start+"\n")
-    for f in flist:
-        checkpoint_fp.write(f+"\n")
-    checkpoint_fp.write(flist_end+"\n")
-    flush_files()
-
-def write_jobs_to_checkpoint(jobs, start_id, end_id):
-    """If we submitted the evaluation as a PBS job with a set walltime, pickle PBS jobs and store the path
-    to the pickle file name in checkpoint file for unpickling upon next run. Note: start_id and end_id are
-    indicators when parsing checkpoint file to tell program what kind of object was stored at a location"""
-    logging_fp.write("Writing jobs to new checkpoint file\n")
-    checkpoint_fp.write(start_id+"\n")
-    for ufj in jobs:
-        pick_fname = ufj.batch_file_name + ".pickle"
-        checkpoint_fp.write(pick_fname+"\n")
-        storePBS(ufj, open(pick_fname, "wb"))
-    checkpoint_fp.write(end_id+"\n")
-    flush_files()
-
-def write_job_dict_to_checkpoint(job_dic, results_dir): #job_dic_pick_fname):
-    """If we submitted the evaluation as a PBS job with a set walltime, pickle list of PBS jobs for each
-    type of tool being evaluated and store path to pickle file name in checkpoint file for unpickling
-    upon next run."""
-    logging_fp.write("Writing job dict to new checkpoint file\n")
-    checkpoint_fp.write(jobdic_start + "\n")
-    for tool in job_dic:
-        pick_name = "{dir}/job_dic.{tname}.pickle".format(dir=results_dir, tname=tool) #results_dir +
-        checkpoint_fp.write(pick_name+"\n")
-        storePBS(job_dic[tool], open(pick_name, "wb"))
-    #flush_files()
-    #checkpoint_fp.write(jobdic_pick_fname)
-    #pickle.dump(job_dic, job_dic_pick_fname)
-    checkpoint_fp.write(jobdic_end + "\n")
-    flush_files()
-    
-def save_timed_chrom_sim_jobs(jobs, finished_jobs, flist):
-    """If we submitted the evaluation as a PBS job with a set walltime, write list of simulated
-    chromosome files that were completed to checkpoint file, and pickle any unfinished 
-    chromosome simulation PBS jobs and store paths to pickle file names in checkpoint file"""
-    flist.extend([x.sim_output for x in finished_jobs])
-    write_flist_to_checkpoint(flist)#[x.sim_output for x in finished_jobs])
-    write_jobs_to_checkpoint(jobs - finished_jobs, csjobs_start, csjobs_end)
-    exit_now()
 
 
 def run_timed_chrom_sim_jobs(jobs, flist=[]):
@@ -918,15 +1092,7 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
             #if flist:
     return [j.sim_output for j in finished_jobs]
 
-def save_timed_tool_jobs(jobs, RM_jobs):
-    """Helper method. Given a list of jobs and repeat masker jobs, pickle jobs and write
-    pickled file paths to checkpoint for unpickling upon next run."""
-    write_jobs_to_checkpoint(jobs, tjobs_start, tjobs_end)
-    write_jobs_to_checkpoint(RM_jobs, rmjobs_start, rmjobs_end)
-    exit_now()
-    
-
-def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
+def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_jobs=None):
     """Given a set of repeat finding tool jobs and repmask jobs (with pa info), keep track of
     what tool jobs have completed and submit corresponding repmask job upon tool job completion.
     We call isJobRunning on each tool job -- if we are 'timing_jobs', this information is saved
@@ -934,45 +1100,43 @@ def run_timed_tool_jobs(jobs, pa, RM_jobs=set()):
     If/when all tool jobs complete, returns list of repmask jobs (some of which are still running). 
     Note: If we submitted the evaluation as a PBS job with a set walltime, keep checking to
     see if we have reached point to save work and exit."""
+    
     job_set = {j for j in jobs}
-    #RM_jobs = set()
+    if not RM_jobs:
+        RM_jobs = set()
+    if not PRA_jobs:
+        PRA_jobs = set()
     time_est = None
     while job_set:
         finished_jobs = set()
         t1 = time.time()
-        #if timing:
-        #    logging_fp.write("Current time is {t}\n".format(t=str(t1)))
         for j in job_set:
             if not j.isJobRunning():
-                new_job = run_repeat_masker(j, pa)
-                RM_jobs.add(new_job)
                 finished_jobs.add(j)
-            else:
-                if timing:
-                    #logging_fp.write("Job with id {id} is still running\n".format(id=j.jobid))
-                    if not time_est:
-                        time_est = time.time()-t1 #parse_redhawk_time(j.walltime)
-                    if not have_time_for_another_run(time_est):
-                        save_timed_tool_jobs(job_set, RM_jobs)
-                        exit_now()
+                rm_job = None
+                pra_job = None
+                if run_rm:
+                    rm_job = run_repeat_masker(j,pa)
+                    RM_jobs.add(rm_job)
+                if run_pra:
+                    pra_job = run_pra_analysis(j, blast_db[j.seq_file])
+                    PRA_jobs.add(pra_job)
+                if rm_job:
+                    rm_job.pra_job = pra_job if pra_job else None
+                if pra_job:
+                    pra_job.rm_job = rm_job if rm_job else None
+                
         job_set = job_set - finished_jobs
-        t2 = time.time()
-        time_est = t2 - t1
+        time_est = time.time() - t1
         if timing and not have_time_for_another_run(time_est):
-            save_timed_tool_jobs(job_set, RM_jobs)
+            save_timed_tool_jobs(job_set, RM_jobs, PRA_jobs, blast_db)
             exit_now()
-    return RM_jobs
+    return RM_jobs, PRA_jobs
 
-def save_timed_RM_jobs(jobs, results_dir, job_dic):
-    """Helper method. Given a list of jobs and job dictionary, pickle jobs and job dict,
-    and write pickled file paths to checkpoint for unpickling upon next run."""
-    write_jobs_to_checkpoint(jobs, rmjobs_start, rmjobs_end)
-    write_job_dict_to_checkpoint(job_dic, results_dir)
-    exit_now()
 
 
 test_tools = ["raider", "bigfoot", "piler", "rep_scout", "araider", "raider2", "raider2.0", "raider2.1", "raider2.2"]  # List of implemented tools 
-def run_timed_RM_jobs(RM_jobs, results_dir, job_dic=None):
+def run_timed_analysis_jobs(RM_jobs, PRA_jobs, results_dir, stats_jobs=None, job_dic=None):
     """Given a set of repmask jobs and a working job dictionary, keep track of what repmask jobs 
     have completed and add completed jobs to job dictionary under appropriate tool name.
     We call isJobRunning on each repmask job -- if we are 'timing_jobs', this information is saved
@@ -981,45 +1145,40 @@ def run_timed_RM_jobs(RM_jobs, results_dir, job_dic=None):
     Note: If we submitted the evaluation as a PBS job with a set walltime, keep checking to
     see if we have reached point to save work and exit."""
     job_dic = job_dic if job_dic else {tool:[] for tool in test_tools}
+    if not stats_jobs:
+        stats_jobs = set()
     for tool in test_tools:
         if tool not in job_dic.keys():
             job_dic[tool] = []
-    if RM_jobs:
-        job_set = {j for j in RM_jobs}
+    if RM_jobs or PRA_jobs:
+        pra_job_set = {j for j in PRA_jobs}
+        rm_job_set = {j for j in RM_jobs}
         #finished_jobs = set()
-        while job_set:
-            finished_jobs = set()
+        while rm_job_set or pra_job_set:
+            finished_rm_jobs = set()
+            finished_pra_jobs = set()
             time_est = None
-            for j in job_set:
-                t1 = time.time()
+            t1 = time.time()
+            for j in rm_job_set:
                 if not j.isJobRunning():
                     #new_finished_jobs.add(j)
                     job_dic[j.tool_description].append(j)
-                    finished_jobs.add(j)
+                    #stats_jobs.add(run_perform_stats(j))
+                    finished_rm_jobs.add(j)
                 #else:
-                t2 = time.time() 
-                time_est = t2 - t1
-                if timing and not have_time_for_another_run(time_est):
-                    save_timed_RM_jobs(job_set - finished_jobs, results_dir, job_dic)
-                    exit_now()
-            job_set = job_set-finished_jobs
-            #if timing and not time_est:
-            #    time_est = parse_redhawk_time(j.walltime)
-            #    if not have_time_for_another_run(time_est):
-            #        save_timed_RM_jobs(job_set, results_dir, job_dic)
-            #t1 = time.time()
-            #if not timing_jobs:
-            #    j.wait();
-            #else:
-            #    j.timed_wait()
-            #finished_jobs.add(j)
-                #write_jobs_to_checkpoint(job_set - finished_jobs, rmjobs_start, rmjobs_end, False)
-                #write_job_dict_to_checkpoint(job_dic, job_dic_pick_fname)
-                #exit_now()
-    job_dic['raider'].sort(key = lambda x: x.seed_num)
-    job_dic['araider'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2'].sort(key = lambda x: x.seed_num)
-    return job_dic
+            for j in pra_job_set:
+                if not j.isJobRunning():
+                    finished_pra_jobs.add(j)
+            t2 = time.time() 
+            time_est = t2 - t1
+            if timing and not have_time_for_another_run(time_est):
+                save_timed_PRA_jobs(pra_job_set - finished_pra_jobs)
+                save_timed_RM_jobs(rm_job_set - finished_rm_jobs, stats_jobs, results_dir, job_dic)
+                exit_now()
+            pra_job_set = pra_job_set - finished_pra_jobs
+            rm_job_set = rm_job_set-finished_rm_jobs
+    return job_dic, stats_jobs, pra_job_set
+
 
 
 
@@ -1032,9 +1191,10 @@ if __name__ == "__main__":
     quit_time = prog_walltime + start_time - safety_margin if prog_walltime else None 
 
     ####
-    # Currently: We check for the RepeatScout executable at the location on my Mac; if found, we
-    # assume we are running on the Mac.  If not, we check for in the Redhawk location, and if found
-    # assume we are running on redhawk.  Otherwise we print and error and quit.
+    # Currently: We check for the RepeatScout executable at the location on my Mac; if 
+    # found, we assume we are running on the Mac.  If not, we check for in the Redhawk 
+    # location, and if found assume we are running on redhawk.  Otherwise we print and 
+    # error and quit.
     if os.path.exists(MacLocations["RptScout"]):
         Locations = MacLocations
     elif os.path.exists(RedhawkLocations['RptScout']):
@@ -1045,8 +1205,8 @@ if __name__ == "__main__":
     ###
 
     
-    
     data_dir = args.results_dir + "/" + args.data_dir    
+     
     if not continue_prev:
         if args.nuke and os.path.exists(args.results_dir):
             subprocess.call("rm -r %s" % args.results_dir, shell = True)
@@ -1056,19 +1216,16 @@ if __name__ == "__main__":
             checkpoint_fp = open(check_fname, "w")
             logging_fp = open(log_fname, "w")
             logging_fp.write("Starting new run from scratch\n")
+        
         ### Generate simulated file(s) and run to completion
         ### Set up the debugging log file (if needed)
         progress_fp = open(args.results_dir + "/debug.txt", "w")
         progress_fp.write(" ".join(sys.argv) + "\n\n");
         
-        #data_dir = args.results_dir + "/" + args.data_dir
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
 
-        #if not continue_prev:
-        #curr_time = time.time()
         # First: we put the chromosomes (simulated or real) into data_dir
-        #time_left = quit_time - curr_time
         if args.subparser_name == "chrom_sim":
             # Launch the jobs
             f = lambda i: simulate_chromosome(chromosome_file = args.chromosome, 
@@ -1079,7 +1236,10 @@ if __name__ == "__main__":
                                               retain_n = args.retain_n, num_repeats = args.num_repeats, low_complexity = args.low_complexity, 
                                               sim_type = args.sim_type)
             J = [f(i) for i in range(args.num_sims)]
-
+            if args.family_file:
+                family_list = [fam for line in open(args.family_file) for fam in re.split("\s+", line.rstrip()) if fam]
+                with open(args.results_dir + "/family_file.txt", "w") as fp:
+                    fp.write("\n".join(["{fam}".format(fam=f) for f in family_list]) + "\n")
             # Get the list of simulated file names
             file_list = run_timed_chrom_sim_jobs(J) #[j.sim_output for j in J]
 
@@ -1100,49 +1260,69 @@ if __name__ == "__main__":
                 old_checkpoint_fp = open(check_fname + ".old", "r")
             if os.path.exists(log_fname):
                 os.rename(log_fname, log_fname + ".old")
-                #old_checkpoint_fp = open(check_fname + ".old", "r")
             checkpoint_fp = open(check_fname, "w")
             logging_fp = open(log_fname, "w")
             logging_fp.write("Continuing previous run\n")
             flush_files()
         progress_fp = open(args.results_dir + "/debug.txt", "a")
         progress_fp.write(" ".join(sys.argv) + "\n\n");
-        #progress_fp.write("timing " + str(timing))
+        
         # Get file list from old checkpoint file
         file_list = []
         next_step = old_checkpoint_fp.readline().rstrip() 
-        progress_fp.write("next step: " + next_step + '\n') 
         if next_step == flist_start:
-            progress_fp.write("Reading list from cpoint\n")
-            logging_fp.write("Reading file list from old checkpoint file\n")
-            flush_files()
-            fname = old_checkpoint_fp.readline().rstrip()
-            while fname != flist_end:
-                file_list.append(fname)
-                fname = old_checkpoint_fp.readline().rstrip()
-            next_step = old_checkpoint_fp.readline().rstrip() 
+            file_list, next_step = recover_file_list()
+            #logging_fp.write("Reading file list from old checkpoint file\n")
+            #flush_files()
+            #fname = old_checkpoint_fp.readline().rstrip()
+            #while fname != flist_end:
+            #    file_list.append(fname)
+            #    fname = old_checkpoint_fp.readline().rstrip()
+            #next_step = old_checkpoint_fp.readline().rstrip() 
 
         if next_step == csjobs_start:
-            logging_fp.write("Reading in chrom sim jobs from old checkpoint file\n")
-            chrom_job_set = set()
-            pickname = old_checkpoint_fp.readline().rstrip()
-            while pickname != csjobs_end:
-                j = loadPBS(open(pickname, "rb"))
-                #j.submit()
-                chrom_job_set.add(j)#redhawk.loadPBS(open(pickname, "rb")))#pickle.load(pickname))
-                pickname = old_checkpoint_fp.readline().rstrip()
+            chrom_job_set, next_step = recover_sim_jobs()
+            #logging_fp.write("Reading in chrom sim jobs from old checkpoint file\n")
+            #chrom_job_set = set()
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != csjobs_end:
+            #    j = loadPBS(open(pickname, "rb"))
+            #    #j.submit()
+            #    chrom_job_set.add(j)#redhawk.loadPBS(open(pickname, "rb")))#pickle.load(pickname))
+            #    pickname = old_checkpoint_fp.readline().rstrip()
             run_timed_chrom_sim_jobs(chrom_job_set, file_list)
-            next_step = old_checkpoint_fp.readline().rstrip()
+            #next_step = old_checkpoint_fp.readline().rstrip()
         flush_files()
 
 
-    if not continue_prev or next_step == '': # Reached end of old checkpoint file 
+    if not continue_prev or next_step == '':
+        BLAST_DATABASE = create_blast_db(file_list) if args.pra else {} #CARLY: Moved this into a method to make main method (slightly) easier to follow
+        if timing:
+            write_blast_db_to_checkpoint(BLAST_DATABASE, args.results_dir)
+    
+    else:
+        if next_step == blast_db_start:
+            BLAST_DATABASE, next_step = recover_blast_db()
+            #logging_fp.write("Reading in blast database from old checkpoint file\n")
+            #BLAST_DATABASE = {}
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != jobdic_end:
+            #    seq_fname = os.path.splitext(os.path.splitext(pickname)[0])[1] #CARLY: still unsure of whether this will work.. maybe need to store basename of seq_file
+            #    BLAST_DATABASE[seq_fname] = loadPBS(open(pickname, 'rb'))
+            #    pickname = old_checkpoint_fp.readline().rstrip()
+            #flush_files()
+            #next_step = old_checkpoint_fp.readline().rstrip()
+        if timing:
+            write_blast_db_to_checkpoint(BLAST_DATABASE, args.results_dir)
+
+
+    if not continue_prev or next_step == '':
         ### Start running each tool.  Each tool should run, creating the repeat masker library (putting the file name
         ### in the pbs lib_file attribute), then run repeat masker (putting the output file name in the pbs
         ### rm_output job.
 
-        ############## First: Launch tools
-
+        ############## Second: Launch tools
+        ############## Need to initially launch all of the tool jobs
         jobs = []
         if args.pre:
             Locations['raider'] = Locations['raider_pre']
@@ -1157,16 +1337,12 @@ if __name__ == "__main__":
             jobs += [run_araider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
                                 araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
                      for file in file_list]
-        #if args.age == 1:
-        #    Locations['raider2'] = Locations['raider2_old']
-        #elif args.age == 2:
-        #    Locations['raider2'] = Locations['raider2_oldest']
+        
         if args.run_raider2:
-            ages = [0,1,2]
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             if args.all_ages:
                 jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in ages
+                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
                      for file in file_list]
 
             else:
@@ -1174,7 +1350,8 @@ if __name__ == "__main__":
                                 raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for i,seed in enumerate(seed_list)
                      for file in file_list]
         if args.run_repscout:
-            jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, use_first_filter = args.use_first_filter) for file in file_list]
+            jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.f, length = args.repscout_min, 
+                        use_first_filter = args.use_first_filter) for file in file_list]
 
         if args.run_bigfoot:
             bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
@@ -1188,75 +1365,121 @@ if __name__ == "__main__":
                 os.makedirs(piler_dir)
             jobs +=[run_piler(input_file = file, piler_dir = piler_dir) for file in file_list]
 
-
-        ############## Second: Launch repeatmasker jobs
+            
+        ############## Third: Launch repeatmasker jobs
         job_set = {j for j in jobs}
-        RM_jobs = run_timed_tool_jobs(jobs, args.pa)
+
+        ### KARRO: This is where we run the pre-rm analysis tool.  I'm setting this up
+        ### so that run_timed_tool_jobs won't be started until all these jobs are launched.
+        ### Technically this is unnecessary.  But its higly unlikely to matter, and a lot
+        ### less code this way. 
+        ### Have not done anything for check-pointing.
+
+        ### KARRO: This is absolutely the wrong way to do the run_pra_analysis lunch.  This will force
+        ### the repeat maksert runs to wait on the completion of ALL database jobs and ALL tool jobs.  (That is,
+        ### the first one won't start until all are done.  The database jobs are really quick and irrelevant, 
+        ### but there is no reason to make the RM run for one tool wait on the completion of another tool.
+        ###
+        ### Nothing is dependent on the PRA_JOBS, though at the end of the code I have added a wiit on each of tose jobs
+        ### just so the RAIDER_eval.py doesn't terminate until everything is done.
+        #if args.pra:
+        #    PRA_JOBS = {run_pra_analysis(j, BLAST_DATABASE[j.seq_file]) for j in job_set}
+
+
+        ### KARRO_END
+
+        RM_jobs, PRA_jobs = run_timed_tool_jobs(jobs, args.repmask, args.pa, args.pra, BLAST_DATABASE)
 
     else:
-        # Didn't finish processing all of the tool jobs
+        ############# Didn't finish processing all of the tool jobs
         jobs = []
         RM_jobs = set()
+        PRA_jobs = set()
         if next_step == tjobs_start: 
-            logging_fp.write("Reading in tool jobs from old checkpoint file\n")
-            pickname = old_checkpoint_fp.readline().rstrip()
-            while pickname != tjobs_end:
-                j = loadPBS(open(pickname, "rb"))
-                logging_fp.write("Read in job {id} from pickle file {pick}\n".format(id=j.jobname,pick=pickname));
-                #j.submit()
-                jobs.append(j)#redhawk.loadPBS(open(pickname, "rb")))#pickle.load(pickname))
-                pickname = old_checkpoint_fp.readline().rstrip()
-            next_step = old_checkpoint_fp.readline().rstrip()
+            jobs, next_step = recover_tool_jobs()
+        if next_step == prajobs_start:
+            PRA_jobs, next_step = recover_pra_jobs()
+            #logging_fp.write("Reading in tool jobs from old checkpoint file\n")
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != tjobs_end:
+            #    j = loadPBS(open(pickname, "rb"))
+            #    logging_fp.write("Read in job {id} from pickle file {pick}\n".format(id=j.jobname,pick=pickname));
+            #    jobs.append(j)
+            #    pickname = old_checkpoint_fp.readline().rstrip()
+            #next_step = old_checkpoint_fp.readline().rstrip()
         if next_step == rmjobs_start:
-            logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
-            pickname = old_checkpoint_fp.readline().rstrip()
-            while pickname != rmjobs_end:
-                j = loadPBS(open(pickname, "rb"))
-                logging_fp.write("Read in repeatmasker job {id} from pickle file {pick}\n".format(id=j.jobname, pick=pickname));
-                #j.submit()
-                RM_jobs.add(j)#redhawk.loadPBS(open(pickname, 'rb')))#pickle.load(pickname))
-                pickname = old_checkpoint_fp.readline().rstrip()
-            next_step = old_checkpoint_fp.readline().rstrip()
+            RM_jobs, next_step = recover_rm_jobs()
+            #logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != rmjobs_end:
+            #    j = loadPBS(open(pickname, "rb"))
+            #    logging_fp.write("Read in repeatmasker job {id} from pickle file {pick}\n".format(id=j.jobname, pick=pickname));
+            #    RM_jobs.add(j)
+            #    pickname = old_checkpoint_fp.readline().rstrip()
+            #next_step = old_checkpoint_fp.readline().rstrip()
+        #if next_step == pra_jobs_start:
+        #    logging_fp.write("Reading in pra jobs from old checkpoint file\n")
+        #    pickname = old_checkpoint_fp.readline().rstrip()
+        #    while pickname != pra_jobs_end:
+        #        j = loadPBS(open(pickname, "rb"))
+        #        logging_fp.write("Read in pra job {id} from pickle file {pick}\n".format(id=j.jobname, pick=pickname));
+        #        PRA_jobs.add(j)
+        #        pickname = old_checkpoint_fp.readline().rstrip()
+        #    next_step = old_checkpoint_fp.readline().rstrip()
         flush_files()
-        RM_jobs = run_timed_tool_jobs(jobs, args.pa, RM_jobs)
-
-    #job_dic_pick_fname = args.results_dir + "/jobdic.picklei"
+        RM_jobs, PRA_jobs = run_timed_tool_jobs(jobs, args.repmask, args.pa, args.pra, BLAST_DATABASE)
 
     if not continue_prev or next_step == '':
-        job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir) #job_dic_pick_fname)
+        ########## Need to run analysis jobs
+        job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir)
+        #job_dic = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir)
+
 
     else:
+        PRA_jobs = set()
         RM_jobs = set()
+        stats_jobs = set()
         job_dic = None
+        if next_step == prajobs_start:
+            PRA_jobs, next_step = recover_pra_jobs()
         if next_step == rmjobs_start:
-            logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
-            pickname = old_checkpoint_fp.readline().rstrip()
-            while pickname != rmjobs_end:
-                j = loadPBS(open(pickname, "rb"))
-                #j.submit()
-                RM_jobs.add(j)#redhawk.loadPBS(open(pickname, 'rb')))#pickle.load(pickname))
-                pickname = old_checkpoint_fp.readline().rstrip()
-            next_step = old_checkpoint_fp.readline().rstrip()
+            RM_jobs, next_step = recover_rm_jobs()
+            #logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != rmjobs_end:
+            #    j = loadPBS(open(pickname, "rb"))
+            #    RM_jobs.add(j)
+            #    pickname = old_checkpoint_fp.readline().rstrip()
+            #next_step = old_checkpoint_fp.readline().rstrip()
+        if next_step == stats_start:
+            stats_jobs, next_step = recover_stats_jobs()
         if next_step == jobdic_start:
-            logging_fp.write("Reading in job dict from old checkpoint file\n")
-            old_job_dic = {tool:[] for tool in test_tools}
-            pickname = old_checkpoint_fp.readline().rstrip()
-            while pickname != jobdic_end:
-                tname = os.path.splitext(os.path.splitext(pickname)[0])[1]
-                old_job_dic[tname] = loadPBS(open(pickname, 'rb'))
-                pickname = old_checkpoint_fp.readline().rstrip()
-            #os.path.split(pickname)[1]
-            flush_files()
+            old_job_dic, next_step = recover_job_dic()
+            #logging_fp.write("Reading in job dict from old checkpoint file\n")
+            #old_job_dic = {tool:[] for tool in test_tools}
+            #pickname = old_checkpoint_fp.readline().rstrip()
+            #while pickname != jobdic_end:
+            #    tname = os.path.splitext(os.path.splitext(pickname)[0])[1]
+            #    old_job_dic[tname] = loadPBS(open(pickname, 'rb'))
+            #    pickname = old_checkpoint_fp.readline().rstrip()
+            #flush_files()
             if not RM_jobs:
                 job_dic = old_job_dic
             else:
-                job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir, old_job_dic)
-            next_step = old_checkpoint_fp.readline().rstrip()
+                job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir, stats_jobs, old_job_dic)
+            #next_step = old_checkpoint_fp.readline().rstrip()
         else:
             flush_files()
-            job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir)    
+            job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir, stats_jobs)
+            #job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir)    
 
-
+    
+    job_dic['raider'].sort(key = lambda x: x.seed_num)
+    job_dic['araider'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.0'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.1'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2.2'].sort(key = lambda x: x.seed_num)
+    
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
         for i in range(len(file_list)):
@@ -1272,21 +1495,36 @@ if __name__ == "__main__":
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
+    ### KARRO
+    # Finally: we should not terminate until all the pra jobs are done.  (If pra is off, this list will be empty.)
+    #for p in PRA_jobs:
+    #    p.timed_wait()        # KARRO: Is this the correct method to use to ensure resubmission of needed
+    ### KARRO END
+
+    regex = re.compile("(?<=\# Average consensus coverage: )\d+.\d+")
+    
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "\n"
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "cc"))
+        
         for key in test_tools:
             for p in job_dic[key]:
                 progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
                 try:
-                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
+                    Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None) # args.family_file)
                     Stats = [round(x,5) for x in Stats]
-                       
+                    Coverage = "NA"
+                    if p.pra_job:
+                        try:
+                            Coverage = regex.findall(open(p.pra_job.pra_output, "r").read()).group(0)
+                        except Exception as E:
+                            progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
+
                     if args.hooke_jeeves:
                         print(Counts[1]+Counts[2])
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(p.getResources(cleanup=False)) + list(Coverage))))
 
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");

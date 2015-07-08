@@ -49,3 +49,4 @@ sqlite3
 *.e[0-9]*
 nohup.*
 tmp*
+temp*

@@ -202,7 +202,8 @@ def perform_stats(real_repeats, tool_output, exclusions):
     
     return get_stats(real_bounds, gen_bounds, l)
 
-def generate_output(output_file, print_reps, counts, stats, lists):
+
+def generate_output_orig(output_file, print_reps, counts, stats, lists):
     """ Writes performance statistics to specified output file.
     
     Keyword arguments:
@@ -234,6 +235,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     generate_output(args.output_file, args.print_reps, *perform_stats(args.repeat_file, args.masker_output, args.exclusion_file))
+    #NO HEADERS
+    print_str = "".join("{:<14}"*4) + "".join("{:<14}"*6) + "\n"
+    with open(output_file, "w") as fp:
+        try:
+            fp.write(print_str.format("tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fnr"))
+            Counts, Stats, Sets = perform_stats(args.repeat_file, args.masker_output, args.exclusion_file) # args.family_file)
+            Stats = [round(x,5) for x in Stats]          
+            fp.write(print_str.format(*(list(Counts) + list(Stats))))
+
+        except Exception as E:
+            fp.write("\t".join(["NA", "INCOMPLETE\n"]))
  
 
 

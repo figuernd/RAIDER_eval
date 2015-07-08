@@ -150,7 +150,7 @@ class pbsJobHandler:
         if not pbsJobHandler.logger:
             pbsJobHandler.logger = logging.getLogger('reval.redhawk')
             pbsJobHandler.logger.setLevel(logging.DEBUG)
-            lfp = self.output_location + 'redhawk.log'# + self.batch_file_name
+            lfp = self.output_location + '/redhawk.log'# + self.batch_file_name
             lfh = logging.FileHandler(lfp, mode='w')
             lfm = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
             lfh.setLevel(logging.DEBUG)
@@ -234,6 +234,7 @@ class pbsJobHandler:
             subprocess.call("chmod 500 %s" % (self.epilogue), shell=True)
 
     def resubmit_with_more_time(self, print_qsub=False, job_limit = job_limit, delay=10, user=current_user, new_walltime=None):
+        """ Resubmit job to queue with a new walltime. Since job is resubmitted, also need to delete old job from queue (as it is no longer important)"""
         self.logger.info("Job {j}:\tResubmitting with more time - {t}".format(j=self.jobid, t=new_walltime))
         new_batch = self.batch_file_name + '_new'
         self.logger.debug("New batch file name: " + new_batch)
@@ -254,6 +255,7 @@ class pbsJobHandler:
             
             
     def delete_job_from_queue(self, jobid):
+        """ Delete job from queue by its jobid. Wait until job it deleted and associated ofile/efile are removed"""
         self.logger.info("Deleting job with ID {j} from queue".format(j=jobid))
         retry=60
         always_retry=600
@@ -367,6 +369,8 @@ class pbsJobHandler:
         return self
 
     def submit_timed_job(self, preserve=False, print_qsub = False, job_limit = job_limit, delay=10, user=current_user, safety_margin=None):
+        """Submit timed job to redhawk. Same as submit_job, but sets the timing related data fields. Additional optional parameters:
+            * safety_margin: Can have user define the amount of extra time necessary when aborting a job"""
         self.logger.info("Submitting timed job")
         #self.logger.info("Job {j}:\tChecking isJobRunning".format(j=self.jobid))
         self.start_time = time.time()
@@ -406,6 +410,7 @@ class pbsJobHandler:
         # If we are using pbs...
         while True:
             if self.is_timing and self.running_out_of_time():
+                # if running out of time, resubmit job with new walltime = prev_walltime*increase_amount
                 self.logger.debug("Job {j}:\tRunning out of time. Resubmit.".format(j=self.jobid))
                 new_wt = self.make_redhawk_time(self.parse_redhawk_time()*increase_amount)
                 self.resubmit_with_more_time(new_walltime=new_wt)     
@@ -467,6 +472,7 @@ class pbsJobHandler:
         return self.ofile_exists()  
     
     def running_out_of_time(self):
+        """Determine whether job is running out of time (walltime - time_elapsed - safety_time)"""
         if not self.is_timing:
             return False
         t_elapsed = time.time() - self.start_time
