@@ -12,6 +12,11 @@
 
 \begin{document}
 
+\section{Basic definitions}
+
+My first attempt at providing a coherent mathematical definition of a
+repeat element family in the context of a spaced seed.
+
 \begin{definition}
   A {\it repeat element family descriptor (refd)} is a
   string over the alphabet $\{A,C,G,T,*\}$, describing the contents
@@ -19,18 +24,29 @@
 \end{definition}
 
 \begin{definition}
+  Given refds $r$ and $r'$, we will say $r'$ is a {\it slack
+    substring} of $r$ (denoted $r' \prec r$) if there is a
+  substring $r''$ of $r$ such that (1) $|r'|=|r''|$, and (2) for all
+  $0 \leq i < |r'|$, either $r'_i = r''_i$, $r'_i = *$, or $r''_i=*$.
+\end{definition}
+(In otherwords, its a substring, with a potentially different *
+pattern.)
+{\bf Note: } I'm not sure if we should be allowing $r''_i=*$.
+
+\begin{definition}
   We say an refd $r$ {\it matches} a Genome $G$ at position $i$ if, for
   all $j$ such that $r_j \neq *$, $r_j = G_{i+j}$.
 \end{definition}
 
-Example If $r = AA*TT$, and $G = AACTTGGAAGTT$, then $r$ matches $G$
+Example: If $r = AA*TT$, and $G = AACTTGGAAGTT$, then $r$ matches $G$
 at positions $i=0$ and $i=7$.  If $G=AAATTT$, then $r$ matches $G$ at
 positions $i=0$ and $i=1$.
 
 
 \begin{definition}
   A spaced seed $s$ {\it matches} an refd $r$ at position $i$
-  if, for every $0 \leq j < |s|$, if $r_{i+j} = *$ then $s_j = 0$.
+  if, for every $0 \leq j < |s|$, $s_j = 0$
+  whenever $r_{i+j}=*$.
 \end{definition}
 
 Example: If $s=11011$ and $r = AAAAA*GGG$, then $s$ matches $r$
@@ -50,7 +66,7 @@ Let $s=11011$ and $r = AA*CC*GGGGGG$.  Then $M_s(r) = [0, 3, 6, 7]$.
   $i - |s| \leq j \leq i$ such that $s$ matches $r$ at position $j$.
 \end{definition}
 
-In otherwords: for any position $i$ of the refd, $i$ must be able to
+In other words: for any position $i$ of the refd, we must be able to
 match the seed to a position of $r$ such that it then covers position
 $i$.
 
@@ -62,10 +78,10 @@ or $i=6$.
 
 \begin{observation}
   Let $L$ be the sortest sequence of the values in $M_s(r)$.  Then $s$
-  is consistent with $r$ if and only if $\max_{0 < j < |s|-1}
-  L[j+1]-L[j] \leq |s|$.  In the sorted list, every pair of adjacent
-  elements must be within $|s|$ of eachother.
+  is consistent with $r$ if and only if $\max_{0 < j < |s|-1} L[j+1]-L[j] \leq |s|$.
 \end{observation}
+That is, in the sorted list, every pair of adjacent elements must be
+within $|s|$ of each other.
 
 \begin{definition}
   Given a fixed genome $G$, and fixed spaced seed
@@ -76,19 +92,29 @@ or $i=6$.
   \item $r$ matches the sequence of length $|r|$ starting at each
     element of $S$.  ($S$ is the set of all instances.)
   \item $s$ is consistent with $r$.  ($r$ corresponds to the seed.)
-  \item There does not exist a proper substring $r'$ of $r$ such that $r$
-    is consistent with $s$ and $M_s(r') - M_s(r) = \emptyset$.  You
-    can't have a proper substring of $r$ that describes sequences
-    outside of the instances described by $r$.  (Minimality.)
-  \item There does not exist a substring $r'$ propertly containing
-      $r$ such that the instances defined by $M_s(r')$ contain all the
+  \item There does not exist an refd $r'$, $r' \prec r$,  such that $r'$
+    is consistent with $s$ and $M_s(r') - M_s(r) \neq \emptyset$.  (You
+    cannot have a proper substring of $r$ that describes sequences
+    outside of the instances described by $r$ -- minimality.)
+  \item There does not exist an refd $r'$, $r \prec r'$, such that $s$ is consistent
+    with $r'$, such that the instances defined by $M_s(r')$ contain all the
     instances of $M_s(r)$.  (Maximality.)
   \end{itemize}
 \end{definition}
+ {\bf Comment:} I'm not sure if the $r \prec r'$ is the right
+ relationship.  Maybe just straight substring?  Or perhaps the
+ definition of $\prec$ isn't quite right?
  
   
+\section{Random Lemmas}
 
+The following are things I wanted to try to prove that may or may not
+be useful.
 
+\begin{lemma}
+  Let $s$ be a seed, $r$ be a refd consistent with $s$,
+  and $r'$ be an refd consistent with $s$ such that $|r'| < |r|$.  
+\end{lemma}
 
 
 

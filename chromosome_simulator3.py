@@ -107,7 +107,8 @@ def generate_chromosome(seq, markov_list, coord_adjust, rpt_gen, mask = False, m
 
     tail_length = min(max_interval, length-current_coord)
     if tail_length > 0:
-        s.append(markov_gen.generate_sequence(markov_list, tail_length))
+        s.append("".join([random.choice("ACGT") for i in range(tail_length)]))
+    
 
     sim_seq = "".join(s)
     sim_seq_len = len(sim_seq)
