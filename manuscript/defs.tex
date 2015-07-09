@@ -18,6 +18,18 @@ My first attempt at providing a coherent mathematical definition of a
 repeat element family in the context of a spaced seed.
 
 \begin{definition}
+An $L$-mer is a string of length $l$.
+\end{definition}
+
+\begin{definition}
+Given a spaced seed $s$ of length $l$ and an $l$-mer $x$, the {\it seeded
+$l$-mer} $s'$ is created by removing all characters of $x$
+corresponding to $0$'s in $s$.  Let $\sigma_s(x)$ denote the seeded
+$l$-mer for $s$.
+\end{definition}
+Example: for $s=11011$ and $x = AACGG$, $\sigma_s(x) = AACC$.
+
+\begin{definition}
   A {\it repeat element family descriptor (refd)} is a
   string over the alphabet $\{A,C,G,T,*\}$, describing the contents
   of any string in the family.
@@ -34,7 +46,7 @@ pattern.)
 {\bf Note: } I'm not sure if we should be allowing $r''_i=*$.
 
 \begin{definition}
-  We say an refd $r$ {\it matches} a Genome $G$ at position $i$ if, for
+  We say an refd $r$ {\it matches} a genome $G$ at position $i$ if, for
   all $j$ such that $r_j \neq *$, $r_j = G_{i+j}$.
 \end{definition}
 
@@ -51,6 +63,16 @@ positions $i=0$ and $i=1$.
 
 Example: If $s=11011$ and $r = AAAAA*GGG$, then $s$ matches $r$
 at positions $i=0$ and $i=3$, but not at any other $i$.
+
+
+\begin{observation}
+$s$ matches $r$ at $i$ if $\sigma_s(r[i:i+|s|])$ does not contain any
+  $*$ symbols.
+\end{observation}
+
+
+$\sigma(r[3:8]) = AAGG$ (hence a match at $i=3$), but $\sigma(r[2:7])
+= AA*G$ (hence no match at $i=2$).
 
 \begin{definition}
   Given a seed $s$ and refd $r$, let $M_s(r)$ be the set of values $i$
@@ -122,40 +144,40 @@ which is not tight.  Interestingly, if we have AAAAATTCCCCC and
 AAGAATTCCGCC, then we get AA*AATTCC*CC -- to that extra T makes it
 tight.  Not sure if this is significant.
 
-\section{Algorithm}
+\section{From Thesis}
 
-Let $s$ be a fixed spaced seed, $G$ be a fixed genomic sequence, and
-$f$ be a fixed integer $\geq 2$.  Let $f_s(i)$ be the sub-sequence at
-$G[i]$ inducted by the seed (with 0-matching characters removed).  So $s = 11011$ and
-the sequence at $G[i]$ is $AACGG$, the $f_s(i) = AAGG$.
+In the following I'm going through definitions / parallels from Nate's
+thesis and seeing if I can create an analgy for spaced seeds.
 
-Let $H$ and $F$ be hash-tables mapping strings to integers:
-\begin{itemize}
-\item $H[f(i)]$ maps reduced sequences to counts.
-\item $F[f(i)]$ maps reduced sequences to family assignments.
-  (e.g. $f(i)$ is assigned to family $F[f(i)]$.
+The following are things I wanted to try to prove that may or may not
+be useful.  In all of these I'm assuming a fixed genome $G$, a fixed
+frequence requriement $f$, and a fixed seed $s$ with length $l$ and
+weight $w$.
 
-Let $p(i)$ be the coorindate of $G$ the marks the beginning of the
-last instance of $f(i)$.  That is, if $s=11011$ and $G =
-ACCTCCAAACCTCC$, then $p(9) = 1$.  ($f(9) = CCCC$, and the largest
-$i < 9$ such that $f_s(i) = CCCC$ is $i=1$.  (Not all functions are
-pegged to a fixed $s$.)
- 
-\begin{verbatim}
-num_fams <- 0 
-for i <- 0 to |G|:
-   seq = G[i:i+|s|]
-   H[seq] += 1
-   if H[seq] >= 2:
-      pseq = 
+\begin{lemma} 
+For any $l$-mer $x$, the seeded $l$-mer $\sigma_s(x)$ can be a member
+of at most $l$ different families.
+\end{lemma}
+My gut is that this is true, but not necessarily tight.  Maybe its
+$w$, or $l-w$?
 
-\end{verbatim}
+\begin{definition}
+Let $x$ and $y$ be two strings such that $x = a \dot b$, $y = b \dot
+c$, and $|b| = i$.  Then $x \circ_i y = a\dot b \dot c$.
+\end{definition}
+
+$AAACC \circ_2 CCGGG = AAACCGGG$.  $AAACC \circ_3 CCGGG$ is undefined.
+
+This is a modification of Nate's $x \circ y$ operator.  May need to be
+adapted for seeds.
+
+
+
+
+
 
   
 \section{Random Lemmas}
-
-The following are things I wanted to try to prove that may or may not
-be useful.
 
 
 
