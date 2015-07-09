@@ -18,6 +18,18 @@ My first attempt at providing a coherent mathematical definition of a
 repeat element family in the context of a spaced seed.
 
 \begin{definition}
+An $L$-mer is a string of length $l$.
+\end{definition}
+
+\begin{definition}
+Given a spaced seed $s$ of length $l$ and an $l$-mer $x$, the {\it seeded
+$l$-mer} $s'$ is created by removing all characters of $x$
+corresponding to $0$'s in $s$.  Let $\sigma_s(x)$ denote the seeded
+$l$-mer for $s$.
+\end{definition}
+Example: for $s=11011$ and $x = AACGG$, $\sigma_s(x) = AACC$.
+
+\begin{definition}
   A {\it repeat element family descriptor (refd)} is a
   string over the alphabet $\{A,C,G,T,*\}$, describing the contents
   of any string in the family.
@@ -34,7 +46,7 @@ pattern.)
 {\bf Note: } I'm not sure if we should be allowing $r''_i=*$.
 
 \begin{definition}
-  We say an refd $r$ {\it matches} a Genome $G$ at position $i$ if, for
+  We say an refd $r$ {\it matches} a genome $G$ at position $i$ if, for
   all $j$ such that $r_j \neq *$, $r_j = G_{i+j}$.
 \end{definition}
 
@@ -51,6 +63,16 @@ positions $i=0$ and $i=1$.
 
 Example: If $s=11011$ and $r = AAAAA*GGG$, then $s$ matches $r$
 at positions $i=0$ and $i=3$, but not at any other $i$.
+
+
+\begin{observation}
+$s$ matches $r$ at $i$ if $\sigma_s(r[i:i+|s|])$ does not contain any
+  $*$ symbols.
+\end{observation}
+
+
+$\sigma(r[3:8]) = AAGG$ (hence a match at $i=3$), but $\sigma(r[2:7])
+= AA*G$ (hence no match at $i=2$).
 
 \begin{definition}
   Given a seed $s$ and refd $r$, let $M_s(r)$ be the set of values $i$
@@ -104,17 +126,60 @@ within $|s|$ of each other.
  {\bf Comment:} I'm not sure if the $r \prec r'$ is the right
  relationship.  Maybe just straight substring?  Or perhaps the
  definition of $\prec$ isn't quite right?
- 
+
+
+\begin{definition}
+Given the refd $r$ of an elementary repeat family with set $S$, we say
+that $r$ is {\it tight} if, for each $i$ such that $r_i = *$, there
+exists two sequences defined by $S$ that have different bases in
+position $i$.
+\end{definition}
+In other words: $r$ is tight if it only uses $*$ symbols where it must
+to match everything sequence defined by $S$.
+
+{\bf Comments:} I had it in mind that the algorithm would always
+return a tight refd.  But in Carly's defense she gave the example:
+s=11011, AAAAATCCCCC, AAGAATCCGCC, where ends up with AA*AA*AA*AA,
+which is not tight.  Interestingly, if we have AAAAATTCCCCC and
+AAGAATTCCGCC, then we get AA*AATTCC*CC -- to that extra T makes it
+tight.  Not sure if this is significant.
+
+\section{From Thesis}
+
+In the following I'm going through definitions / parallels from Nate's
+thesis and seeing if I can create an analgy for spaced seeds.
+
+The following are things I wanted to try to prove that may or may not
+be useful.  In all of these I'm assuming a fixed genome $G$, a fixed
+frequence requriement $f$, and a fixed seed $s$ with length $l$ and
+weight $w$.
+
+\begin{lemma} 
+For any $l$-mer $x$, the seeded $l$-mer $\sigma_s(x)$ can be a member
+of at most $l$ different families.
+\end{lemma}
+My gut is that this is true, but not necessarily tight.  Maybe its
+$w$, or $l-w$?
+
+\begin{definition}
+Let $x$ and $y$ be two strings such that $x = a \dot b$, $y = b \dot
+c$, and $|b| = i$.  Then $x \circ_i y = a\dot b \dot c$.
+\end{definition}
+
+$AAACC \circ_2 CCGGG = AAACCGGG$.  $AAACC \circ_3 CCGGG$ is undefined.
+
+This is a modification of Nate's $x \circ y$ operator.  May need to be
+adapted for seeds.
+
+
+
+
+
+
   
 \section{Random Lemmas}
 
-The following are things I wanted to try to prove that may or may not
-be useful.
 
-\begin{lemma}
-  Let $s$ be a seed, $r$ be a refd consistent with $s$,
-  and $r'$ be an refd consistent with $s$ such that $|r'| < |r|$.  
-\end{lemma}
 
 
 
