@@ -1,0 +1,213 @@
+\documentclass{article}
+\usepackage{longtable}
+\usepackage{ulem}
+\pagestyle{myheadings}
+\usepackage{ifthen}
+\usepackage{color}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\cyan}[1]{{\color{cyan}#1}}
+\newcommand{\magenta}[1]{{\color{magenta}#1}}
+
+\newtheorem{definition}{Definition}
+\newtheorem{observation}{Observation}
+\newtheorem{lemma}{Lemma}
+
+\begin{document}
+
+\section{Definitions}
+
+\subsection{REFDs}
+In RAIDER, everything is defined in terms of $l$-mers.  hHence we need
+to generlize slightly to allow the ambiguity character, so we will
+create a description of a {\it repeat element family discriptior},
+with an $l$-mer being a special case of that.
+
+\begin{definition}
+A \underline{repeat element family discriptor} (refd) is a sequence over
+$\Sigma=\{A,C,G,T,*\}$, where $*$ denotes unspecified bases. 
+\end{definition}
+
+{\bf Note:} We will refer to sub-refds as consistent with the concept
+of a substring, and denote then as consistent with Python.  (That is,
+if $r =  AAAC*CGG'$, then the sub-refd $r_{3:6}$, or $r[3:6]$, is the refd
+$C*C$).  Generally, we will define all standard string operators on
+refds unless otherwise noted.  (e.g. $\cdot$ will be the concatenation
+operator, $|r|$ will denote total length, etc...)
+
+\begin{definition}
+Given an refd, $|r|$ denotes the length of the string and $||r||$
+denotes the number of non-$*$ characters in the string.
+\end{definition}
+For $r = A*A$, $|r| = 3$ and $||r|| = 2$.
+
+\begin{definition}
+An $l$-mer is an refd of length $l$.
+\end{definition}
+
+\begin{definition}
+Let $r$ and $r'$ be two $l$-mers.
+\begin{itemize}
+\item $r$ and $r'$ are \underline{consistent} if,
+  for any position $i$ in which they differ, one of them contains a
+  $*$.  ($AAC*TT$ and $AA*GTT$ are consistent; $AAC*TT$ and $AAGGTT$
+  are not.)
+\item We will say $r$ \underline{generalizes} $r'$ if, wherever they differ,
+  $r$ has a $*$.  Denote this as $r \vdash r'$.  ($AAC*TT \vdash AACGTT$, 
+  $AAC*TT \not\vdash AA*CTT$.)
+\item The \underline{merge} of $r$ and $r'$, denoted $r \oplus r'$, is
+  the $l$-mer such that $s_i = r_i$ when $r_i=r'_i$,
+  and $*$ otherwise. ($AAC*TT \oplus AA*GTT = AA**TT$.) 
+\item The \underline{tight merge} of $r$ and $r'$, denoted $r \otimes r'$,
+  is $r \oplus r'$ if $r$ and $r'$ are consistent, and undefined
+  otherwise. ($AAC*TT \otimes AA*GTT = AA**GT$, but $AAC*TT \otimes AAAA*CGT$ is undefined.)
+\item The \underline{compression} of consistent refds $r$ and $r'$, denoted $r\ominus r'$, 
+  is the string $s$ where $s_i$ is: $*$ if both $r_i$ and $r'_i$ are
+  $*$, other the non-$*$ character at $r_i$ or $r'_i$.  If $r$ is and
+  $r'$ are not consistent, $r \ominus r'$ is undefined.  ($AA**C
+  \ominus A**CC = AA*CC$.
+\end{itemize}
+\end{definition}
+
+{\bf Comments:}
+\begin{itemize}
+\item $r \oplus r'$ is the string that finds the $s$ over all
+$l$-mers $s$ that generalizes both $r$ and $r'$ which maximizes $||s||$.
+\item $r \ominus r'$ is the string that finds the $s$ over all
+  $l$-mers $s$ that can be gerlized t both $r$ and $r'$ which
+  maximizes $||s||$.
+\item It might makes sense to say $r' < r$ if $r$ generlizes $r$ --
+  which would then indce a lattice.  I have no idea if this is
+  actually interesting / useful, and am ignoring it for now.
+\end{itemize}
+
+
+\begin{definition}
+Let $x$ and $y$ be REFDs. Define $x \circ y$ as follows.  Let $i$ be
+the largest $i$ such that $x_{|x|-i:}$ and $y_{:i}$ are consistent, let
+$b = x_{|x|-i:} \ominus y_{:i}$, let $a = x_{:|x|-i}$ and $c = y_{i:}$.  
+$x \circ y = a \cdot b \cdot c$.
+\end{definition}
+{\bf Examples:}
+\begin{itemize}
+\item $AAACCC \circ C*CTTT = AACCC$.
+\item $AAACCC \circ CTCTTT = AAATCCTCTTT$.
+\item $AAACC* \circ CC*TTT = AAACC*TTT$.
+\end{itemize}
+
+
+\subsection{REFDs and Spaced Seeds}
+
+
+\begin{definition}
+Given an $l$-mer $r$ and a spaced seed $s$ of length $l$, The seeded
+$l$-mer, denoted $\sigma_s(r)$, is created by removing all bases at
+positions corresponding to 0s.
+\end{definition}
+Example: $\sigma_{11011}(AACGG) = AAGG$. 
+
+\begin{definition}
+Given an $l$-mer $r$ and a spaced seed $s$ of length $l$, the
+generlized $l$-mer (w.r.t. $s$), or $\gamma_s(r)$, is the refd created by replacing
+all basses corresponding to 0s with * characters.
+\end{definition}
+Example: $\sigma_{110101}(AACGTG) = AA*G*G$.
+
+\begin{definition}
+Given a spaced seed $s$ of length $l$: 
+\begin{itemize}
+\item $s$ is {\it consistent} with an $l$-mer $r$ if, for all
+$i$ such that $r_i = *$, $s_i = 0$.  
+\item A spaced seed $s$ hits an refd $r$ at position $i$ if 
+  $i <|r|-|s|$ and $s$ is consistent with $r_{i:i+|s|}$.
+\end{itemize}
+\end{definition}
+
+\begin{definition} 
+A spaced seed $s$ of length $l$ {\underline covers} and refd $r$ is, for every $j$,
+there is an $i \leq j$ such that $s$ is consistent with the sub-refd
+$r_{i:i+|l|}$.
+\end{definition}
+{\bf Examples:} Let $s = 11011$.
+\begin{itemize}
+\item $r = AAAAA*AA$. $s$ covers $r$ as we can place $s$ $i=0$ and
+  $i=3$ and, between them, cover every character in $r$ without
+  conclict between a 1 and a $*$.
+\item $r = AAA*AA$.  $s$ does not cover $r$.  $s$ only hist at $i=1$,
+  so there is no way to cover base 0.
+\item $r = AAAAAAAAAA$.  $s$ covers $r$, since $s$ hits at every base.
+\end{itemize}
+
+\subsection{REFDs and Sequence Sets}
+Looks like we will need to define the relationship between refds and
+sets of sequences to get the elementary repeat sequence.
+
+Assume a fixed genome $G$.
+
+\begin{definition}
+Let $r$ be an refd of length $l$ and let $S$ be a set of sequences,
+each of length $l$.
+\begin{itemize}
+\item We say $r$ is \underline{consistent} with $S$ if $r$ is
+  consistent with every sequence in $S$.
+\item We say $r$ is \underline{tightly consistent} with $S$ if $r$ is
+  consistent with $s$ and, for every $i$ such that $r_i=*$, there
+  exists sequences $x,y \in S$ such that $x_i \neq y_i$.
+\end{itemize}
+That is: $r$ is tightly consistent with the set $S$ is $r$ only has
+$*$ characters in those places it must.  (I thought this was going to
+be necessary at one point, but am now doubting it.)
+
+
+
+
+\subsection{Elementary Repeats}
+
+\begin{definition}
+Let $s$ be a fixed seed with length $l$, $f$ be a fixed integer, and $G$ be a fixed
+genomic sequence.  An
+\underline{Elementary Repeat Family} is a tuple $(r,S)$ where: 
+\begin{enumerate}
+\item $r$ is an refd such that $s$ covers $r$. 
+\item $S$ is a set of genomic coordinates such that $|S| \geq f$.  Say
+  that the sub-refds induced by $S$ are the substrings of $G$ starting
+  at cordinates of $S$ and extended $|r|$ bases.
+\item For every $i \in S$, $r$ is consistent with the string
+  $G_{i:i+|r|}$.
+\item Minimality condition.  Possibilities (I'm not sure which is
+  right):
+  \begin{itemize}
+  \item There is no sub-refd $r'$ of $r$ that is covered by $s$ and is
+     consistent some sequence $x$ that is sits outside the sequences
+      induced by $S$.
+  \item There is no $l$-mer $r'$ contained in $r$ that is consistence
+    with $s$, such that $\sigma_s(r)'$ occurs anywhere in $G$ outside
+    of the sequences induced by $S$.
+ \end{itemize}
+\item There is no refd $r'$ containing $r$ such that every sequence
+  induced by $S$ is contained by some sequence consisted with $r'$.
+\end{definition}
+
+{\bf Comments:} For the last two points, I'm really not sure if the
+substring relation is the correct relation between $r$ and $r'$.
+
+
+\subsection{Lemmas}
+
+Right now, I'm trying trying to think ofpossibly interesting
+statements and prove them.
+
+Assume a fixed seed $s$ of length $l$ and a fixed genome $G4.
+
+\begin{lemma}
+Let $r$ and $r'$ be two different $l$
+
+
+
+
+
+\end{document}
