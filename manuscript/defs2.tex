@@ -29,12 +29,12 @@ with an $l$-mer being a special case of that.
 
 \begin{definition}
 A \underline{repeat element family discriptor} (refd) is a sequence over
-$\Sigma=\{A,C,G,T,*\}$, where $*$ denotes unspecified bases. 
+$\Sigma=\{A,C,G,T,*\}$ (where $*$ denotes unspecified bases).
 \end{definition}
 
 {\bf Note:} We will refer to sub-refds as consistent with the concept
 of a substring, and denote then as consistent with Python.  (That is,
-if $r =  AAAC*CGG'$, then the sub-refd $r_{3:6}$, or $r[3:6]$, is the refd
+if $r =  AAAC*CGG$, then the sub-refd $r_{3:6}$, or $r[3:6]$, is the refd
 $C*C$).  Generally, we will define all standard string operators on
 refds unless otherwise noted.  (e.g. $\cdot$ will be the concatenation
 operator, $|r|$ will denote total length, etc...)
@@ -69,7 +69,8 @@ Let $r$ and $r'$ be two $l$-mers.
   is the string $s$ where $s_i$ is: $*$ if both $r_i$ and $r'_i$ are
   $*$, other the non-$*$ character at $r_i$ or $r'_i$.  If $r$ is and
   $r'$ are not consistent, $r \ominus r'$ is undefined.  ($AA**C
-  \ominus A**CC = AA*CC$.
+  \ominus A**CC = AA*CC$.  But $AA**C \ominus AT**C$ is undefined
+  (because of the disagreement in the second position).
 \end{itemize}
 \end{definition}
 
@@ -94,7 +95,7 @@ $x \circ y = a \cdot b \cdot c$.
 \end{definition}
 {\bf Examples:}
 \begin{itemize}
-\item $AAACCC \circ C*CTTT = AACCC$.
+\item $AAACCC \circ C*CTTT = AAACCCTTT$.
 \item $AAACCC \circ CTCTTT = AAATCCTCTTT$.
 \item $AAACC* \circ CC*TTT = AAACC*TTT$.
 \end{itemize}
@@ -104,7 +105,7 @@ $x \circ y = a \cdot b \cdot c$.
 
 
 \begin{definition}
-Given an $l$-mer $r$ and a spaced seed $s$ of length $l$, The seeded
+Given an $l$-mer $r$ and a spaced seed $s$ of length $l$, the seeded
 $l$-mer, denoted $\sigma_s(r)$, is created by removing all bases at
 positions corresponding to 0s.
 \end{definition}
@@ -115,7 +116,7 @@ Given an $l$-mer $r$ and a spaced seed $s$ of length $l$, the
 generlized $l$-mer (w.r.t. $s$), or $\gamma_s(r)$, is the refd created by replacing
 all basses corresponding to 0s with * characters.
 \end{definition}
-Example: $\sigma_{110101}(AACGTG) = AA*G*G$.
+Example: $\gamma_{110101}(AACGTG) = AA*G*G$.
 
 \begin{definition}
 Given a spaced seed $s$ of length $l$: 
@@ -128,16 +129,16 @@ $i$ such that $r_i = *$, $s_i = 0$.
 \end{definition}
 
 \begin{definition} 
-A spaced seed $s$ of length $l$ {\underline covers} and refd $r$ is, for every $j$,
+A spaced seed $s$ of length $l$ \underline{covers} and refd $r$ is, for every $j$,
 there is an $i \leq j$ such that $s$ is consistent with the sub-refd
 $r_{i:i+|l|}$.
 \end{definition}
 {\bf Examples:} Let $s = 11011$.
 \begin{itemize}
-\item $r = AAAAA*AA$. $s$ covers $r$ as we can place $s$ $i=0$ and
+\item $r = AAAAA*AA$. $s$ covers $r$ as we can place $s$ at $i=0$ and
   $i=3$ and, between them, cover every character in $r$ without
-  conclict between a 1 and a $*$.
-\item $r = AAA*AA$.  $s$ does not cover $r$.  $s$ only hist at $i=1$,
+  concflict between a 1 and a $*$.
+\item $r = AAA*AA$.  $s$ does not cover $r$.  $s$ only hits at $i=1$,
   so there is no way to cover base 0.
 \item $r = AAAAAAAAAA$.  $s$ covers $r$, since $s$ hits at every base.
 \end{itemize}
@@ -163,10 +164,68 @@ That is: $r$ is tightly consistent with the set $S$ is $r$ only has
 $*$ characters in those places it must.  (I thought this was going to
 be necessary at one point, but am now doubting it.)
 
+\subsection{REFD Decomposition}
 
+Given an REDF $r$ and a seed $s$ of length $l$ ($l \leq |r|$), we want
+to decompose $r$ into a set of overlapping $l$-mers.  These are the
+$l$-mers that cannot be repeated outside of the repeat.
+
+For example: if we have $G = \ldots AAAAACTTTTT\ldots AAAAAGTTTTT
+\ldots$ (notice: 6 As), with the seed $1101$, we get the refd $AAAAAA*TT*TT$, which
+deposes into $AA*AA$, $AA*TT$, and $TT*T$$.  If any string compatible
+with any of these three occurs anywhere else, it breaks the family.
+But if the string $AA*AC$ occurs somewhere else, it does not -- thats
+irrelevant.  (In this example the minimal decomposition is unique -- I'm not
+sure that this is always the case, or what multiple decompositions
+mean.)
+
+\begin{definition} 
+Given a spaced seed $s$ of length $l$ and a an refd $r$ that is
+covered by $s$, a \underline{decomposition} of $r$ w.r.t. $s$ is a set of coordinates $i$, $0 \leq i < |r|-l$, such
+that (a) for each $i \in S$, $s$ hits $r$ at $i$, and (b) $r$ is
+covered by $s$ using only those positions from $S$.
+\end{definition}
+
+Examples:
+\begin{itemize}
+\item $s=11011$, $r=AAAAA*CCCCC$, then the only decomposition is
+  ${0,3,6}$.
+\item $s=11011$, $r=AAAAAA*CCCCC$, then ${0,1,4,7}$ and ${0,4,7}$ are
+  both decompositions.
+\end{itemize}
+
+\begin{definition}
+A decomposition $S$ of $r$ with respect to $s$ is \underline{minimal}
+if no element of $S$ can be removed without breaking the decomposition
+properties. 
+\end{definition}
+In the above, the first set of the second example is not minimal. 
 
 
 \subsection{Elementary Repeats}
+
+I want to get a definition of elementary repeats that paralleles the
+one we had.  (And, hopefully, is provably equivilent for spaced seeds
+without spaces.)  This is tricky: I'm not yet sure what the equivilent
+is for the minimality condition (there is no subsequence of an
+elementary repeat that occurs independently of the instances of the
+elementary repeat).  Lets look why. 
+
+Suppose we have in the string out genome $AAAAATCCCCC$ and
+$AAAAAGCCCCC$.  Using the seed $s=11011$, we should get the refd
+$r=AA*AA*CC*CC$. Here are different ways of phrasing the minimality
+condition, and why they break:
+\begin{enumerate}
+\item No sub-refd can match any string in the genome outside of those
+  matching $r$.  Doesn't work: we can have an AAAAT occuring somewhere
+  else wihtout breaking this family, since the second $l$-mer is
+  irrelevant to construction.
+\item There cannot be any string $S'$, $|s'| < |r|$, occuring outside
+  the instances, such that $s'$ generalizes to a sub-refd $s$ or $r$.
+\end{enumerate}
+
+
+
 
 \begin{definition}
 Let $s$ be a fixed seed with length $l$, $f$ be a fixed integer, and $G$ be a fixed
