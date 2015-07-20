@@ -1,0 +1,290 @@
+\documentclass{article}
+\usepackage{longtable}
+\usepackage{ulem}
+\pagestyle{myheadings}
+\usepackage{ifthen}
+\usepackage{color}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+\newcommand{\und}{\underline}
+
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\cyan}[1]{{\color{cyan}#1}}
+\newcommand{\magenta}[1]{{\color{magenta}#1}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{notation}{Notation}
+\newtheorem{definition}{Definition}
+\newtheorem{observation}{Observation}
+\newtheorem{lemma}{Lemma}
+
+\begin{document}
+
+\subsection{REFDs}
+
+\begin{definition}
+  A \underline{sequence descriptor} (sd) is a string over $\Sigma=\{A,C,G,T,*\}$.
+\end{definition}
+
+We will allow any normal string operator to apply to sequence descriptors.  In specific, for a s.d. $r$:
+\begin{itemize}
+\item $r_{i,i+l}$, or $r[i:i+l]$, is the length $l$ sub-sd (substring) of $r$ starting at $i$.
+\item $|r|$ is the number of characters in $r$.
+\item $||r||$ is the number of non-* characters in $r$.
+\item We will use $l$-mer to denote a length $l$ sd.
+\end{itemize}
+
+\begin{definition}
+  If $r_1$ and $r_2$ are sds of the same length:
+\begin{enumerate}
+\item $r_1$ and $r_2$ are \und{consistent} if, for any position $i$ in
+  which they differ, one of them is a $*$. 
+\item $r_2$ \und{generalizes} $r_1$ (and $r_1$ is \und{generlized} by $r_2$),
+  if, for any position in which they are different, $r_2$ has a $*$.
+  \end{enumerate}
+\end{definition}
+
+\begin{definition}
+  The frequency of an s $r$ in genome sequence $G$ is the number of
+  $i$ such that $G_{i:i+|r|}$ is compatible with $r$.  
+\end{definition}
+
+
+\begin{notation}
+Let $r_1$ and $r_2$ be sds.  We say:
+\begin{itemize}
+\item $r_1 < r_2$ if $r_1$ is generalized by $r_2$.  Extended to
+  $\leq$, $\geq$, and $>$ as normal. 
+\item $r_1 || r_2$ ($r_1$ is ``parallel'' to $r_2$) if $r_1$ and $r_2$ are
+  compatible, but neither generalizes the other.
+\item $freq_G(r)$ is number of substrings in $G$ that are compatable with $r$.
+\end{itemize}
+\end{notation}
+
+{\bf Comment:} This forms a lattice over the set of all
+$l$-length sds.  I have no idea if this is important/useful.
+
+\subsection{REFDs and Spaced Seeds}
+
+\begin{definition}
+Given a spaced seed of length $l$ and an $l$-mer $r$, we
+\und{generlize} $r$
+w.r.t $s$ by replacing $r_i$ with a * for all $i$ such that $s_i = 0$.
+\end{definition}
+Example: We generalize $AAAAAA$ w.r.t. $110101$ to $AA*A*A$.
+
+\begin{definition}
+  Let $s$ be a spaced seed of length $l$.
+ 
+  \begin{itemize}
+  \item We say $s$ and an $l$-mer $r$ are \und{consistent} if, when $s_i = 0$, $r_i = *$.
+  \item We say seed $s$ \und{hits} sd $r$ at position $i$ such that
+    $s$ is consistent with $r_{i:i+|s|}$ ($i \leq |r| - |s|$).
+  \item We say seed $s$ \und{covers} sd $r$ if, for every $j$, $0 \leq
+    j < |r|$, there is an $i$ such that $s$ hits $r$ at $i$ and covers
+    position $j$ in doing so.
+  \end{itemize}
+\end{definition}
+
+Example: For $s=11011$ and $r=AAAAA*TTTTT$, $s$ covers $r$, hitting at
+$\{0,3,6\}$.  $s$ does not cover $AAAAA**TTTTT$, as there is no
+position at which $s$ hits and extens over $i=5$.
+
+\begin{definition}
+  Let $r$ be an sd and $s$ be a seed that covers $r$.
+\begin{itemize}
+\item The \und{decompostion} of $r$ w.r.t $s$ is set of all $i$ such
+  that $s$ hits $r$ at position $i$.
+\item The \und{seqeunce decomposition} of $r$ w.r.t. $s$ is the set
+  of all sds $r_{i:i+|s|}$ for each $i$ in the decomposition.
+\item The \und{generalized sequence decomposition} of $r$ w.r.t. $s$
+  is the set of generalizations of $w$ for all $w$ in the sequence decomposition.
+\end{itemize}
+\end{definition}
+  
+Examples: For $s=11011$ and $r = TAAAAA*CCCCCC$, the decomposition is
+$\{1,2,5,8,9\}$, the sequence decomposition is $\{TAAAA, AAAAA, AA*CC,
+CCCCC\}$ (note the two sequences a 8 and 9 are the same, so only
+included once), and the generlized sequence decomposition is $\{TA*AA,
+AA*AA, AA*CC, CC*CC\}$. 
+    
+\begin{notation}
+  \begin{itemize}
+  \item Let $\gamma_s(r)$ denote the generalization of $r$ w.r.t. $s$
+  (undefined if $|r| \neq |s|$).
+  \item Let $\delta_s(r)$ denote the decomposition of $r$ w.r.t. $s$.
+  \item Let $\Delta_s(r)$ denote the sequence decomposition of $r$ w.r.t. to
+  $s$.
+  \item Let $\Gamma_s(r)$ denote the generalized seqeunce decomposition of
+  $r$ w.r.t. $s$.
+  \end{itemize}
+\end{notation}
+
+{\bf Note:} I messed around with other decompositions (subsets of the
+decomposition, minimal decompositions, right-most decompositions), but
+this is the only one that seemed to be useful so far.
+
+\subsection{Elementary repeats}
+
+\begin{definition}
+  \label{ERdef}
+  Given a fixed seed $s$, genome $G$, and frequency $f$, an sd $r$ is
+  a \underline{repeat element descriptor} (red) if the following
+  holds true:
+  \begin{enumerate}
+  \item $s$ covers $r$.
+  \item $freq_G(r) \geq f$.
+  \item $freq_G(w) = freq_G(r)$ for all $w \in \Gamma_s(r)$.
+  \item There does not exist an $r'$ with a substring $w$ such that
+    $r \leq w$ and $r'$ meets conditions 1-3.
+  \end{enumerate}
+\end{definition}
+{\bf Questions:} On (4): what if there exists a substring $w$ of $r'$
+such that $r || w$?  What if $w$ is not a proper substring?  (That is,
+$r = w$.)
+
+\begin{definition}
+  A {\it repeat element family} is a tuple $(r,S)$ where $r$ is a
+  repeat element descriptor and $S$ is the set of coordinates of $G$
+  where there is a sequence compatiable with $r$.
+\end{definition}
+
+\subsection{Equivilance proof}
+
+We want to prove that our definition, when using a seed with no
+spaces, is equivilent to the Z\&L definition.  Recall that in Nate's
+there was an alternate definition proved equivilent to Z\&L.
+
+\begin{definition}
+\label{NateDef}
+Given a genomic sequence $G$ and integers $f$ and $l$, a seqeunce $r$
+is an {\it elementary repeat} if we can write $r = x_0 \cdot x_2 \cdot
+\cdot x_k$ $where $|x_i|=l$, $k = |r|-|l|$, and:
+\begin{enumerate}
+\item $k \geq 0$.  (There is at least one $l$-mer substring).
+\item $freq_G(r) \geq f$
+\item $freq_G(x_i) = freq_G(r)$
+\item There does not exist an $y$, $|y|=l$ such that either $y \cdot
+  r$ or $r \cdot y$ meets conditions 1-3.
+\end{enuemrate}
+\end{definition}
+Recall that $x \circ y$ is defined only when $x$ has an $|x|-1$ length suffix
+that is a prefix of $y$, and represents their ``merging''.
+(e.g. $ACCC \circ CCCG = ACCCG$.)
+
+
+\begin{theorem}
+  Consider a genome $G$, an integer $f$, and a seed $s$ such that $s$
+  has no zero chartacters.  $r$ is an elementary
+  repeat descriptor for $s$ (by Definition~\label{ERdef}) if and only if $r$
+  is an elementary repeat for $l=|s|$ (by
+  Definition~\label{NateDef})).
+\end{theorem}
+
+{\bf Proof:}
+
+($Leftarrow$) First we observe that if $s$ has no zeros, and covers
+$r$, then $r$ has no * characters.  From this it follows that
+$\Gamma_s(r) = \{r_0,r_1,\cdtos,r_{k}$ where $|r_i|=l$ and $k=r-l$ --
+every $l$-mer contained with $r$.  From this it follows that $r = r_0 \circ
+r_1 \
+
+
+Now we prove each of the four conditions of Nate's definiciton:
+\begin{enumerate}
+  \item Since $r$ is covered by $s$, $|r| \geq |s|$, so $k =
+    |r|-|s|+1 > 0$.
+  \item Since $r$ contains no * symbols, the only string it
+    is compatible with is itself.  Meaning it has the sme frequency by
+    either definition (sd or string).  Hence (2) of Nate's
+    definition following directly from (2) of out definition.
+  \item Follows immediately from the fact that every $r_i$is a
+    member of $\Delta_G(r)$, and hence must have the right frequency.
+   \item Argue by contradiction: suppose there were such a $y$ (assume
+     w.l.g. it follow $r$, and let $r' = r \circ x$.  Since Nate's
+     definition tells us $r'$ matches a string around every occurance
+     of a match to $r$, this means $r'$ is (trivially) compatable to a
+     substring around every occurance of a match to $r'$ -- to $r'$
+     could not have been a repeat element descriptor.
+\end{enumerate}
+
+($Rightarrow$) This is the same argument backwards, and not worth
+writing out.
+\end{enumerate}
+
+\subsection{Basic Lemmas}
+
+\begin{definition}
+  Given a repetitive element descriptor $r$ for seed $s$ of length
+  $l$, we say a length $l$ s.d. $w$ belongs to $r$ is $w$ is
+  consistent with so $w \in 
+  \Gamma_s(r)$.  (That is: if there is a a string in the generlized
+  decomposition of $r$ that is consistent with $r$.
+\end{definition}
+
+
+Using this definition of {\it belongs}, all of our lemmas and
+observations still holds:
+\begin{lemma}
+  An $l$-mer belongs to at most one elementary repeat family.
+\end{lemma}
+If the $l$-mer belongs, then it subject to condition (3) of the
+definition, which would be violated if the $l$-mer belonged to two
+different families.
+
+\begin{observation}
+  Any $l$-mer that occurs $\geq f$ times either is an elementary
+  repeat descriptor or belongs to one.
+\end{observation}
+If the $l$-mer occurs at least $f$ times is automatically meets
+criteria 1-3.  So the only thing that could stop it from being an
+elementary repeat is (4) -- meaning its contained within one.
+
+\begin{lemma}
+  Let $r$ be a sd that maximially matches $G$ in two locations.  Than
+  $r$ may be an elementary repeat descriptior, or may contain an
+  elementary repeat descriptor -- but it is not contained within
+  another elementary repeat descriptor.  (That is, (4) must hold.)
+\end{lemma}
+Any elementary repeat descriptor containing it would have to hit at
+both location, which we just said isn't possible.
+
+{\bf COMMENT:} HMM...I'm worried about this one.  What if we extneded
+by a whole sead length?  Could that matter?
+
+\begin{lemma}
+  If two $l$-mers appear blog to the same elementary repeat
+  descriptor, then they have the same frequence.
+  
+\end{lemma}
+Follows directly from the definition.
+
+From here is should be very easy to prove that Carly's algorithm
+returns an elementary repeat descriptors for each family.
+
+\subsection{Variations}
+
+Suppose $r_1$ and $r_2$ are repeat element descriptors for the same
+set of instances.  What are their potential relationships?
+
+Let $s=11011$ and $G = \cdots AAAAACGGGGG \cdots AAAAATGGGGG\cdots$.
+Then possible repeat element descriptors are $11111*11111$,
+$11*11*111111$, $11111*11*11$, and $11*11*11*11$.  So we can have $r_1
+< r_2$ or $r_1 || r_2$.
+
+For $11011$ and $G = \cdots ACCCCCGTTTTTA\cdots ACCCCCATTTTTA$, we can
+have $AC*CCC*TT*TTA$ or $ACC*CC*TTT*TA$$, among others.
+
+What do we know about the r.e.d. that Carly's algorithm will pick?
+
+  
+    
+  
+
+
+
+
+\end{document}
