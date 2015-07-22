@@ -274,10 +274,56 @@ studied.
 
 The most well known tools for repeat identification ar RepeatMasker
 and [Eddy's tool] [CITE], both of which work on the principle of a
-library-based search.  That is, to final transposable elements of a
-given family, 
+library-based search.  That is, to find transposable elements of a
+given family, the tools require some description of sequence in the
+family (in the form of a model sequence for blasting, or a pHMM) that
+is used as the basis for identification.  This begs the obvious
+question: much like we ask how the snow plow driver gets to work, or
+how dictinary authors look up the spelling of a word [CITE], we must ask how the
+tools compile their libraries.  How do we compile the libraries of
+transposible elements, or discover new transpoable element families.
 
+Within mammalian speices we can, to some extent, rely on homology
+relationships to port libraries across species.  A library description
+of a human ALU sequence can likely be used for the initial annotation
+of a newly sequence primate sequence, and many LINEs will extend to
+rodent, or even more distantn mammalian species.  This does not hold
+so well in plants.  In many cases TE composition of a given organism
+is species-specific.  For example, a rice-based TE libarary will only identify 25\%
+of the TEs in the maize genome. [CITE Jiang] 
 
+To solve this problem we turn to {\it de novo} TE identification
+tools: tools identifying TEs though a genome using only the genome
+sequence information.  A number of such tls have been publised in the
+literature, operating on a number of different principles.  Tools such
+as RECON and PILER are based on self-alignment, using WU-BLAST and
+PALS for the alignemnt [CITE].  RECON show good sensitivity but is
+computationally intesive and infeasible for use on whole genomes (requiring 60 hours for 18Mb rice genome in a 2013
+report), while PILER achieves a good runtime with very low
+sensitivey. [CITE JIANG].   ReAS and RepeatScout are based on $k$-mer
+searches [CITE], with the earlier showing less sensitivity than
+RECON.  Finally RepeatGluer is based on a vairation od DeBrujin
+grauphs [CITE], which allows for a decomposition of TE families into
+domains, but is very, very computationally expensive.  In Saha {\it et
+  al.} the authors perform an extenive comparison of the tools, and
+conclude that RepeatScout is the best tool overall for assembled
+genomes and ReAS the best when dealing with unassembled sequeunce
+fragments [CITE].
+
+Another line of developement, first proposed by Zheng and Lonardi,
+involves the use of {\it elementary repeats} [CITE].  Similar in concept to
+the motifes identified by RepeatGluer [CITE], an elementary repeat is
+foramlly defined sequence pattern that could be considered a buiding
+block (or motif) of a transposable element.  Zheng and Lonardi defined
+the concept and proposed an idenficiation algorith, but that algorithm
+suffered from a runtime that was quadratic in the size of the genome.
+Two other works, He [CITE] and Huo {\it et al.} employed variations of
+suffix trees to get linear identification algorithms, but lost
+sensitivity in the resence of genomic substitions -- making them less
+useful on real data.  
+
+Here we describe RAIDER (Rapid Ab Initio Detection of Elementary
+Repeats), 
 
 
 

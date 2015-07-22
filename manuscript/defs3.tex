@@ -23,15 +23,15 @@
 
 \begin{document}
 
-\subsection{REFDs}
+\section{REFDs}
 
 \begin{definition}
   A \underline{sequence descriptor} (sd) is a string over $\Sigma=\{A,C,G,T,*\}$.
 \end{definition}
 
-We will allow any normal string operator to apply to sequence descriptors.  In specific, for a s.d. $r$:
+We will allow any normal string operator to apply to sequence descriptors.  In specific, for an s.d. $r$:
 \begin{itemize}
-\item $r_{i,i+l}$, or $r[i:i+l]$, is the length $l$ sub-sd (substring) of $r$ starting at $i$.
+\item $r_{i,i+l}$, or $r[i:i+l]$, is the length $l$ sub-sd (substring) of $r$ starting at $i$.  (Python-like notation.)
 \item $|r|$ is the number of characters in $r$.
 \item $||r||$ is the number of non-* characters in $r$.
 \item We will use $l$-mer to denote a length $l$ sd.
@@ -41,16 +41,17 @@ We will allow any normal string operator to apply to sequence descriptors.  In s
   If $r_1$ and $r_2$ are sds of the same length:
 \begin{enumerate}
 \item $r_1$ and $r_2$ are \und{consistent} if, for any position $i$ in
-  which they differ, one of them is a $*$. 
+  which they differ, one of them has a $*$ in that position.
 \item $r_2$ \und{generalizes} $r_1$ (and $r_1$ is \und{generlized} by $r_2$),
   if, for any position in which they are different, $r_2$ has a $*$.
   \end{enumerate}
 \end{definition}
 
 \begin{definition}
-  The frequency of an s $r$ in genome sequence $G$ is the number of
+  The frequency of an sd $r$ in genome sequence $G$ is the number of
   $i$ such that $G_{i:i+|r|}$ is compatible with $r$.  
 \end{definition}
+{\bf Note:} Debated whether this should be ``compatible'' or ``generalized'' -- then realized that since $G$ is a string (as opposed to an sd) they are equivilent.
 
 
 \begin{notation}
@@ -67,7 +68,7 @@ Let $r_1$ and $r_2$ be sds.  We say:
 {\bf Comment:} This forms a lattice over the set of all
 $l$-length sds.  I have no idea if this is important/useful.
 
-\subsection{REFDs and Spaced Seeds}
+\section{REFDs and Spaced Seeds}
 
 \begin{definition}
 Given a spaced seed of length $l$ and an $l$-mer $r$, we
@@ -80,7 +81,7 @@ Example: We generalize $AAAAAA$ w.r.t. $110101$ to $AA*A*A$.
   Let $s$ be a spaced seed of length $l$.
  
   \begin{itemize}
-  \item We say $s$ and an $l$-mer $r$ are \und{consistent} if, when $s_i = 0$, $r_i = *$.
+  \item We say $s$ and an $l$-mer $r$ are \und{consistent} if, when $r_i = *$, $s_i=0$.
   \item We say seed $s$ \und{hits} sd $r$ at position $i$ such that
     $s$ is consistent with $r_{i:i+|s|}$ ($i \leq |r| - |s|$).
   \item We say seed $s$ \und{covers} sd $r$ if, for every $j$, $0 \leq
@@ -91,7 +92,7 @@ Example: We generalize $AAAAAA$ w.r.t. $110101$ to $AA*A*A$.
 
 Example: For $s=11011$ and $r=AAAAA*TTTTT$, $s$ covers $r$, hitting at
 $\{0,3,6\}$.  $s$ does not cover $AAAAA**TTTTT$, as there is no
-position at which $s$ hits and extens over $i=5$.
+position at which $s$ hits and extends over $i=5$.
 
 \begin{definition}
   Let $r$ be an sd and $s$ be a seed that covers $r$.
@@ -112,6 +113,7 @@ included once), and the generlized sequence decomposition is $\{TA*AA,
 AA*AA, AA*CC, CC*CC\}$. 
     
 \begin{notation}
+Notation for the concepts from this section:
   \begin{itemize}
   \item Let $\gamma_s(r)$ denote the generalization of $r$ w.r.t. $s$
   (undefined if $|r| \neq |s|$).
@@ -127,7 +129,7 @@ AA*AA, AA*CC, CC*CC\}$.
 decomposition, minimal decompositions, right-most decompositions), but
 this is the only one that seemed to be useful so far.
 
-\subsection{Elementary repeats}
+\section{Elementary repeats}
 
 \begin{definition}
   \label{ERdef}
@@ -147,12 +149,18 @@ such that $r || w$?  What if $w$ is not a proper substring?  (That is,
 $r = w$.)
 
 \begin{definition}
-  A {\it repeat element family} is a tuple $(r,S)$ where $r$ is a
-  repeat element descriptor and $S$ is the set of coordinates of $G$
-  where there is a sequence compatiable with $r$.
+  A {\it repeat element family} is a set $S$ of genome coordinates
+  such that there exists an sd $r$ where:
+\begin{itemize}
+\item $r$ generlizes the string $G_{i:i+|r|}$ for every $i \inS4.
+\item $r$ does not generalize any other substring of $G$.
 \end{definition}
+Notice that there can be multiple such $r$ for a given set.  Any two
+such $r$ for the same $S$ will be compatible, but they don't
+necessarily generlize each other.
 
-\subsection{Equivilance proof}
+
+\section{Equivilance proof}
 
 We want to prove that our definition, when using a seed with no
 spaces, is equivilent to the Z\&L definition.  Recall that in Nate's
@@ -161,15 +169,15 @@ there was an alternate definition proved equivilent to Z\&L.
 \begin{definition}
 \label{NateDef}
 Given a genomic sequence $G$ and integers $f$ and $l$, a seqeunce $r$
-is an {\it elementary repeat} if we can write $r = x_0 \cdot x_2 \cdot
-\cdot x_k$ $where $|x_i|=l$, $k = |r|-|l|$, and:
+is an {\it elementary repeat} if we can write $r = x_0 \circ x_2 \circ
+\cdots \circ x_k$ where $|x_i|=l$, $k = |r|-|l|$, and:
 \begin{enumerate}
 \item $k \geq 0$.  (There is at least one $l$-mer substring).
 \item $freq_G(r) \geq f$
 \item $freq_G(x_i) = freq_G(r)$
-\item There does not exist an $y$, $|y|=l$ such that either $y \cdot
-  r$ or $r \cdot y$ meets conditions 1-3.
-\end{enuemrate}
+\item There does not exist an $y$, $|y|=l$ such that either $y \circ
+  r$ or $r \circ y$ meets conditions 1-3.
+\end{enumerate}
 \end{definition}
 Recall that $x \circ y$ is defined only when $x$ has an $|x|-1$ length suffix
 that is a prefix of $y$, and represents their ``merging''.
@@ -179,18 +187,18 @@ that is a prefix of $y$, and represents their ``merging''.
 \begin{theorem}
   Consider a genome $G$, an integer $f$, and a seed $s$ such that $s$
   has no zero chartacters.  $r$ is an elementary
-  repeat descriptor for $s$ (by Definition~\label{ERdef}) if and only if $r$
+  repeat descriptor for $s$ (by Definition~\ref{ERdef}) if and only if $r$
   is an elementary repeat for $l=|s|$ (by
-  Definition~\label{NateDef})).
+  Definition~\ref{NateDef})).
 \end{theorem}
 
 {\bf Proof:}
 
-($Leftarrow$) First we observe that if $s$ has no zeros, and covers
+($\Leftarrow$) First we observe that if $s$ has no zeros, and covers
 $r$, then $r$ has no * characters.  From this it follows that
-$\Gamma_s(r) = \{r_0,r_1,\cdtos,r_{k}$ where $|r_i|=l$ and $k=r-l$ --
-every $l$-mer contained with $r$.  From this it follows that $r = r_0 \circ
-r_1 \
+$\Gamma_s(r) = \{r_0,r_1,\cdots,r_{k}\}$ where $|r_i|=l$ and $k=r-l$.
+That is, every $l$-mer contained with $r$.  From this it follows that $r = r_0 \circ
+r_1 \circ \cdots \circ r_k$.
 
 
 Now we prove each of the four conditions of Nate's definiciton:
@@ -198,24 +206,23 @@ Now we prove each of the four conditions of Nate's definiciton:
   \item Since $r$ is covered by $s$, $|r| \geq |s|$, so $k =
     |r|-|s|+1 > 0$.
   \item Since $r$ contains no * symbols, the only string it
-    is compatible with is itself.  Meaning it has the sme frequency by
+    is compatible with is itself.  Meaning it has the same frequency by
     either definition (sd or string).  Hence (2) of Nate's
-    definition following directly from (2) of out definition.
+    definition follows directly from (2) of our definition.
   \item Follows immediately from the fact that every $r_i$is a
     member of $\Delta_G(r)$, and hence must have the right frequency.
    \item Argue by contradiction: suppose there were such a $y$ (assume
-     w.l.g. it follow $r$, and let $r' = r \circ x$.  Since Nate's
+     w.l.g. it follow $r$), and let $r' = r \circ x$.  Since Nate's
      definition tells us $r'$ matches a string around every occurance
      of a match to $r$, this means $r'$ is (trivially) compatable to a
-     substring around every occurance of a match to $r'$ -- to $r'$
+     substring around every occurance of a match to $r'$ -- so $r'$
      could not have been a repeat element descriptor.
 \end{enumerate}
 
-($Rightarrow$) This is the same argument backwards, and not worth
+($\Rightarrow$) This is the same argument backwards, and not worth
 writing out.
-\end{enumerate}
 
-\subsection{Basic Lemmas}
+\section{Basic Lemmas}
 
 \begin{definition}
   Given a repetitive element descriptor $r$ for seed $s$ of length
@@ -253,11 +260,11 @@ Any elementary repeat descriptor containing it would have to hit at
 both location, which we just said isn't possible.
 
 {\bf COMMENT:} HMM...I'm worried about this one.  What if we extneded
-by a whole sead length?  Could that matter?
+by a whole se1d length?  Could that matter?
 
 \begin{lemma}
-  If two $l$-mers appear blog to the same elementary repeat
-  descriptor, then they have the same frequence.
+  If two $l$-mers belong to the same elementary repeat
+  descriptor, then they have the same frequency.
   
 \end{lemma}
 Follows directly from the definition.
@@ -265,7 +272,7 @@ Follows directly from the definition.
 From here is should be very easy to prove that Carly's algorithm
 returns an elementary repeat descriptors for each family.
 
-\subsection{Variations}
+\section{Variations}
 
 Suppose $r_1$ and $r_2$ are repeat element descriptors for the same
 set of instances.  What are their potential relationships?
@@ -276,9 +283,35 @@ $11*11*111111$, $11111*11*11$, and $11*11*11*11$.  So we can have $r_1
 < r_2$ or $r_1 || r_2$.
 
 For $11011$ and $G = \cdots ACCCCCGTTTTTA\cdots ACCCCCATTTTTA$, we can
-have $AC*CCC*TT*TTA$ or $ACC*CC*TTT*TA$$, among others.
+have $AC*CCC*TT*TTA$ or $ACC*CC*TTT*TA$, among others.
 
-What do we know about the r.e.d. that Carly's algorithm will pick?
+\subsection{Carly's output}
+
+\begin{definition}
+Given a repeat element family $S$ and a descriptor $r$, we say:
+\begin{itemize}
+\item We say position $i$ is variable in $S$ if there are two elements
+  of $S$ whose sequences vary at positin $i$.
+\item Position $i$ of $r$ is \und{tight} if either $r_i \neq *$ or
+  $S$ variable at position $i$.  (That is, $r$ must have a *.)
+\item We say $r$ is tight if $r_i$ is tight for all $0 \leq i < |r|$.
+\end{itemize}
+\end{definition}
+
+Facts about Carly's output:
+\begin{itemize}
+\item If $S$ is invarient in all positions, then the results $r$ has
+  no * characters.  For every $i$, $s$ hits at either $i$ or
+  $i-|s|+1$, meaning that there is a $w \in \Gamme_s(r)$ that starts
+  (or ends) at position $i$.  Since a seed starts (ends) with a 1,
+  there canot be a * at this position.
+\item The output descriptor is not necessarily tight.  For example:
+  $s=11011$, where $G$ contains $AAAAACGGGGG$ and $AAAAATGGGGG$.  Then
+  $r = AA*AA*AA*AA$, hence is not tight at position 2.
+\end{itemize}
+
+
+
 
   
     

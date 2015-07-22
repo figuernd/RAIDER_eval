@@ -16,6 +16,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{observation}{Observation}
 \newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
 
 \begin{document}
 
@@ -23,8 +24,8 @@
 
 \subsection{REFDs}
 In RAIDER, everything is defined in terms of $l$-mers.  Hence we need
-to generlize slightly to allow the ambiguity character, so we will
-create a description of a {\it repeat element family discriptior},
+to generalize slightly to allow the ambiguity character, so we will
+create a description of a {\it repeat element family description},
 with an $l$-mer being a special case of that.
 
 \begin{definition}
@@ -100,6 +101,15 @@ $x \circ y = a \cdot b \cdot c$.
 \item $AAACC* \circ CC*TTT = AAACC*TTT$.
 \end{itemize}
 
+\begin{definition}
+Given aan refd and a sequence $G$, let $freq_G(r)$ be the number of
+positions $i$ at which $r$ generalizes $G_{i:i+|r|}$.
+\end{definition}
+
+{\bf Example:} Let $R=AA*AA$ and $G=AAAAACCAAGAAC$.  Then $freq_G(r)
+= 2$.  
+
+
 
 \subsection{REFDs and Spaced Seeds}
 
@@ -144,6 +154,7 @@ $r_{i:i+|l|}$.
 \item $r = AAAAAAAAAA$.  $s$ covers $r$, since $s$ hits at every base.
 \end{itemize}
 
+
 \subsection{REFDs and Sequence Sets}
 Looks like we will need to define the relationship between refds and
 sets of sequences to get the elementary repeat sequence.
@@ -173,7 +184,7 @@ $l$-mers that cannot be repeated outside of the repeat.
 
 For example: if we have $G = \ldots AAAAACTTTTT\ldots AAAAAGTTTTT
 \ldots$ (notice: 6 As), with the seed $1101$, we get the refd $AAAAAA*TT*TT$, which
-deposes into $AA*AA$, $AA*TT$, and $TT*T$$.  If any string compatible
+deposes into $AA*AA$, $AA*TT$, and $TT*T$.  If any string compatible
 with any of these three occurs anywhere else, it breaks the family.
 But if the string $AA*AC$ occurs somewhere else, it does not -- thats
 irrelevant.  (In this example the minimal decomposition is unique -- I'm not
@@ -203,136 +214,141 @@ properties.
 In the above, the first set of the second example is not minimal. 
 
 \begin{definition}
-\label{rmdecomp}
-Given an refd $r$ and a seed $s$ that covers $R4, the
-\underline{right-most} decomposition, denoted $\delta_s(r)$ is the decomposition $S$ created
-by:
-\begin{enuemrate}
-\item Set $i=0$.
-\item Let $S = S \cup \{i\}$.
-\item If $i == |r| - l$: quit.
-\item Let $j = max_{i < j < i+|l|}\{s \mbox{ hits } r \mbox{ at } j$.
-\item Goto (1).
-\end{enumerate}
-(In other words: Add $0$ to $S$, then keep taking then keep adding the
-right-most index you can where $s$ hits $r$ and doesn't leave a gap
-from the last hit.)
+A decomposition $S$ of $r$ w.r.t. $s$ is \underline{maximal} it
+countains every $i$ such that $s$ hits $r$ at $i$.
+\end{definition}
+(Clearly this is unique.)
 
-{\bf Note:} I think later we should consder allowing it to leave a
-small gap to allow for insertions.
+Eample: 
+\begin{itemize}
+\item If $s=11011$ and $r=AAAAAA*CCCCCC$, then $D=\{0,1,4,7,8\}$.
+\item If $s$ has no 0s, then $D = \{i \; : \l 0 \leq i \leq
+  |r|-|s|\}$.
+\end{itemize}
+
+\begin{definition}
+Given an refd $r$, a length $l$ covering seed $s$, and a decomposition $D$, the
+\underline{sequence decomposion} $Q = \{\gamma(r_{i:i+l}) \; : \; i \in D}$ 
+\end{definition}
 
 {\bf Examples:}
 \begin{itemize}
-\item $\delta_{11011}(AA*AATT*TT) = \{0,5\}$.
-\item $\delta_{11011}(AA*AA*TT*TT) = \{0,3,6\}$.
+\item $s=11011$, $r=AAAAA*CCCCC$, the only minimal decomposition is
+  $D=\{0,4,6\}$, and the corresponding sequence decomposition is
+  $\{AA*AA, AA*CC, CC*CC\}$.
+\item $s=11011$, $r=AAAAATCCCCC$, there are five different minimal
+  decompositions.  For $\{0,1,6\}$ the sequence decomposition would be
+  $AA*AA, AA*AT$, and $TT*TT$.
 \end{itemize}
 
-\begin{observation}
-A few observations about the decompositions of $r$ w.r.t. to seed $s$:
+\begin{definition}
+The {\it representitive sequence} of a decomposition is
+created by compressing the overlapping portions of the elements of the
+decompresion.
+\end{definition}
+
+{\bf Examples:}
 \begin{itemize}
-\item Any decomposition must containt $0$ and $|r|-|s|$ (as these are
-  the only way the first and last base can be covered).
-\item $\delta_s(r)$ exists if and only if there is some decompostion of
-  $r$ w.r.t $s$, which is true if and only if $s$ covers $r$.
-\item $\delta_s(r)$ is unique if it exists.
+\item $s=11011$, $r=AAAAA*CCCCC$, $D={0, 3, 6}$,
+  $Q=\{AA*AA,AA*CC,CC*CC$}.  The representative sequence would be
+  $\{AA*AA*CC*CC\}$.
+\item $s=11011$, $r=AAAAATCCCCC$, $D={0,2,6}$, $Q=\{AA*AA, AA*TC, CC*CC\}$.  
+ The representative sequence would be $\{AAAAATCC*CC\}$.  We have to
+ compress the overlap at $r=2:5$, which endsup removing both *
+ symbols.
 \end{itemize}
+
+{\bf TO CONSIDER: What is the relationship between $r$ and the
+  representative sequence of one of its decompostion?  Always a
+  generlization of $r$?}
 
 
 \subsection{Elementary Repeats}
 
 \begin{definition}
-Let $s$ be a fixed seed with length $l$, $f$ be a fixed integer, and $G$ be a fixed
-genomic sequence.  An
-\underline{Elementary Repeat Family} is a tuple $F=(r,s,S)$ where: 
+For a ferquenct $f$, a genome $G$ and seed $s$, an refd $r$ is an \undetline{elementary
+  repeat} if the following holds.  
 \begin{enumerate}
-\item $s$ is a seed and $r$ is an refd such that $s$ covers $r$. 
-\item $S$ is a set of genomic coordinates such that $|S| \geq f$.  Say
-  that the sequences induced by $S$ are the substrings of $G$ starting
-  at cordinates of $S$ and extended $|r|$ bases.
-\item For every $i \in S$, $r$ is consistent with the string
-  $G_{i:i+|r|}$.
-\item Consider the sub-refds of $r$ used for $\delta_r(s)$ (definition
-  \ref~{rmdecomp$}). None of these strings may generalize (definition
-  \ref~{generalize}) any substring of $G$ outside ofthose induced by
-  $S$.  (Minimiality condition.)
-\item There is no refd $r'$ such that all of the following are true:
-\begin{itemize}
-  \item $r$ generalizes to some proper(?) substring of $v$ of $r'$.
-  \item The strings in $\delta_r(s)$ make up part of the cover of
-    $\delta_{s}(r')$.
-  \item Every string induced in $G$ by $S$ is covered by a string that
-    generalizes to $r'$.
-\end{itemize}
+\item $s$ covers $r$.
+\item $freq_G(r) \geq f$.
+\item For the maximimal sequence decomposition $Q$, 
+  $freq_G(q) = freq_G(r)$ for all $q \in Q$.
+\item There does not exist an $r'$ that is covered by $s$ such that
+  (1) $r$ is compatable(2) with a sub-refd of $r'$, and (2) $r'$ meets
+  conditions (1)-(3) of this definition.
 \end{enumerate}
 \end{definition}
 
-{\bf Comments:} 
+
+\begin{theorm}
+If $s$ is a contiguous spaced seed (that is, no 0s) and $r$ is a
+repeat element w.r.t to $s$, the $r$ is a repeat element by Definition
+5 of Nate's thesis.
+\end{theorem}
+{\bf Proof:} Let $s$ be a spaces seed of length $L$ with no 0 symbols,
+and $r$ be an elementary repeat.  Note that $r$ has no $*$
+symbols, as otherwise $s$ could not cover it.  Now consider the
+conditions for Definition 5:
 \begin{itemize}
-\item I'm not sure if the maximality condition is what we want.
-\item I haven't done anything to control the number of * symbols.
-  Currently, we can have multipled refds for the same family by
-  generalizing.  I'm not sure if this matters.
+\item The repeat element is at least length $L$: since $r$ is covered
+  by seed $s$ of length $L$, this is clearly true.\footnote{There
+    appears to be a mistake in Nate's thesis with condition 1 -- this
+    is what it was supposed to mean.}
+\item $freq_G(r) \geq f$: Follows directly from (2).
+\item Every substring of $r$ has the same frequence as $r$: Since $s$
+  has no 0s, $Q$ is the set of all substrings of $r$. Hence this
+  condition applies to every substring of $r$, which is what we nee.
+\item $r$ is maximal w.r.t to Nate's defintion: Suppose this were not
+  true: we could add 1 character to $r$  to form $r'$, and have an element that
+  meats conditions Nate's definition.  (Note that, with no spaces, if
+  we can add one or more characters we can add only 1 character -- we
+  can assume are only adding 1.)  That means that every subsequence of
+  $r'$ has the same frequency in $G$ (by condition (3) of Nate's
+  defintion), meaning that they fufill condition (3) of our
+  definition.  The other two conditions of our definition our
+  immediate, meaning $r'$ contradicts (4) and hence $r$ is not an elementary
+  repeat (by our definition).
 \end{itemize}
 
-
-\begin{definition}
-Given a repeat family $F=(r,S)$, the length of the family $|F|=|r|$,
-and the size of the family $||F||=|S|$, the number of elements in the
-family.
-\end{definiton}
-
-
-Alternative definition of elementary repeats:
-\begin{definition}
-Let $F=(r,s,S)$ be a repeat family with refd $r$, spaced seed $s$, and
-coordinate set $S$ such that $s$ covers $r$. Let $C$ be the set of all
-sub-refds corresponding to the right-most decompostion of $S$
-w.r.t. $r$.  Then $F$ is a repeat element family (w.r.t. to $s$) if:
-\begin{enumerate}
-\item $|C| > 0$.
-\item For each $i \in S$, $G[i:i+|r|]$ generalizes to $r$.
-\item For each $w \in C$, the number of strings in $G$ that generlize
-  to $w$ is $|S|$.  (Minimality -- but only applies to the
-  decomposition.)
-\item $F$ is maximal w.r.t to this definition.  Specifically, we
-  cannot extend $r$ in either direction and have it covering exactly
-  the same sequences.  (Need to think about this.)
-\end{enumerate}
 
 
 
 
 \subsection{Lemmas}
+Assume a fixed seed $s$ of length $l$ and a fixed genome $G$.
 
-Right now, I'm trying trying to think of possibly interesting
-statements and prove them.  Mostly just to get into the swing of this.
-
-\begin{defintion} 
-Conisider to elementary repeat families $F_1=(r_1,s,S_1)$ and
-$F_2=(r_2,s,S_2)$.  These families overlap if there exist
-some $i \in F_1$ and $j \in F_2$ such that either $0 \leq j-i < |r_1|$
-or $0 \leq i-j < |r_2|$.
-\end{definition}
-
-That is, you have one sequence induced by each family such that they
-actually overlap on $G$.
-
+\begin{definition}
+An $l$-mer {\it belongs} to a repeat element $r$ if the element is
+compatable with an element in the maximal sequence decomposition of $r$.
 
 \begin{lemma}
-Given repeat families $F_1$ and $F_2$ that overlap, and w.l.o.g. 
-pick the $i$ and $j$ such that $0 \leq j-i < |r_1|$.  Then there exist
-an offset vale $o = j-i$ such that, for any $i' \in S_1$, $j' \ in S_2$
-s.t. $j' \geq i'$, either $j' - i' > |r_1|$ or $j' - i' = o$.
+An $l$-mer can belong to at most one elementary repeat family.
 \end{lemma}
-(In otherwords, corresponding sequences are offset by the same amount
-every time.)
+Using our definition of ``belongs'', violating this would vilate
+condition (3) of the r.e. definition.
 
+\begin{observation}
+For any string $l$-mer $w$, if $freq(\gamma_s(w)) \geq w$ than
+$\gamma_s(w)$ is either is an elementary
+repeat or is compatable with some substring of an elementary repeat.
+\end{observation}
+$\gamma_s(w)$ trivially satsfies the first three conditions, so only
+the fourth condition could break it.
 
-
-\begin{lemma} 
-If repeat element families $F_1$ and $F_2$ overlap, then $||F_1|| \neq
-||F_2||$.  
+\begin{lemma}
+Let $s_1$ and $s_2$ be two sequences in $G$ such that refd generalizes
+both but there is no refd that generalizes generlizes superstrings
+properly containing each, then $r$ is not compatable with a sub-refd
+of any repeat element family.
 \end{lemma}
+Violation of this would imply a violation of (2) in the definition.
+
+\begin{lemma}
+If two $l$-mers belong to the same elementary repeat, then they have
+the same frequency.
+\end{lemma}
+Given our definition of ``belongs'', this follow immediately.
+
 
 
 
@@ -343,3 +359,5 @@ If repeat element families $F_1$ and $F_2$ overlap, then $||F_1|| \neq
 
 
 \end{document}
+
+%%  LocalWords:  REFDs mers
