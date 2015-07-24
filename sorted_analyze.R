@@ -1,7 +1,6 @@
 #!/software/R/3.0.2-gcc/bin/Rscript
 
 suppressPackageStartupMessages(require(optparse))
-
 suppressPackageStartupMessages(require(gdata))
 getDf <- function(fname) {
     #dat <- readLines(fname,n=-1)
@@ -35,9 +34,10 @@ getMatches <- function(expr, seed){
 
 numberOf <- function(seed, val){
     match.string <- paste("(?<=", val, "\\^\\{)[[:digit:]]+(?=\\})", sep="")
-    numOnes <- sumOverMatches(getMatches(match.string, seed))
+    numOnes <- sumOverMatches(getMatches(match.string, as.character(seed)))
     match.string <- paste(val, "(?!\\^)", sep="")
     numOnes + length(unlist(getMatches(match.string, seed)))
+    
 }
 
 toSeedString <- function(seed){
@@ -46,12 +46,20 @@ toSeedString <- function(seed){
     match.indices <- gregexpr(match.string,seed,perl=TRUE)[[1]]
     match.values <- regmatches(seed,gregexpr(match.string,seed,perl=TRUE))[[1]]
     j = 1
+    #print("here")
+    #print(match.indices)
+    if (length(match.indices) == 1 && match.indices[1]==-1){
+        #print("seed")
+        seed
+        #return as.string(seed)
+    }
+    else{
     for( i in 1:length(match.indices)){
         next.index <- match.indices[i]
         next.val <- match.values[i]
         seed.val.index = next.index - 3
         if(seed.val.index > j + 1){
-            print( substring(seed, j, seed.val.index - 1))
+            #print( substring(seed, j, seed.val.index - 1))
             seed.string <- paste(seed.string, substring(seed, j, seed.val.index - 1), sep="")
         }
         j = next.index + length(as.character(next.val)) + 1
@@ -59,7 +67,7 @@ toSeedString <- function(seed){
         seed.string <- paste(seed.string, paste(replicate(next.val,as.character(seed.val)),collapse=""), sep="")
     }
     seed.string
-    
+    }
 
 }
 
@@ -67,11 +75,11 @@ toSeedString <- function(seed){
 addInfo <- function(fname, include.seeds, include.type, include.chrom, include.dir){
     dat <- getDf(fname) #read.table(fname,header=TRUE,comment.char="")
     if(include.type) {
-        type <- basename(dirname(dirname(dirname(fname))))
+        type <- basename(dirname(dirname(fname)))
         dat$type <- rep(type,nrow(dat))
     }
     if(include.chrom){
-        chrom <- basename(dirname(dirname(fname)))
+        chrom <- basename(dirname(dirname(dirname(fname))))
         dat$chrom <- rep(chrom,nrow(dat))
     }
     dir.name <- basename(dirname(fname))
@@ -82,7 +90,8 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
     
     
     if(include.seeds){
-        seeds <- read.table(file=paste(dirname(fname),"seed_file.txt",sep="/"))
+        seeds <- read.table(file=paste(dirname(fname),"seed_file.txt",sep="/"),colClasses="character")
+        #print(seeds)
         mylist <- rep(NA,nrow(dat)) #list()
         seed.lengths <- rep(NA,nrow(dat))
         seed.widths <- rep(NA,nrow(dat))
@@ -98,9 +107,13 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
             if (s2.index != -1){
                 #print(seeds[s2.index, 2])
                 #print("\n")
-                seed <- as.character(seeds[s2.index, 2]) #as.character(seeds[s2.index, 2])
+                seed <- as.character(seeds[s2.index, 2])
+                #print(seed)
                 w <- numberOf(seed, 1)
                 l <- w + numberOf(seed, 0)
+                #print(w)
+                #print(l)
+
                 
                 mylist[i] <- seed
                 seed.widths[i] <- w
@@ -112,6 +125,7 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
                 mylist[i] <- NA
             }
         }
+        #print("through seeds")
         names(dat) <- sub("seed", "seed#", names(dat))
         dat$seed <- mylist
         dat$length <- seed.lengths
@@ -123,6 +137,13 @@ addInfo <- function(fname, include.seeds, include.type, include.chrom, include.d
     }
     freq <- getMatches("(?<=F)[[:digit:]]+",dir.name)
     dat$freq <- rep(freq, nrow(dat))
+    #cover.cols <- grepl("Cover", names(dat))
+    #if (cover.cols != -1 ){
+    #    dat <- dat[,c(
+    #df <- df[, c(col_idx, (1:ncol(df))[-col_idx])]
+
+
+    
     if("cc" %in% names(dat)){
         dat$cover <- dat[,"cc"]
     }

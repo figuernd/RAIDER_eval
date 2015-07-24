@@ -23,8 +23,11 @@ my $NSEG_THRESHOLD = .5;
 my $TRF_THRESHOLD  = .5;
 my $MIN_LENGTH     = 50;
 
-my $TRF_COMMAND    = -e "trf" ? "./trf" : ($ENV{'TRF_COMMAND'}  || "trf");
-my $NSEG_COMMAND   = $ENV{'NSEG_COMMAND'} || "nseg";
+my $TRF_COMMAND = "./trf"; 
+my $NSEG_COMMAND = "./nseg"; 
+
+#my $TRF_COMMAND    = $ENV{'TRF_COMMAND'}  || "trf";
+#my $NSEG_COMMAND   = $ENV{'NSEG_COMMAND'} || "nseg";
 
 
 my ($head, $body);
