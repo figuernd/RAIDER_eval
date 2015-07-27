@@ -55,6 +55,12 @@
 %\usepackage[applemac]{inputenc} %applemac support if unicode package fails
 %\usepackage[latin1]{inputenc} %UNIX support if unicode package fails
 
+% Added by karro for commenting -- should be removed before submission.
+\usepackage{color}
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\cyan}[1]{{\color{cyan}#1}}
+\newcommand{\magenta}[1]{{\color{magenta}#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                             %%
@@ -97,7 +103,7 @@
 %%                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{Fast de novo transpoible element annotation}
+\title{Fast de novo transposable element annotation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                          %%
@@ -114,14 +120,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \author[
+   addressref={aff1},
+   noteref={n1},
+   email={schaefce@miamiOH.edu}
+]{\inits{SE}\fnm{Carly E} \snm{Schaeffer}}
+\author[
    addressref={aff1},                   % id's of addresses, e.g. {aff1,aff2}
    noteref={n1},                        % id's of article notes, if any
    email={figuernd@miamiOH.edu}   % email address
 ]{\inits{ND}\fnm{Nathaniel D} \snm{Figueroa}}
-\author[
-   addressref={aff1},
-   email={schaefce@miamiOH.edu}
-]{\inits{SE}\fnm{Carly E} \snm{Schaeffer}}
 \author[
    addressref={aff1,aff2},
    email={liux17@miamiOH.edu}
@@ -203,11 +210,21 @@
 \begin{abstractbox}
 
 \begin{abstract} % abstract
-\parttitle{First part title} %if any
-Text for this section.
+\parttitle{Background} The problem of {\it de novo} identification of
+transposable elements (the discovery and annotation of transposable
+elements without the use of a pre-complied profile) has been addressed
+by a number of tools -- all of which are either based on
+computationally complex algorithms that cannot scale to whole-genome
+use, or whose sensitivity suffers significantly from the presence of
+sequence variation.  Here we present phRAIDER (Pattern Hunter based
+Rapid Ab Initio Detection of Elementary Repeats), a tool that can
+quickly identify and mask tranposable elements in a a newly sequenced
+genome and is robust to the sequence variation present in real data.
 
-\parttitle{Second part title} %if any
-Text for this section.
+\parttitle{Results} \red{To be written later.}
+
+\parttitle{Conclusions} \red{To be written later.}
+
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,9 +236,10 @@ Text for this section.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{keyword}
-\kwd{sample}
-\kwd{article}
-\kwd{author}
+\kwd{transposable elements}
+\kwd{elementary repeats}
+\kwd{pattern hunter}
+\kwd{genomic masking}
 \end{keyword}
 
 % MSC classifications codes, if any
@@ -260,171 +278,363 @@ Text for this section.
 \newtheorem{definition}{Definition}
 \newtheorem{observation}{Observation}
 \newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
 
 %%%%%%%%%%%%%%%%%%%%%%%%% start of article main body
 \section*{Background}
-Here we introduce phRAIDER (Rapid Ab Initio Detection of Elementary
-Repeat), designed to enable the quick annoation of transposible
-elements and repetitive DNA without requiring a pre-compiled template
-library.  Transposible elements, or TEs, are present in almost every
-higher order genome, covering as much as 45\% of the human genome and
-90\% of the maize genome [CHECK THIS] [CITE].  Given their prevelence,
-identiication of TEs is important not only for those who study them, but for
-anyone trying to understand a geome.  If not filtered, TEs can trigger
-hug numbers of false positives in the course of applying automated
-gene finding techniques, as well as blow up runtime.  [CITE: Jiang]
-So identifying and masking them in a must for any genome being
-studied.
+Transposable elements, or TEs, are genomic sequences that have at some
+point had the capacity to insert copies of themselves into other
+genomic locations, resulting in homologous families of sequences
+spread across the genome.  TEs are present in almost every higher
+order genome, covering as much as 45\% of the human genome and 90\% of
+the maize genome \cite{Venter:2001p92,SanMiguel:1996wa}.  TEs have
+proved an important source of data in a number of studies
+\cite{Arndt:2005p279,Karro:2008p123,Mugal:2009p581,Hardison:2003p97},
+but given their prevalence, it is just important for those studying
+the genome to have TEs masked out -- their bases replaced by N to
+allow for easy identification and filtering.  Failure to filter can
+reek havoc with genomic analysis tools.  For example. if not filtered,
+TEs can trigger huge numbers of false positives automated gene finding
+tool \cite{Jiang:2013jt}, as well as inflate tool runtime.
 
-The most well known tools for repeat identification ar RepeatMasker
-and [Eddy's tool] [CITE], both of which work on the principle of a
-library-based search.  That is, to find transposable elements of a
-given family, the tools require some description of sequence in the
-family (in the form of a model sequence for blasting, or a pHMM) that
-is used as the basis for identification.  This begs the obvious
-question: much like we ask how the snow plow driver gets to work, or
-how dictinary authors look up the spelling of a word [CITE], we must ask how the
-tools compile their libraries.  How do we compile the libraries of
-transposible elements, or discover new transpoable element families.
+The most well known tools for repeat identification is RepeatMasker,
+with the new nHMMER showing promise as well)
+\cite{RepeatMaskerOpen:XkNxXSd7,Wheeler:2013gj}.  Both work on the
+principle of a library-based search.  That is, to identify
+transposable elements to a known family, the tools require some
+description of sequences in the family (e.g. a ancestral sequence for
+BLASTing, or a profile HMM description) that is used as the basis for
+identification.  But, much like we ask how the snow plow driver gets
+to work, or how the author of a dictionary authors look up the spelling of a word
+\cite{Pratchett:uw}, we must ask how the libraries on which the tools
+are based are initially compiled.  Library-based tools are useless for the
+discovery of new families, and cannot be applied to a newly sequenced
+genome for which such a library has not been compiled.
 
-Within mammalian speices we can, to some extent, rely on homology
+
+Within mammalian species we can largely rely on homology
 relationships to port libraries across species.  A library description
 of a human ALU sequence can likely be used for the initial annotation
-of a newly sequence primate sequence, and many LINEs will extend to
-rodent, or even more distantn mammalian species.  This does not hold
-so well in plants.  In many cases TE composition of a given organism
-is species-specific.  For example, a rice-based TE libarary will only identify 25\%
-of the TEs in the maize genome. [CITE Jiang] 
+of a newly sequenced primate genome, and many human LINEs will extend to
+rodent, or even more distant, mammalian species.  This does not hold
+so well in plants: in many cases TE composition of a given plant organism
+is species-specific.  For example, a rice-based TE library will only identify 25\%
+of the TEs in the maize genome \cite{Jiang:2013jt}.
 
 To solve this problem we turn to {\it de novo} TE identification
 tools: tools identifying TEs though a genome using only the genome
-sequence information.  A number of such tls have been publised in the
+sequence information.  A number of such tools are discussed in the
 literature, operating on a number of different principles.  Tools such
-as RECON and PILER are based on self-alignment, using WU-BLAST and
-PALS for the alignemnt [CITE].  RECON show good sensitivity but is
-computationally intesive and infeasible for use on whole genomes (requiring 60 hours for 18Mb rice genome in a 2013
-report), while PILER achieves a good runtime with very low
-sensitivey. [CITE JIANG].   ReAS and RepeatScout are based on $k$-mer
-searches [CITE], with the earlier showing less sensitivity than
-RECON.  Finally RepeatGluer is based on a vairation od DeBrujin
-grauphs [CITE], which allows for a decomposition of TE families into
-domains, but is very, very computationally expensive.  In Saha {\it et
-  al.} the authors perform an extenive comparison of the tools, and
-conclude that RepeatScout is the best tool overall for assembled
-genomes and ReAS the best when dealing with unassembled sequeunce
-fragments [CITE].
+as RECON and PILER are based on
+self-alignment, using WU-BLAST and LASTZ for the alignment
+\cite{Bao:2002,Edgar:2005p2365,Lopez:2003td,Harris:2007uf}.  RECON show good sensitivity but is
+computationally intensive and infeasible for use on whole genomes
+(requiring 60 hours for 18Mb rice genome int 2013), while
+PILER achieves a good runtime with very low sensitivity
+\cite{Jiang:2013jt}.  ReAS \cite{Li:2005he} and RepeatScout
+\cite{Price:2005p1247} are based on $k$-mer searches, with the
+earlier showing less sensitivity than RECON \cite{Jiang:2013jt}.
+RepeatGluer \cite{Pevzner:2004p3157,Zhi:2006p3199} is
+based on a variation of DeBrujin graphs, which allows for a
+decomposition of TE families into domains, but is very, very
+computationally expensive.  In Saha {\it et al.} the authors perform
+an extensive comparison of the tools, and conclude that RepeatScout is
+the best tool overall for assembled genomes, while ReAS the best when
+dealing with unassembled sequence fragments \cite{Saha:2008dm}.
+
 
 \subsection*{Elementary Repeats}
-Another line of developement, first proposed by Zheng and Lonardi,
-involves the use of {\it elementary repeats} [CITE].  
-Zheng and Lonardi formulated their defintion with the explicit intention of factoring minimum length and
-frequency into the definition: to be an elementary repeat a sequence
-must have some minimum length $l$ and occur at least $f$ times.  More
-importantly, it must be minimal (that is, no section of an elementary
-repeat can itself be an elementary repeat), and it must have appear
-independently of any other sequence meeting definition of an
-elementary repeat.  [CITE]  Formally:
-\begin{definition}
-Give a length criteria $l$ and a frequence criteria $f$, a sequence
-$r$ is an elementary repeat in a genome if:
+Another line of development, first proposed by Zheng and Lonardi
+\cite{Zheng:2005bl}, involves the use of {\it elementary repeats}.
+Similar to the RepeatGluer domains, elementary repeats are
+decompositions of TEs into basic building blocks.  Identification of
+these building blocks are sufficient for the purpose
+of masking, and can be assembled into Transposable Elements for those
+interested in TEs themselves.
+
+While it is notoriously difficult to mathematically model transposable
+elements \cite{Bao:2002}, elementary repeats are more conducive to a
+formal description.  For a given genome, a nucleotide sequence $r$ is
+an elementary repeat if:
 \begin{enumerate}
-\label{ZLDef}
-\item $r$ is of length at least $l$.
-\item There are at least $f$ copies of $r$ in the genome.
-\item There is no proper subsequence $r'$ of $r$ such that $r'$ is of
-  length $l$ or grater and $r'$ occurs independently of $r$.  (That
-  is, every length $>l$ subsequence of $r'$ occurs only where $r'$
-  occurs in the genome.  (The minimality condition.)
-\item There is no sequence $r'$ that properly contains $r$ and appears
-  around every occurence of $r$ in the genome.
+\item It is of at least length $l$.  (The length requirement.)
+\item At least $f$ exact copies of $r$ appear in the genome.  (The
+  frequency requirement.)
+\item There is no proper substring of $r$ that is of at least length
+  $l$ and appears in the genome independently of $r$. (The minimality
+  requirement.)
+\item There is no string that contains $r$, appears in the genome
+  the same number of times as $r$, and satisfies conditions 1-3.  (The
+  maximality requirement.)
 \end{enumerate}
-\end{definition}
-The third condition insures minimality (that an elementary repeat
-cannot contain elementary repeats), while the fourth condition that
-each elementary repeat is maximal in length.  Having proposed this
-definition, Zheng and Lonardi developed an identification algorithm
-that had a runtime quadratic in the genome size -- so not of practical
-use on whole-genome analysis.  This was refined to linear time by He [CITE],
-and also by Huo {\it et al.} [CITE] based on variations suffix tree
-approaches, but because of that use of suffix trees they are limited
-in their ability to handle sequence variation.  As transposible
-elements naturallly accumulate instance-specific base substitutions
-over time, this is a significant limitation.
+The first two criteria are straight-forward, allowing us to designate
+length and frequency thresholds for our model.  The minimality
+requirement ensures that an elementary repeat does not contain
+anything that could be viewed as an independent elementary repeat --
+that it is the ``smallest building block'' that we can find.  While
+the maximality requirement ensures that it is not tied to some other, larger,
+elementary repeat.
+
+
+Having proposed this definition, Zheng and Lonardi developed an
+identification algorithm that had a runtime quadratic in the genome
+size -- so not of practical use on whole-genome analysis.  This was
+refined to linear time by He and also by Huo {\it et al.}
+\cite{He:2006gpa,Huo:2009hoa} based on variations of suffix tree
+approaches, but are limited
+in their ability to handle sequence variation.  As transposable
+elements naturally suffer from copy mistakes and accumulate
+instance-specific base substitutions over time, this is a significant
+limitation.
 
 \subsection*{RAIDER}
+\label{RAIDERSec}
 It was with the objective of creating a linear time identification
 algorithm that could handle variation through use of
-PatternHunter-like spaced seeds [CITE].  A rough implementatin was
-first presentd in Figuera {\it et al.}, with more details in the
-Figuera masters thesis [CITE].  Not itself fully able to handle the
-spaced seed component, RAIDER was built along an alternate,
-but equivilent definition of elementary repeats based on $l$-mers
-(sequences of length $l$).  Specifically, it was observed that
-condition (3) of Definition~\ref{ZLDef} could be rewritten as: There
-is no $l$-mer contained with $r$ that appears in the genome
-independelty of $r$.
-
-From this it follows that:
+PatternHunter-like spaced seeds that we developed the prototype RIADER
+\cite{Li:2004wl}.  A rough implementation was first presented in
+Figueroa {\it et al.}, with more details in the Figueroa masters
+thesis \cite{Figueroa:2014uk,Figueroa:2013cz}.  Not itself fully able
+to handle the spaced seed component, RAIDER was built along an
+alternate, but equivalent definition of elementary repeats based on
+$l$-mers (sequences of length $l$).  Specifically, it was observed
+that the minimality condition could be rewritten as: 
+There is no $l$-mer contained with $r$ that appears in the genome
+more times than $r$.  From there we make our four core observations that form
+the basis for the RAIDER algorithm:
 \begin{enumerate}
 \item An $l$-mer cannot belong to two different elementary repeats.
 \item Any $l$-mer in the genome that occurs $f$ or more times is
-  either an elementary repeat or is contained on one.
-\item Any two $l$-ers contained within an elementary repeat must occur
-  the same number of times in the genome.
-\item Given two sequences in the genome that are {\it maximally
-  idenitcal} (that is, cannot be extended in either direction and stil
-  be identical), these sequences cannot be contained with in
-  elementart repeat.
+  either an elementary repeat or belongs to one.
+\item Any two $l$-mers belonging to an elementary repeat must appear
+  the same number of times in the genome. 
+\item If two sequences in the genome that are {\it maximally
+  identical} (that is, cannot be extended in either direction and still
+  be identical), these sequences cannot belong to a larger
+  elementary repeat.
 \end{enumerate}
-(For dicussion and proof, see the Figueroa Thesis [CITE]].)
+By ``belong'' we mean ``is a substring of''; the reason for the
+terminology will be explained shortly.  For discussion and proof, see
+the Figueroa Thesis \cite{Figueroa:2013cz}. 
 
 Based on these observations, we discover we can find all elementary
 repeats in a single scan of the genome.  Specifically, as we scan from
-left to right, we track $l$-mer occurances, and look for repeated
-$l$-mer sequences.  When we find the same sequence of $l$-mers
-occuring multile times in a row, we can mark it as a tentative family,
-then brack it down later if we discover violations of the minimality
-condition.  The alogrithm is summerized in Figueroa {\it et al.} [CITE], and
-discussed in detail in the Figueroa Thesis [CITE].
+left to right, we track $l$-mer occurrences and identify multiple
+copies of the same $l$-mer.  When we find the same sequence of $l$-mers
+occurring multiple times in a row, we can mark it as a tentative family,
+then break it down later if we discover violations of the minimality
+condition.  The algorithm is summarized in Figueroa {\it et al.}, and
+discussed in detail in the Figueroa Thesis \cite{Figueroa:2014uk,Figueroa:2013cz}.
 
 Results of the preliminary implementation were promising.  Based on
-the Saha {\it et al} analysis putting RepeatMasker as the top {\it de
-  novo} search tool, comparisone were aginst that.  RAIDER result
+the Saha {\it et al.} analysis putting RepeatScout as the top {\it de
+  novo} search tool, comparisons were made against that tool.  RAIDER result
 quality was close, but slightly behind -- with runtime
 order of magnitudes better.  On human chromosome 22 we saw a
-$12\times$ speedup (2344 seconds to 192 seconds), while coverage
-actually improved (77\% to 84\%), while on mouse chromsome 19 we saw 
-the same speedup with a sinifcant drop in coverage (53\% to 30\%).  On
+$12\times$ speedup from RepeatScout to RAIDER (2344 seconds to 192 seconds), while coverage
+of the RepBase  \cite{Jurka:2005bl} ancestral sequence actually improved (77\% to 84\%), while on mouse chromosome 19 we saw 
+the same speedup with a significant drop in coverage (53\% to 30\%).  On
 the full human genome RAIDER ran in $6.3$ hours, while RepeatScout was
-unable to complete it run.  For details, see Figueroa {\it et al.} [CITE]
+unable to complete it run.  For details, see Figueroa {\it et al.} \cite{Figueroa:2014uk}.
 
 \subsection*{Spaced Seeds}
  
-PatternHunter, first proposed as a very succesful augmentation to
-BLAST [CITE PatternHunter,BLAST], is based on the notion of {\it
+PatternHunter, first proposed as a very successful augmentation to
+BLAST \cite{Li:2004wl,Altschul:1997p843}, is based on the notion of {\it
   spaced seeds}.  In the context of BLAST, instead of looking for a
-cntiguous substring match to triger the alignment exention,
-PatternHunter uses a more refised match pattern.  For example, the
-{\it seed} 1111110111111 would specify that we were looking for an exact
-match of two length-six substrings seperated by a single base (which
+contiguous substring match to trigger the alignment extension,
+PatternHunter uses a more refined match pattern.  For example, the
+seed 1111110111111 would specify that we were looking for an exact
+match of two length-six substrings separated by a single base (which
 might or might not match).  In the toy seed $s=110101$, we would say the
-strings $AACACA$ and $AAGACA$ because all positions corresponding to a
-1 match.  The string $AACACA$ does not math $TACACA$ (with respect to
+strings $AACACA$ and $AAGACA$ match because all miss-matched positions correspond to a 
+0 match.  The string $AACACA$ does not math $TACACA$ (with respect to
 $s$), as the single miss-match does not correspond to the 1.  Nor does
-$AACACA$ match ant substring of $TTAACTCA$.
+$AACACA$ match any substring of $TTAACTCA$, though it does match a
+substring of $T\mathbf{AAGATA}C$.
 
-The incorperations of spaced seeds into BLAST lead to significant
-improvements at vertual no cost in runtime [CITE], so it made sence to
-incorportat them here.  Specifcially, instead of looking at repeat
-elements as a set of identical strings, we could require that they
-match with respect to a PatternHunter spaced seed.  The preliminary
-version of RAIDER from Figueroa {\it et al.} made some attempt to
-incorperate this -- was succesful enough to provide a
-proof-of-concept, but a significant amount of work was left to be done
-for the developement of phRAIDER (PatternHunter-based RAIDER) -- the
-main method in this paper.
+The incorporation of spaced seeds into BLAST lead to significant
+improvements at virtually no cost in runtime \cite{Li:2004wl}.
+In our context, we will use them to allow limited
+miss-matches between instances of ``the same'' elementary repeat.  The
+preliminary version of RAIDER from Figueroa {\it et al.} made some
+attempt to incorporate this.  It was successful enough to provide a
+proof-of-concept, but a significant amount of work was left to be
+done to allow for true space seed usage.
 
-\section{Methods}
+In this paper we present phRAIDER (PatternHunter-based RAIDER), a fast
+tool for the identification and making of transposible elements in
+both assembled and unassembled genomes. Code  may be obtained [NEED WEB ADDRESS].  In our Methods section
+we present the new model that allows us to extend RAIDER to correctly
+use spaced seeds, and briefly outline the algorithm (with more details
+provided in the supplementary materials), with a analysis of phRAIDER
+performance in our Results.
+
+
+\section*{Methods}
+
+In order to allow the use of a spaced seed strategy, we will need to
+define a new model of elementary repeats that will accommodate it.  In
+the following we will first outline our theoretical framework
+(described in detail in the Supplementary Materials), and then review
+the phRAIDER algorithm.
+
+\subsection*{Seeded Elementary Repeats}
+In order to present our new model of elementary repeats, we first need
+to define a few terms:
+\begin{enumerate}
+  \item A spaced seed is a binary string that starts and ends with 1
+    symbols (as defined in Li {\it et al.} \cite{Li:2004wl}).
+  \item A {\it sequence descriptor} is a DNA string that allows *
+    symbols (indicating that a position where base content does not
+    matter).  A string matches a sequence descriptor of equal length if
+    it has the same base in all non-* positions.
+  \item We say the frequency of $r$ in a genomic sequence $G$ (denoted
+    $\nu_G(r)$) is the number of subsequences in $G$ that match $r$.
+  \item A spaced seed $s$ {\it hits} a substring of sequence
+    descriptor $r$ if that substring is the same length of $s$ and,
+    when aligned, every $*$ in the substring matches a 0 in the
+    string.  (Example: if $s=11011$ and $r=AAA*TTTTT$, then $s$
+    hits both $AA*CC$ and $TTTTT$, but not $A*TTT$.)
+  \item The {\it decomposition} of $r$ (with respect to seed $s$) is
+    the set of all substrings of $r$ that are hit by $s$.  For the
+    {\it generalized decomposition}, we take each member of the
+    decomposition and replace by $*$ any base that aligned to a 0 in
+    the seed.  (Example: if $s=11011$ and $r=AAATTT$, then $AAATT$ is
+    in the decomposition, so $AA*TT$ is in the generalized
+    decomposition.)
+  \item We say a string $s$ {\it covers} a sequence descriptor $r$ if
+  every base in $r$ is contained within at least one substring from
+  the decomposition of $r$.
+\end{enumerate}
+
+
+\begin{definition}
+  \label{REDDef}
+  Given a fixed genomic sequence $G$, a integer $f$, and spaced seed $s$, a sequence
+  descriptor $r$ is a {\it repeat element descriptor} if:
+  \begin{enumerate}
+  \item $s$ covers $r$.  (Minimum length requirement.)
+  \item $\nu_G(r) \geq f$.  (Frequency requirement.)
+  \item For every string $w$ in the generalized decomposition of $r$
+    (w.r.t. $s$), $\nu_G(w) = \nu_G(r)$.  (Minimality requirement.)
+  \item There is no sequence descriptor $r'$ such that (1) $r$ is
+    a substring of $r'$, (2) $\nu_G(r') = \nu_G(r)$, and (3) $r'$
+    satisfies conditions 1-3.  (Maximality requirement.)
+  \end{enumerate}
+\end{definition}
+
+We will refer to the set of sequences in the genome that match the
+repeat family descriptor to be the repeat element family of the
+descriptor.
+
+\begin{theorem}
+Definition~\ref{REDDef} is equivalent to the Z\&L
+definition of elementary repeats when $s$ contains no 0 symbols.
+\end{theorem}
+In the Supplementary materials we prove our definition equivalent to
+the Figueroa definition (Definition 5 from the thesis) -- which is
+proved to be equivalent to the Z\&L definition in that work \cite{Figueroa:2014uk}.
+
+It is instructive to look at a specific example.  Consider the toy
+seed $11011$, let $f=2$, and assume the genome contains a unique
+instance of $g_1 = AAAAA{\mathbf C}TTTTT$ and a unique instance of
+$g_2 = AAAAA{\mathbf G}TTTTT$.  Consider the sequence descriptor $r_1
+= AAAAA*TTTTT$.  A simple inspection shows us that conditions (1)-(3)
+of Definition~\ref{REDDef} hold, so if we assume the surrounding
+sequence is such that (4) holds as well, this is an elementary repeat
+descriptor for this family of sequences.  (Note $AA*AA*TT*TT$ also qualifies -- the
+elementary repeat descriptor is not necessarily unique.)  But if we add a second
+instance of $g_3 = AAAAAGTTTTT$, something happens that was not
+possible in the unseeded version.  While $r_1$ continues to meet the definition, the $g_2/g_3$
+subsequence $AAAAGTTTT$ also induces an elementary repeat family
+$r_2 = AAAA*TTTT$. (Note that we cannot extend this by, for example,
+one base to the left, as the $AAAAA$ substring would cause a violation
+of condition (3)).  So $r_2$ matches strings in $G$ that are
+substrings of those that $r_1$ matches -- a condition not possible
+with the seedless elementary repeats.  This also then violates one of
+our core observation on which RAIDER is broken: we now have an $l$-mer
+($AAAA*$) that belongs to multiple descriptors.
+
+A second complicating factor is that our repeat element descriptor is
+not a sequence of consecutive $l$-mers. In the seedless version, an
+elementary repeat of length $n$ can be viewed as a sequence of $n-l+1$
+$l$-mers, each overlapping the last by exactly $l-1$ bases. In this
+definition we use members of the generalize decomposition, and find
+they are not necessarily offset by just one base: given the $g_1$ and
+$g_2$ example above, we see that the $r_1 = AAAAA*TTTTT$ descriptor is
+composed of $AA*AA$, $AA*TT$, and $TT*TT$ -- each offset from the last
+by 3.  As RAIDER assumed that it need a look-back of only one, this
+too breaks the algorithm.
+
+\subsection*{phRAIDER}
+
+In order to adapt the RAIDER algorithm to the new definition, we
+require observations parallel to those on which RAIDER was built.  As
+it turns out, its easy to adopt those.  Consider, for example, the
+first observation: ``An $l$-mer cannot belong to two different
+elementary repeats.''  We have already seen a violation, but can
+eliminate this by changing the definition of {\it belongs}:
+\begin{definition}
+  Given a elementary repeat descriptor $r$ for seed $s$ with length
+  $l$, we say a length $w$ substring \underline{belongs} to $r$ if it
+  matches a member of the generalized decomposition of $r$ (w.r.t. to
+  $s$).
+\end{definition}
+We notice in the above example, the string $AAAAA$ belongs to the
+generalized decomposition, hence could not appear in both elementary
+repeats.  But the string $AAAAT$ does not match any string in the
+generalized decomposition of $r$, and hence was free to belong to the
+descriptor of a ``distinct'' family.  See the Supplementary Materials
+for a proof of all the core observations.
+
+\subsection*{phRAIDER Algorithm}
+
+\red{
+TO DO: Give a pseudocode description of the algoirthm and some minimal
+discussion.
+}
+
+\subsection*{Analysis}
+
+\red{
+TO DO: Describe pra analysis and quality metrics.
+}
+
+
+\section*{Results}
+
+\red{
+Points to be made:
+\begin{enumerate}
+\item Show: RAIDER2 has better quality masking results then RS.
+\item Show: RAIDER2 is better than RAIDER.
+\item Show: Seeds matter.
+\item Show: Runtime / memory usage
+\end{enumerate}
+
+
+Possible tables / plots:
+\begin{itemize}
+\item Table showing results on different chromosomes (pra, runtime, memory).
+\item Plot of runtime against genome size (simulated data to control size)?
+\item Plot of memory usage (simlated data to control size)?
+\item We might want to compare the ability to detect transposable
+  elements againsts other types of repeats.  (Should be easy to do
+  using simulator.)
+\end{itemize}
+}
+
+\section*{Conclusions}
+
+\red {
+Hopefully will beconcluding that RAIDER is a better tool than
+RepeatScout.  Posible discussion of tool features.
+}
+
+
+  
+    
 
 
 
@@ -467,7 +677,7 @@ main method in this paper.
 
 % if your bibliography is in bibtex format, use those commands:
 \bibliographystyle{bmc-mathphys} % Style BST file (bmc-mathphys, vancouver, spbasic).
-\bibliography{bmc_article}      % Bibliography file (usually '*.bib' )
+\bibliography{bmc}      % Bibliography file (usually '*.bib' )
 % for author-year bibliography (bmc-mathphys or spbasic)
 % a) write to bib file (bmc-mathphys only)
 % @settings{label, options="nameyear"}
@@ -493,17 +703,17 @@ main method in this paper.
 %%
 %% Do not use \listoffigures as most will included as separate files
 
-\section*{Figures}
-  \begin{figure}[h!]
-  \caption{\csentence{Sample figure title.}
-      A short description of the figure content
-      should go here.}
-      \end{figure}
+%% \section*{Figures}
+%%   \begin{figure}[h!]
+%%   \caption{\csentence{Sample figure title.}
+%%       A short description of the figure content
+%%       should go here.}
+%%       \end{figure}
 
-\begin{figure}[h!]
-  \caption{\csentence{Sample figure title.}
-      Figure legend text.}
-      \end{figure}
+%% \begin{figure}[h!]
+%%   \caption{\csentence{Sample figure title.}
+%%       Figure legend text.}
+%%       \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                               %%
@@ -513,17 +723,17 @@ main method in this paper.
 
 %% Use of \listoftables is discouraged.
 %%
-\section*{Tables}
-\begin{table}[h!]
-\caption{Sample table title. This is where the description of the table should go.}
-      \begin{tabular}{cccc}
-        \hline
-           & B1  &B2   & B3\\ \hline
-        A1 & 0.1 & 0.2 & 0.3\\
-        A2 & ... & ..  & .\\
-        A3 & ..  & .   & .\\ \hline
-      \end{tabular}
-\end{table}
+%% \section*{Tables}
+%% \begin{table}[h!]
+%% \caption{Sample table title. This is where the description of the table should go.}
+%%       \begin{tabular}{cccc}
+%%         \hline
+%%            & B1  &B2   & B3\\ \hline
+%%         A1 & 0.1 & 0.2 & 0.3\\
+%%         A2 & ... & ..  & .\\
+%%         A3 & ..  & .   & .\\ \hline
+%%       \end{tabular}
+%% \end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                               %%
@@ -531,15 +741,27 @@ main method in this paper.
 %%                               %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Additional Files}
-  \subsection*{Additional file 1 --- Sample additional file title}
-    Additional file descriptions text (including details of how to
-    view the file, if it is in a non-standard format or the file extension).  This might
-    refer to a multi-page table or a figure.
+%% \section*{Additional Files}
+%%   \subsection*{Additional file 1 --- Sample additional file title}
+%%     Additional file descriptions text (including details of how to
+%%     view the file, if it is in a non-standard format or the file extension).  This might
+%%     refer to a multi-page table or a figure.
 
-  \subsection*{Additional file 2 --- Sample additional file title}
-    Additional file descriptions text.
+%%   \subsection*{Additional file 2 --- Sample additional file title}
+%%     Additional file descriptions text.
 
 
 \end{backmatter}
 \end{document}
+
+%%  LocalWords:  de addressref aff neteref Schaeffer noteref Xiaolin
+%%  LocalWords:  Liu corref JE Karro Initio phRAIDER genomic TEs Ns
+%%  LocalWords:  JIANG RepeatMasker nHMMER BLASTing homology ALU ReAS
+%%  LocalWords:  LINEs Jiang PILER RepeatScout mer RepeatGluer Saha
+%%  LocalWords:  infeasible DeBrujin et al Zheng Lonardi pre Huo mers
+%%  LocalWords:  PatternHunter decompositions subsequence minimality
+%%  LocalWords:  maximality RIADER ers substring AACACA AAGACA TACACA
+%%  LocalWords:  TTAACTCA TTTTT TTT substrings AAATTT AAATT TT AAAAA
+%%  LocalWords:  FIGUREOA AAAAAGTTTTT AAAAGTTTT AAAA TTTT AAAAT novo
+%%  LocalWords:  Acknowledgements transposable tranposable runtime
+%%  LocalWords:  unassembled RepBase AAGATA
