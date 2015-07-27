@@ -211,8 +211,8 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) 
   newFam->setExpectedEnd(v->back() + newFam->repeatLength(L));
   
   if (verbosity > 2){
-    prettyPrintFamily(tabbing+1, fam, false, true);
-    prettyPrintFamily(tabbing+1, newFam, true, false);
+    prettyPrintFamily(2, fam, false, true);
+    prettyPrintFamily(2, newFam, true, false);
   }
   return newFam;
   
@@ -266,8 +266,8 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
   }
   
   if (verbosity > 2){
-    prettyPrintFamily(tabbing+1, fam, false, true);
-    prettyPrintFamily(tabbing+1, newFam, true, false);
+    prettyPrintFamily(2, fam, false, true);
+    prettyPrintFamily(2, newFam, true, false);
   }
   
   return newFam;
@@ -344,7 +344,7 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbos
   // if it was previously skipped in forming a family instance
   else if (excising && v->prev() < fam->getLast()->prev() && v->size() < fam->size() ) {
     if (verbosity > 2){
-      prettyPrintTabbing(tabbing + 1);
+      prettyPrintTabbing(1);
       cout << "The lmer was skipped in a previous iteration" << endl;
     }
     // OLDEST (1):
