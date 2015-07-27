@@ -36,21 +36,29 @@ const string OUTPUT_SUMMARY_FILENAME = "summary_info";
 
 // This struct stores the options from the command line.
 struct AppOptions {
-	// Age.  0 -- curr, 1 -- old, 2 -- oldest, 
-	int age;
-	// Verbosity level.  0 -- quiet, 1 -- normal, 2 -- verbose, 3 -- carly verbose
-	int verbosity;
-	// Minimum repeat length
-	uint min;
-	// Minimum number of repeats to be significant
-	uint count;
-
-	seqan::CharString seed;
-	seqan::CharString sequence_file;
-	seqan::CharString output_directory;
-
-	AppOptions() :
-			verbosity(1) {}
+  // Age. Presets for familyarray, excising, overlaps, and tieup
+  int age;
+  // Verbosity level.  0 -- quiet, 1 -- normal, 2 -- verbose, 3 -- carly verbose
+  int verbosity;
+  // Minimum repeat length
+  uint min;
+  // Minimum number of repeats to be significant
+  uint count;
+  // Whether or not to use family array
+  bool family_array;
+  // Whether or not to allow for excising
+  bool excising;
+  // Whether or not to require overlaps
+  bool overlaps;
+  // Whether or not to allow for modified tie up
+  bool tieup;
+  
+  seqan::CharString seed;
+  seqan::CharString sequence_file;
+  seqan::CharString output_directory;
+  
+  AppOptions() :
+  verbosity(1), age(1), family_array(true), excising(false), overlaps(true), tieup(false){}
 };
 
 // ==========================================================================
@@ -61,121 +69,147 @@ struct AppOptions {
 // Function parseCommandLine()
 // --------------------------------------------------------------------------
 seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int argc, char const ** argv) {
-	// Setup ArgumentParser.
-	seqan::ArgumentParser parser("RAIDER2");
-	// Set short description, version, and date.
-	setShortDescription(parser, "RAIDER - Rapid Ab Initio Detection of Elementary Repeats");
-	setVersion(parser, "2.0");
-	setDate(parser, "June 2015");
+  // Setup ArgumentParser.
+  seqan::ArgumentParser parser("RAIDER2");
+  // Set short description, version, and date.
+  setShortDescription(parser, "RAIDER - Rapid Ab Initio Detection of Elementary Repeats");
+  setVersion(parser, "2.0");
+  setDate(parser, "June 2015");
+  
+  // Define usage line and long description.
+  addUsageLine(parser, "[\\fIOPTIONS\\fP]  \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
+  addDescription(
+                 parser,
+                 "RAIDER2 parses the given sequence file using the supplied mask (spaced seed) to identify de novo repeats. Minimum repeat size and other options can be configured as described below.");
+  
+  // We require two arguments.
+  //addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "MASK"));
+  addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "SEQUENCE_FILE"));
+  addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "OUTPUT_DIRECTORY"));
+  
+  addOption(
+            parser,
+            seqan::ArgParseOption("s", "seed", "Spaced seed/mask to use. Defaults to 111110011111110001111111000000000000011111.",
+                                  seqan::ArgParseOption::STRING));
+  
+  addOption(
+            parser,
+            seqan::ArgParseOption("m", "min", "Minimum repeat length. Defaults to pattern length.",
+                                  seqan::ArgParseOption::INTEGER));
+  addOption(
+            parser,
+            seqan::ArgParseOption("c", "count", "Minimum number of repeats in a family. Defaults to 5.",
+                                  seqan::ArgParseOption::INTEGER));
+  addOption(parser, seqan::ArgParseOption("q", "quiet", "Set verbosity to a minimum."));
+  addOption(parser, seqan::ArgParseOption("v", "verbose", "Enable verbose output."));
+  addOption(parser, seqan::ArgParseOption("vv", "verbose+", "Enable extremely verbose output."));
+  addOption(
+            parser,
+            seqan::ArgParseOption("a", "age", "Age of raiderv2. Defaults to 1.",
+                                  seqan::ArgParseOption::INTEGER));
+  addOption(parser, seqan::ArgParseOption("na", "noarray", "Disable family array (enabled by default)."));
+  addOption(parser, seqan::ArgParseOption("e", "excise", "Enable excising (disabled by default)."));
+  addOption(parser, seqan::ArgParseOption("no", "nooverlaps", "Do not require overlaps (required by default)."));
+  addOption(parser, seqan::ArgParseOption("t", "tieup", "Enable alternate tie up (disabled by default)."));
 
-	// Define usage line and long description.
-	addUsageLine(parser, "[\\fIOPTIONS\\fP]  \"\\fISEQUENCE_FILE\\fP\"  \"\\fIOUTPUT_DIRECTORY\\fP\"");
-	addDescription(
-			parser,
-			"RAIDER2 parses the given sequence file using the supplied mask (spaced seed) to identify de novo repeats. Minimum repeat size and other options can be configured as described below.");
-
-	// We require two arguments.
-	//addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "MASK"));
-	addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "SEQUENCE_FILE"));
-	addArgument(parser, seqan::ArgParseArgument(seqan::ArgParseArgument::STRING, "OUTPUT_DIRECTORY"));
-	
-    addOption(
-			parser,
-			seqan::ArgParseOption("s", "seed", "Spaced seed/mask to use. Defaults to 111110011111110001111111000000000000011111.",
-					seqan::ArgParseOption::STRING));
-
-	addOption(
-			parser,
-			seqan::ArgParseOption("m", "min", "Minimum repeat length. Defaults to pattern length.",
-					seqan::ArgParseOption::INTEGER));
-	addOption(
-			parser,
-			seqan::ArgParseOption("c", "count", "Minimum number of repeats in a family. Defaults to 5.",
-					seqan::ArgParseOption::INTEGER));
-	addOption(parser, seqan::ArgParseOption("q", "quiet", "Set verbosity to a minimum."));
-	addOption(parser, seqan::ArgParseOption("v", "verbose", "Enable verbose output."));
-	addOption(parser, seqan::ArgParseOption("a", "verbose+", "Enable extremely verbose output."));
-	addOption(
-			parser,
-			seqan::ArgParseOption("g", "age", "Age of raiderv2. Defaults to 0.",
-					seqan::ArgParseOption::INTEGER));
-
-	// Add Examples Section.
-	addTextSection(parser, "Examples");
-	addListItem(parser, "\\fBraider\\fP \\fB-v\\fB -s \\fI1110110111\\fP \\fIchr23.fasta\\fP \"\\fIchr23_out\\fP\"",
-			"Call with mask \"1110110111\" and verbose output.");
-
-	// Parse command line.
-	seqan::ArgumentParser::ParseResult res = seqan::parse(parser, argc, argv);
-
-	// Only extract  options if the program will continue after parseCommandLine()
-	if (res != seqan::ArgumentParser::PARSE_OK)
-		return res;
-
-	// Extract option values.
-	if (isSet(parser, "quiet"))
-		options.verbosity = 0;
-	if (isSet(parser, "verbose"))
-		options.verbosity = 2;
-    if (isSet(parser, "verbose+"))
-        options.verbosity = 3;
-
-	//seqan::getArgumentValue(options.seed, parser, 0);
-	seqan::getArgumentValue(options.sequence_file, parser, 0);
-	seqan::getArgumentValue(options.output_directory, parser, 1);
-
-
-	if (isSet(parser, "count"))
-		seqan::getOptionValue(options.count, parser, "count");
-	else
-		options.count = 5;
-
-    if (isSet(parser, "seed"))
-        seqan::getOptionValue(options.seed, parser, "seed");
-    else
-        options.seed = "111110011111110001111111000000000000011111";
-
-	if (isSet(parser, "min"))
-		seqan::getOptionValue(options.min, parser, "min");
-	else
-		options.min = seqan::length(options.seed);
-	
-    if (isSet(parser, "age"))
-		seqan::getOptionValue(options.age, parser, "age");
-	else
-		options.age = 0;
-	// Ensure a trailing /
-	if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {
-		seqan::append(options.output_directory, "/");
-	}
-
-	return seqan::ArgumentParser::PARSE_OK;
+  
+  // Add Examples Section.
+  addTextSection(parser, "Examples");
+  addListItem(parser, "\\fBraider\\fP \\fB-v\\fB -s \\fI1110110111\\fP \\fIchr23.fasta\\fP \"\\fIchr23_out\\fP\"",
+              "Call with mask \"1110110111\" and verbose output.");
+  
+  // Parse command line.
+  seqan::ArgumentParser::ParseResult res = seqan::parse(parser, argc, argv);
+  
+  // Only extract  options if the program will continue after parseCommandLine()
+  if (res != seqan::ArgumentParser::PARSE_OK)
+    return res;
+  
+  // Extract option values.
+  if (isSet(parser, "quiet"))
+    options.verbosity = 0;
+  if (isSet(parser, "verbose"))
+    options.verbosity = 2;
+  if (isSet(parser, "verbose+"))
+    options.verbosity = 3;
+  
+  //seqan::getArgumentValue(options.seed, parser, 0);
+  seqan::getArgumentValue(options.sequence_file, parser, 0);
+  seqan::getArgumentValue(options.output_directory, parser, 1);
+  
+  
+  if (isSet(parser, "count"))
+    seqan::getOptionValue(options.count, parser, "count");
+  else
+    options.count = 5;
+  
+  if (isSet(parser, "seed"))
+    seqan::getOptionValue(options.seed, parser, "seed");
+  else
+    options.seed = "111110011111110001111111000000000000011111";
+  
+  if (isSet(parser, "min"))
+    seqan::getOptionValue(options.min, parser, "min");
+  else
+    options.min = seqan::length(options.seed);
+  
+  if (isSet(parser, "age")){
+    seqan::getOptionValue(options.age, parser, "age");
+    options.family_array = options.age > 0 ? true : false;
+    options.excising = options.age > 1 ? true : false;
+  }
+  else
+    options.age = 1;
+  
+  // If any switch is explicitly set, this overrides age
+  if (isSet(parser, "noarray")){
+    options.family_array = false;
+  }
+  
+  if (isSet(parser, "excise")){
+    options.excising = true;
+  }
+  
+  if (isSet(parser, "nooverlaps")){
+    options.overlaps = false;
+  }
+  
+  if (isSet(parser, "tieup")){
+    options.tieup = true;
+  }
+  
+  // Ensure a trailing /
+  if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {
+    seqan::append(options.output_directory, "/");
+  }
+  
+  return seqan::ArgumentParser::PARSE_OK;
 }
 
 /**
  * Given a sequence stream, read in all sequences and concatenate into a master sequence
  */
 bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> &thresholds,
-		seqan::Dna5String &outSequence, int verbosity) {
-	seqan::CharString id;
-	if (seqan::readRecord(id, outSequence, seqStream) != 0) {
-		return false;
-	}
-	if (verbosity > 0) {
-		cout << "Preparing " << id << endl;
-	}
-	uint currentThreshold = seqan::length(outSequence);
-	thresholds.push_back(make_pair(currentThreshold, id));
-	seqan::Dna5String other;
-	while (seqan::readRecord(id, other, seqStream) == 0) {
-		if (verbosity > 0) {
-			cout << "Preparing " << id << endl;
-		}
-		currentThreshold += seqan::length(other);
-		thresholds.push_back(make_pair(currentThreshold, id));
-		seqan::append(outSequence, other);
-	}
-	return true;
+                          seqan::Dna5String &outSequence, int verbosity) {
+  seqan::CharString id;
+  if (seqan::readRecord(id, outSequence, seqStream) != 0) {
+    return false;
+  }
+  if (verbosity > 0) {
+    cout << "Preparing " << id << endl;
+  }
+  uint currentThreshold = seqan::length(outSequence);
+  thresholds.push_back(make_pair(currentThreshold, id));
+  seqan::Dna5String other;
+  while (seqan::readRecord(id, other, seqStream) == 0) {
+    if (verbosity > 0) {
+      cout << "Preparing " << id << endl;
+    }
+    currentThreshold += seqan::length(other);
+    thresholds.push_back(make_pair(currentThreshold, id));
+    seqan::append(outSequence, other);
+  }
+  return true;
 }
 
 /**
@@ -184,29 +218,29 @@ bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> 
  * individual sequence begins.
  */
 bool getSequence(seqan::CharString file, seqan::Dna5String &sequence, vector<idThreshold> &thresholds, int verbosity) {
-	if (verbosity > 0) {
-		cout << "Loading sequence..." << endl;
-	}
-
-	seqan::SequenceStream seqStream(seqan::toCString(file));
-	if (!seqan::isGood(seqStream) || !concatenateSequences(seqStream, thresholds, sequence, verbosity)) {
-		cout << "Error: unable to open sequence." << endl;
-		return false;
-	}
-	return true;
+  if (verbosity > 0) {
+    cout << "Loading sequence..." << endl;
+  }
+  
+  seqan::SequenceStream seqStream(seqan::toCString(file));
+  if (!seqan::isGood(seqStream) || !concatenateSequences(seqStream, thresholds, sequence, verbosity)) {
+    cout << "Error: unable to open sequence." << endl;
+    return false;
+  }
+  return true;
 }
 
 /**
  * Given an index into the master sequence, return the associated sequence ID
  */
 seqan::CharString getSeqId(uint index, vector<idThreshold> &thresholds) {
-	for (uint i = 0; i < thresholds.size(); i++) {
-		if (index < thresholds[i].first) {
-			return thresholds[i].second;
-		}
-	}
-	cout << "ERROR: unable to find associated sequence ID" << endl;
-	return "Unknown";
+  for (uint i = 0; i < thresholds.size(); i++) {
+    if (index < thresholds[i].first) {
+      return thresholds[i].second;
+    }
+  }
+  cout << "ERROR: unable to find associated sequence ID" << endl;
+  return "Unknown";
 }
 
 /**
@@ -214,166 +248,167 @@ seqan::CharString getSeqId(uint index, vector<idThreshold> &thresholds) {
  * return the corresponding index into that sequence
  */
 uint getSeqIndex(uint index, vector<idThreshold> &thresholds) {
-	uint prevThreshold = 0;
-	for (uint i = 0; i < thresholds.size(); i++) {
-		if (index < thresholds[i].first) {
-			return index - prevThreshold;
-		}
-		prevThreshold = thresholds[i].first;
-	}
-	cout << "ERROR: unable to find correct threshold" << endl;
-	// TODO throw exceptions
-	return index;
+  uint prevThreshold = 0;
+  for (uint i = 0; i < thresholds.size(); i++) {
+    if (index < thresholds[i].first) {
+      return index - prevThreshold;
+    }
+    prevThreshold = thresholds[i].first;
+  }
+  cout << "ERROR: unable to find correct threshold" << endl;
+  // TODO throw exceptions
+  return index;
 }
 
 /**
  * Print the command line arguments back to the user.
  */
 void printArgs(AppOptions &options) {
-	if (options.verbosity > 0) {
-		cout << "__ARGUMENTS____________________________________________________________________" << endl
+  if (options.verbosity > 0) {
+    cout << "__ARGUMENTS____________________________________________________________________" << endl
 				<< "VERBOSITY\t" << options.verbosity << endl
 				<< "MIN_LENGTH\t" << options.min << endl
 				<< "MIN_COUNT\t" << options.count << endl
 				<< "SPACED_SEED     \t" << options.seed <<endl
 				<< "SEQUENCE_FILE\t" << options.sequence_file << endl
 				<< "OUTPUT_DIRECTORY\t" << options.output_directory << endl;
-	}
+  }
 }
 
 void writeFamilies(vector<Family*> &families, AppOptions &options) {
-	ofstream ofile;
-	string familiesFilePath(seqan::toCString(options.output_directory));
-	familiesFilePath.append(OUTPUT_REPEAT_FAMILIES_FILENAME);
-
-	if (options.verbosity > 0) {
-		cout << "Writing families to " << familiesFilePath << endl;
-	}
-
-	ofile.open(familiesFilePath.c_str());
-
-	ofile << "#  fam\tnum_copies\tcopy_length" << endl;
-	for (uint i = 0; i < families.size(); i++) {
-		Family* fam = families[i];
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
-			ofile << i << "\t" << fam->size() << "\t" << fam->repeatLength(options.min) << endl;
-		}
-	}
+  ofstream ofile;
+  string familiesFilePath(seqan::toCString(options.output_directory));
+  familiesFilePath.append(OUTPUT_REPEAT_FAMILIES_FILENAME);
+  
+  if (options.verbosity > 0) {
+    cout << "Writing families to " << familiesFilePath << endl;
+  }
+  
+  ofile.open(familiesFilePath.c_str());
+  
+  ofile << "#  fam\tnum_copies\tcopy_length" << endl;
+  for (uint i = 0; i < families.size(); i++) {
+    Family* fam = families[i];
+    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+      ofile << i << "\t" << fam->size() << "\t" << fam->repeatLength(options.min) << endl;
+    }
+  }
 }
 
 void writeRepeats(vector<Family*> &families, vector<idThreshold> &thresholds, AppOptions &options) {
-	uint repCount = 0;
-
-	ofstream ofile;
-	string repeatsFilePath(seqan::toCString(options.output_directory));
-	repeatsFilePath.append(OUTPUT_ELEMENTARY_REPEATS_FILENAME);
-
-	if (options.verbosity > 0) {
-		cout << "Writing elementary repeats to " << repeatsFilePath << endl;
-	}
-
-	ofile.open(repeatsFilePath.c_str());
-
-	ofile << "#  fam\tele\tdir\tsequence\tstart\tend" << endl;
-
-	for (uint i = 0; i < families.size(); i++) {
-		Family* fam = families[i];
-
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
-			int famId = i;
-			int repId = repCount;
-			repCount += fam->size();
-
-			LmerVector* prefix = fam->getPrefix();
-			for (uint i = 0; i < prefix->size(); i++) {
-				repId++;
-				uint index = (*prefix)[i];
-				uint trueIndex = getSeqIndex(index, thresholds);
-				uint length = fam->repeatLength(options.min);
-				ofile << famId << "\t" << repId << "\t" << "1" << "\t" << getSeqId(index, thresholds) << "\t"
-						<< trueIndex << "\t" << trueIndex + length << endl;
-			}
-		}
-
-	}
+  uint repCount = 0;
+  
+  ofstream ofile;
+  string repeatsFilePath(seqan::toCString(options.output_directory));
+  repeatsFilePath.append(OUTPUT_ELEMENTARY_REPEATS_FILENAME);
+  
+  if (options.verbosity > 0) {
+    cout << "Writing elementary repeats to " << repeatsFilePath << endl;
+  }
+  
+  ofile.open(repeatsFilePath.c_str());
+  
+  ofile << "#  fam\tele\tdir\tsequence\tstart\tend" << endl;
+  
+  for (uint i = 0; i < families.size(); i++) {
+    Family* fam = families[i];
+    
+    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+      int famId = i;
+      int repId = repCount;
+      repCount += fam->size();
+      
+      LmerVector* prefix = fam->getPrefix();
+      for (uint i = 0; i < prefix->size(); i++) {
+        repId++;
+        uint index = (*prefix)[i];
+        uint trueIndex = getSeqIndex(index, thresholds);
+        uint length = fam->repeatLength(options.min);
+        ofile << famId << "\t" << repId << "\t" << "1" << "\t" << getSeqId(index, thresholds) << "\t"
+        << trueIndex << "\t" << trueIndex + length << endl;
+      }
+    }
+    
+  }
 }
 
 
 void writeSummary(vector<Family*> &families, AppOptions &options) {
-	uint maxLen = 0;
-	uint maxSize = 0;
-	uint maxSecondSize = 0;
-	uint repCount = 0;
-	uint famCount = 0;
-
-	ofstream ofile;
-	string summaryFilePath(seqan::toCString(options.output_directory));
-	summaryFilePath.append(OUTPUT_SUMMARY_FILENAME);
-
-	if (options.verbosity > 0) {
-		cout << "Writing summary to " << summaryFilePath << endl;
-	}
-
-	ofile.open(summaryFilePath.c_str());
-
-	for (uint i = 0; i < families.size(); i++) {
-		Family* fam = families[i];
-		if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
-			famCount++;
-			repCount += fam->size();
-
-			if (fam->size() > maxSize) {
-				maxSecondSize = maxSize;
-				maxSize = fam->size();
-			}
-
-			if (fam->repeatLength(options.min) > maxLen) {
-				maxLen = fam->repeatLength(options.min);
-			}
-		}
-	}
-
-	ofile << "#FAMILIES\t" << famCount << endl;
-	ofile << "#REPEATS\t" << repCount << endl;
-	ofile << "LONGEST_REPEAT\t" << maxLen << endl;
-	ofile << "LONGEST_FAMILY\t" << maxSize << endl;
-	ofile << "SECOND_LONGEST\t" << maxSecondSize << endl;
+  uint maxLen = 0;
+  uint maxSize = 0;
+  uint maxSecondSize = 0;
+  uint repCount = 0;
+  uint famCount = 0;
+  
+  ofstream ofile;
+  string summaryFilePath(seqan::toCString(options.output_directory));
+  summaryFilePath.append(OUTPUT_SUMMARY_FILENAME);
+  
+  if (options.verbosity > 0) {
+    cout << "Writing summary to " << summaryFilePath << endl;
+  }
+  
+  ofile.open(summaryFilePath.c_str());
+  
+  for (uint i = 0; i < families.size(); i++) {
+    Family* fam = families[i];
+    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+      famCount++;
+      repCount += fam->size();
+      
+      if (fam->size() > maxSize) {
+        maxSecondSize = maxSize;
+        maxSize = fam->size();
+      }
+      
+      if (fam->repeatLength(options.min) > maxLen) {
+        maxLen = fam->repeatLength(options.min);
+      }
+    }
+  }
+  
+  ofile << "#FAMILIES\t" << famCount << endl;
+  ofile << "#REPEATS\t" << repCount << endl;
+  ofile << "LONGEST_REPEAT\t" << maxLen << endl;
+  ofile << "LONGEST_FAMILY\t" << maxSize << endl;
+  ofile << "SECOND_LONGEST\t" << maxSecondSize << endl;
 }
 
 void writeResults(vector<Family*> &families, vector<idThreshold> &thresholds, AppOptions &options) {
-	writeFamilies(families, options);
-	writeRepeats(families, thresholds, options);
-	writeSummary(families, options);
+  writeFamilies(families, options);
+  writeRepeats(families, thresholds, options);
+  writeSummary(families, options);
 }
 
 
 int main(int argc, char const ** argv) {
-	AppOptions options;
-	parseCommandLine(options, argc, argv);
-	printArgs(options);
+  AppOptions options;
+  parseCommandLine(options, argc, argv);
+  printArgs(options);
+  
+  // Load sequences into master sequence, mark where each sequence ID begins within the master
+  vector<idThreshold> thresholds;
+  seqan::Dna5String sequence;
+  if (getSequence(options.sequence_file, sequence, thresholds, options.verbosity) == false) {
+    // TODO throw exceptions
+    return 1;
+  }
+  
+  if (options.verbosity > 0) {
+    cout << "BASE PAIRS\t" << seqan::length(sequence) << endl;
+  }
+  
+  vector<Family*> families;
+  vector<seqan::CharString> seeds;
+  seeds.push_back(options.seed);
+  
 
-	// Load sequences into master sequence, mark where each sequence ID begins within the master
-	vector<idThreshold> thresholds;
-	seqan::Dna5String sequence;
-	if (getSequence(options.sequence_file, sequence, thresholds, options.verbosity) == false) {
-		// TODO throw exceptions
-		return 1;
-	}
-
-	if (options.verbosity > 0) {
-		cout << "BASE PAIRS\t" << seqan::length(sequence) << endl;
-	}
-
-	vector<Family*> families;
-	vector<seqan::CharString> seeds;
-	seeds.push_back(options.seed);
-
-	getElementaryFamilies(sequence, seeds, families, options.verbosity, options.age);
-
-	if (options.verbosity > 0) {
-		cout << "Writing results elements..." << endl;
-	}
-	writeResults(families, thresholds, options);
-
-	return 0;
+  getElementaryFamilies(sequence, seeds, families, options.verbosity, options.family_array, options.excising, options.overlaps, options.tieup);
+  
+  if (options.verbosity > 0) {
+    cout << "Writing results elements..." << endl;
+  }
+  writeResults(families, thresholds, options);
+  
+  return 0;
 }
