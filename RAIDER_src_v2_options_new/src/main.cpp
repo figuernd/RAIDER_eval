@@ -428,11 +428,8 @@ int main(int argc, char const ** argv) {
   vector<Family*> families;
   vector<seqan::CharString> seeds;
   seeds.push_back(options.seed);
-  seeds.push_back("1011111");
-
 
   vector<int> SBL = createSBL(seeds, options.sbl);
-
 
   getElementaryFamilies(sequence, seeds, families, options);
   
