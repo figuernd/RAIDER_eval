@@ -30,40 +30,6 @@ const string OUTPUT_REPEAT_FAMILIES_FILENAME = "families";
 const string OUTPUT_COMPOSITES_FILENAME = "composites";
 const string OUTPUT_SUMMARY_FILENAME = "summary_info";
 
-// --------------------------------------------------------------------------
-// Class AppOptions
-// --------------------------------------------------------------------------
-
-// This struct stores the options from the command line.
-struct AppOptions {
-  // Age. Presets for familyarray, excising, overlaps, and tieup
-  int age;
-  // Verbosity level.  0 -- quiet, 1 -- normal, 2 -- verbose, 3 -- carly verbose
-  int verbosity;
-  // Minimum repeat length
-  uint min;
-  // Minimum number of repeats to be significant
-  uint count;
-  // Whether or not to use family array
-  bool family_array;
-  // Whether or not to allow for excising
-  bool excising;
-  // Whether or not to require overlaps
-  bool overlaps;
-  // Whether or not to allow for modified tie up
-  bool tieup;
-  // Do cleanup while going
-  bool proactive_split;
-  // Keep track of previous family
-  bool prev_fam;
-  
-  seqan::CharString seed;
-  seqan::CharString sequence_file;
-  seqan::CharString output_directory;
-  
-  AppOptions() :
-  verbosity(1), age(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive(false), prevFam(false){}
-};
 
 // ==========================================================================
 // Functions

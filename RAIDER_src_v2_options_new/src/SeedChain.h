@@ -12,6 +12,41 @@
 
 using namespace std;
 
+// --------------------------------------------------------------------------
+// Class AppOptions
+// --------------------------------------------------------------------------
+
+// This struct stores the options from the command line.
+struct AppOptions {
+  // Age. Presets for familyarray, excising, overlaps, and tieup
+  int age;
+  // Verbosity level.  0 -- quiet, 1 -- normal, 2 -- verbose, 3 -- carly verbose
+  int verbosity;
+  // Minimum repeat length
+  uint min;
+  // Minimum number of repeats to be significant
+  uint count;
+  // Whether or not to use family array
+  bool family_array;
+  // Whether or not to allow for excising
+  bool excising;
+  // Whether or not to require overlaps
+  bool overlaps;
+  // Whether or not to allow for modified tie up
+  bool tieup;
+  // Do cleanup while going
+  bool proactive_split;
+  // Keep track of previous family
+  bool prev_fam;
+  
+  seqan::CharString seed;
+  seqan::CharString sequence_file;
+  seqan::CharString output_directory;
+  
+  AppOptions() :
+  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false){}
+};
+
 typedef unordered_map<size_t, LmerVector*> LmerMap;
 
 int p = getpid();
@@ -356,21 +391,21 @@ bool canMergeSkipped(Family* fam, uint L, bool overlaps) {
   return true;
 }
 
-Family* mergeIntoFamily(vector<LmerVector*> &lmers, uint L){
+Family* mergeIntoFamily(vector<LmerVector*> lmers, uint L){
   Family* newFam = new Family();
-  for (LmerVector * v : fam->popSkipped()){
+  for (LmerVector* v : lmers){
     newFam->adopt(v,L);
   }
   return newFam;
 }
 
 
-void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, AppOptions options) {
+void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
   if (options.verbosity > 2) cout << "--- Tying Loose Ends ---" << endl;
   for (auto fam : families) {
     
     if (options.tieup){
-      if (!canMergeSkipped(fam, L, overlaps)){
+      if (!canMergeSkipped(fam, L, options.overlaps)){
         families.push_back(mergeIntoFamily(fam->popSkipped(), L));
       }
     }
@@ -378,7 +413,7 @@ void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, AppOptions 
       Family* newFam;
       if (options.tieup){
         fam->setRemainingSkipped();
-        newFam = mergeIntoFamily(fam->popSkipped(), L));
+        newFam = mergeIntoFamily(fam->popSkipped(), L);
       }
       else{
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
@@ -417,7 +452,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
     // Needs to be placed with a family (either existing or new).
     if (v->size() == 2) {
       // If family_array enabled, search for corresponding family within L of this instance.
-      if(family_array){
+      if(options.family_array){
         int fam_index = getFamilyIndex(v, curr_families, curr_fam, signed_L, options.overlaps);
         if (fam_index == signed_L) {
           fam = new Family();
@@ -452,7 +487,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
       else if (repeatExpects(fam, v, L, options)) {
         // proactively get rid of waste if we just finished the repeat instance (anything unused)
         if (options.proactive_split){
-          if (!canMoveSkippedRange(fam, L, options.overlaps)){
+          if (!canMergeSkipped(fam, L, options.overlaps)){
             families.push_back(mergeIntoFamily(fam->popSkipped(), L));
           }
           fam->moveSkippedRange(v);
