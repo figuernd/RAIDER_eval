@@ -1,6 +1,6 @@
 %% BioMed_Central_Bib_Style_v1.01
 
-\begin{thebibliography}{13}
+\begin{thebibliography}{25}
 % BibTex style file: bmc-mathphys.bst (version 2.1), 2014-07-24
 \ifx \bisbn   \undefined \def \bisbn  #1{ISBN #1}\fi
 \ifx \binits  \undefined \def \binits#1{#1}\fi
@@ -43,169 +43,612 @@
 \csname PreBibitemsHook\endcsname
 
 %%% 1
-\bibitem{koon}
+\bibitem{Venter:2001p92}
 \begin{barticle}
+\bauthor{\bsnm{Lander}, \binits{E.S.}},
+\bauthor{\bsnm{Linton}, \binits{L.M.}},
+\bauthor{\bsnm{Birren}, \binits{B.}},
+\bauthor{\bsnm{Nusbaum}, \binits{C.}},
+\bauthor{\bsnm{Zody}, \binits{M.C.}},
+\bauthor{\bsnm{Baldwin}, \binits{J.}},
+\bauthor{\bsnm{Devon}, \binits{K.}},
+\bauthor{\bsnm{Dewar}, \binits{K.}},
+\bauthor{\bsnm{Doyle}, \binits{M.}},
+\bauthor{\bsnm{FitzHugh}, \binits{W.}},
+\bauthor{\bsnm{Funke}, \binits{R.}},
+\bauthor{\bsnm{Gage}, \binits{D.}},
+\bauthor{\bsnm{Harris}, \binits{K.}},
+\bauthor{\bsnm{Heaford}, \binits{A.}},
+\bauthor{\bsnm{Howland}, \binits{J.}},
+\bauthor{\bsnm{Kann}, \binits{L.}},
+\bauthor{\bsnm{Lehoczky}, \binits{J.}},
+\bauthor{\bsnm{LeVine}, \binits{R.}},
+\bauthor{\bsnm{McEwan}, \binits{P.}},
+\bauthor{\bsnm{McKernan}, \binits{K.}},
+\bauthor{\bsnm{Meldrim}, \binits{J.}},
+\bauthor{\bsnm{Mesirov}, \binits{J.P.}},
+\bauthor{\bsnm{Miranda}, \binits{C.}},
+\bauthor{\bsnm{Morris}, \binits{W.}},
+\bauthor{\bsnm{Naylor}, \binits{J.}},
+\bauthor{\bsnm{Raymond}, \binits{C.}},
+\bauthor{\bsnm{Rosetti}, \binits{M.}},
+\bauthor{\bsnm{Santos}, \binits{R.}},
+\bauthor{\bsnm{Sheridan}, \binits{A.}},
+\bauthor{\bsnm{Sougnez}, \binits{C.}},
+\bauthor{\bsnm{Stange-Thomann}, \binits{N.}},
+\bauthor{\bsnm{Stojanovic}, \binits{N.}},
+\bauthor{\bsnm{Subramanian}, \binits{A.}},
+\bauthor{\bsnm{Wyman}, \binits{D.}},
+\bauthor{\bsnm{Rogers}, \binits{J.}},
+\bauthor{\bsnm{Sulston}, \binits{J.}},
+\bauthor{\bsnm{Ainscough}, \binits{R.}},
+\bauthor{\bsnm{Beck}, \binits{S.}},
+\bauthor{\bsnm{Bentley}, \binits{D.}},
+\bauthor{\bsnm{Burton}, \binits{J.}},
+\bauthor{\bsnm{Clee}, \binits{C.}},
+\bauthor{\bsnm{Carter}, \binits{N.}},
+\bauthor{\bsnm{Coulson}, \binits{A.}},
+\bauthor{\bsnm{Deadman}, \binits{R.}},
+\bauthor{\bsnm{Deloukas}, \binits{P.}},
+\bauthor{\bsnm{Dunham}, \binits{A.}},
+\bauthor{\bsnm{Dunham}, \binits{I.}},
+\bauthor{\bsnm{Durbin}, \binits{R.}},
+\bauthor{\bsnm{French}, \binits{L.}},
+\bauthor{\bsnm{Grafham}, \binits{D.}},
+\bauthor{\bsnm{Gregory}, \binits{S.}},
+\bauthor{\bsnm{Hubbard}, \binits{T.}},
+\bauthor{\bsnm{Humphray}, \binits{S.}},
+\bauthor{\bsnm{Hunt}, \binits{A.}},
+\bauthor{\bsnm{Jones}, \binits{M.}},
+\bauthor{\bsnm{Lloyd}, \binits{C.}},
+\bauthor{\bsnm{McMurray}, \binits{A.}},
+\bauthor{\bsnm{Matthews}, \binits{L.}},
+\bauthor{\bsnm{Mercer}, \binits{S.}},
+\bauthor{\bsnm{Milne}, \binits{S.}},
+\bauthor{\bsnm{Mullikin}, \binits{J.C.}},
+\bauthor{\bsnm{Mungall}, \binits{A.}},
+\bauthor{\bsnm{Plumb}, \binits{R.}},
+\bauthor{\bsnm{Ross}, \binits{M.}},
+\bauthor{\bsnm{Shownkeen}, \binits{R.}},
+\bauthor{\bsnm{Sims}, \binits{S.}},
+\bauthor{\bsnm{Waterston}, \binits{R.H.}},
+\bauthor{\bsnm{Wilson}, \binits{R.K.}},
+\bauthor{\bsnm{Hillier}, \binits{L.W.}},
+\bauthor{\bsnm{McPherson}, \binits{J.D.}},
+\bauthor{\bsnm{Marra}, \binits{M.A.}},
+\bauthor{\bsnm{Mardis}, \binits{E.R.}},
+\bauthor{\bsnm{Fulton}, \binits{L.A.}},
+\bauthor{\bsnm{Chinwalla}, \binits{A.T.}},
+\bauthor{\bsnm{Pepin}, \binits{K.H.}},
+\bauthor{\bsnm{Gish}, \binits{W.R.}},
+\bauthor{\bsnm{Chissoe}, \binits{S.L.}},
+\bauthor{\bsnm{Wendl}, \binits{M.C.}},
+\bauthor{\bsnm{Delehaunty}, \binits{K.D.}},
+\bauthor{\bsnm{Miner}, \binits{T.L.}},
+\bauthor{\bsnm{Delehaunty}, \binits{A.}},
+\bauthor{\bsnm{Kramer}, \binits{J.B.}},
+\bauthor{\bsnm{Cook}, \binits{L.L.}},
+\bauthor{\bsnm{Fulton}, \binits{R.S.}},
+\bauthor{\bsnm{Johnson}, \binits{D.L.}},
+\bauthor{\bsnm{Minx}, \binits{P.J.}},
+\bauthor{\bsnm{Clifton}, \binits{S.W.}},
+\bauthor{\bsnm{Hawkins}, \binits{T.}},
+\bauthor{\bsnm{Branscomb}, \binits{E.}},
+\bauthor{\bsnm{Predki}, \binits{P.}},
+\bauthor{\bsnm{Richardson}, \binits{P.}},
+\bauthor{\bsnm{Wenning}, \binits{S.}},
+\bauthor{\bsnm{Slezak}, \binits{T.}},
+\bauthor{\bsnm{Doggett}, \binits{N.}},
+\bauthor{\bsnm{Cheng}, \binits{J.F.}},
+\bauthor{\bsnm{Olsen}, \binits{A.}},
+\bauthor{\bsnm{Lucas}, \binits{S.}},
+\bauthor{\bsnm{Elkin}, \binits{C.}},
+\bauthor{\bsnm{Uberbacher}, \binits{E.}},
+\bauthor{\bsnm{Frazier}, \binits{M.}},
+\bauthor{\bsnm{Gibbs}, \binits{R.A.}},
+\bauthor{\bsnm{Muzny}, \binits{D.M.}},
+\bauthor{\bsnm{Scherer}, \binits{S.E.}},
+\bauthor{\bsnm{Bouck}, \binits{J.B.}},
+\bauthor{\bsnm{Sodergren}, \binits{E.J.}},
+\bauthor{\bsnm{Worley}, \binits{K.C.}},
+\bauthor{\bsnm{Rives}, \binits{C.M.}},
+\bauthor{\bsnm{Gorrell}, \binits{J.H.}},
+\bauthor{\bsnm{Metzker}, \binits{M.L.}},
+\bauthor{\bsnm{Naylor}, \binits{S.L.}},
+\bauthor{\bsnm{Kucherlapati}, \binits{R.S.}},
+\bauthor{\bsnm{Nelson}, \binits{D.L.}},
+\bauthor{\bsnm{Weinstock}, \binits{G.M.}},
+\bauthor{\bsnm{Sakaki}, \binits{Y.}},
+\bauthor{\bsnm{Fujiyama}, \binits{A.}},
+\bauthor{\bsnm{Hattori}, \binits{M.}},
+\bauthor{\bsnm{Yada}, \binits{T.}},
+\bauthor{\bsnm{Toyoda}, \binits{A.}},
+\bauthor{\bsnm{Itoh}, \binits{T.}},
+\bauthor{\bsnm{Kawagoe}, \binits{C.}},
+\bauthor{\bsnm{Watanabe}, \binits{H.}},
+\bauthor{\bsnm{Totoki}, \binits{Y.}},
+\bauthor{\bsnm{Taylor}, \binits{T.}},
+\bauthor{\bsnm{Weissenbach}, \binits{J.}},
+\bauthor{\bsnm{Heilig}, \binits{R.}},
+\bauthor{\bsnm{Saurin}, \binits{W.}},
+\bauthor{\bsnm{Artiguenave}, \binits{F.}},
+\bauthor{\bsnm{Brottier}, \binits{P.}},
+\bauthor{\bsnm{Bruls}, \binits{T.}},
+\bauthor{\bsnm{Pelletier}, \binits{E.}},
+\bauthor{\bsnm{Robert}, \binits{C.}},
+\bauthor{\bsnm{Wincker}, \binits{P.}},
+\bauthor{\bsnm{Smith}, \binits{D.R.}},
+\bauthor{\bsnm{Doucette-Stamm}, \binits{L.}},
+\bauthor{\bsnm{Rubenfield}, \binits{M.}},
+\bauthor{\bsnm{Weinstock}, \binits{K.}},
+\bauthor{\bsnm{Lee}, \binits{H.M.}},
+\bauthor{\bsnm{Dubois}, \binits{J.}},
+\bauthor{\bsnm{Rosenthal}, \binits{A.}},
+\bauthor{\bsnm{Platzer}, \binits{M.}},
+\bauthor{\bsnm{Nyakatura}, \binits{G.}},
+\bauthor{\bsnm{Taudien}, \binits{S.}},
+\bauthor{\bsnm{Rump}, \binits{A.}},
+\bauthor{\bsnm{Yang}, \binits{H.}},
+\bauthor{\bsnm{Yu}, \binits{J.}},
+\bauthor{\bsnm{Wang}, \binits{J.}},
+\bauthor{\bsnm{Huang}, \binits{G.}},
+\bauthor{\bsnm{Gu}, \binits{J.}},
+\bauthor{\bsnm{Hood}, \binits{L.}},
+\bauthor{\bsnm{Rowen}, \binits{L.}},
+\bauthor{\bsnm{Madan}, \binits{A.}},
+\bauthor{\bsnm{Qin}, \binits{S.}},
+\bauthor{\bsnm{Davis}, \binits{R.W.}},
+\bauthor{\bsnm{Federspiel}, \binits{N.A.}},
+\bauthor{\bsnm{Abola}, \binits{A.P.}},
+\bauthor{\bsnm{Proctor}, \binits{M.J.}},
+\bauthor{\bsnm{Myers}, \binits{R.M.}},
+\bauthor{\bsnm{Schmutz}, \binits{J.}},
+\bauthor{\bsnm{Dickson}, \binits{M.}},
+\bauthor{\bsnm{Grimwood}, \binits{J.}},
+\bauthor{\bsnm{Cox}, \binits{D.R.}},
+\bauthor{\bsnm{Olson}, \binits{M.V.}},
+\bauthor{\bsnm{Kaul}, \binits{R.}},
+\bauthor{\bsnm{Shimizu}, \binits{N.}},
+\bauthor{\bsnm{Kawasaki}, \binits{K.}},
+\bauthor{\bsnm{Minoshima}, \binits{S.}},
+\bauthor{\bsnm{Evans}, \binits{G.A.}},
+\bauthor{\bsnm{Athanasiou}, \binits{M.}},
+\bauthor{\bsnm{Schultz}, \binits{R.}},
+\bauthor{\bsnm{Roe}, \binits{B.A.}},
+\bauthor{\bsnm{Chen}, \binits{F.}},
+\bauthor{\bsnm{Pan}, \binits{H.}},
+\bauthor{\bsnm{Ramser}, \binits{J.}},
+\bauthor{\bsnm{Lehrach}, \binits{H.}},
+\bauthor{\bsnm{Reinhardt}, \binits{R.}},
+\bauthor{\bsnm{McCombie}, \binits{W.R.}},
+\bauthor{\bparticle{de} \bsnm{La~Bastide}, \binits{M.}},
+\bauthor{\bsnm{Dedhia}, \binits{N.}},
+\bauthor{\bsnm{Bl{\"o}cker}, \binits{H.}},
+\bauthor{\bsnm{Hornischer}, \binits{K.}},
+\bauthor{\bsnm{Nordsiek}, \binits{G.}},
+\bauthor{\bsnm{Agarwala}, \binits{R.}},
+\bauthor{\bsnm{Aravind}, \binits{L.}},
+\bauthor{\bsnm{Bailey}, \binits{J.A.}},
+\bauthor{\bsnm{Bateman}, \binits{A.}},
+\bauthor{\bsnm{Batzoglou}, \binits{S.}},
+\bauthor{\bsnm{Birney}, \binits{E.}},
+\bauthor{\bsnm{Bork}, \binits{P.}},
+\bauthor{\bsnm{Brown}, \binits{D.G.}},
+\bauthor{\bsnm{Burge}, \binits{C.B.}},
+\bauthor{\bsnm{Cerutti}, \binits{L.}},
+\bauthor{\bsnm{Chen}, \binits{H.C.}},
+\bauthor{\bsnm{Church}, \binits{D.}},
+\bauthor{\bsnm{Clamp}, \binits{M.}},
+\bauthor{\bsnm{Copley}, \binits{R.R.}},
+\bauthor{\bsnm{Doerks}, \binits{T.}},
+\bauthor{\bsnm{Eddy}, \binits{S.R.}},
+\bauthor{\bsnm{Eichler}, \binits{E.E.}},
+\bauthor{\bsnm{Furey}, \binits{T.S.}},
+\bauthor{\bsnm{Galagan}, \binits{J.}},
+\bauthor{\bsnm{Gilbert}, \binits{J.G.}},
+\bauthor{\bsnm{Harmon}, \binits{C.}},
+\bauthor{\bsnm{Hayashizaki}, \binits{Y.}},
+\bauthor{\bsnm{Haussler}, \binits{D.}},
+\bauthor{\bsnm{Hermjakob}, \binits{H.}},
+\bauthor{\bsnm{Hokamp}, \binits{K.}},
+\bauthor{\bsnm{Jang}, \binits{W.}},
+\bauthor{\bsnm{Johnson}, \binits{L.S.}},
+\bauthor{\bsnm{Jones}, \binits{T.A.}},
+\bauthor{\bsnm{Kasif}, \binits{S.}},
+\bauthor{\bsnm{Kaspryzk}, \binits{A.}},
+\bauthor{\bsnm{Kennedy}, \binits{S.}},
+\bauthor{\bsnm{Kent}, \binits{W.J.}},
+\bauthor{\bsnm{Kitts}, \binits{P.}},
 \bauthor{\bsnm{Koonin}, \binits{E.V.}},
-\bauthor{\bsnm{Altschul}, \binits{S.F.}},
-\bauthor{\bsnm{Bork}, \binits{P.}}:
-\batitle{Brca1 protein products: functional motifs}.
-\bjtitle{Nat Genet}
-\bvolume{13},
-\bfpage{266}--\blpage{267}
-(\byear{1996})
+\bauthor{\bsnm{Korf}, \binits{I.}},
+\bauthor{\bsnm{Kulp}, \binits{D.}},
+\bauthor{\bsnm{Lancet}, \binits{D.}},
+\bauthor{\bsnm{Lowe}, \binits{T.M.}},
+\bauthor{\bsnm{McLysaght}, \binits{A.}},
+\bauthor{\bsnm{Mikkelsen}, \binits{T.}},
+\bauthor{\bsnm{Moran}, \binits{J.V.}},
+\bauthor{\bsnm{Mulder}, \binits{N.}},
+\bauthor{\bsnm{Pollara}, \binits{V.J.}},
+\bauthor{\bsnm{Ponting}, \binits{C.P.}},
+\bauthor{\bsnm{Schuler}, \binits{G.}},
+\bauthor{\bsnm{Schultz}, \binits{J.}},
+\bauthor{\bsnm{Slater}, \binits{G.}},
+\bauthor{\bsnm{Smit}, \binits{A.F.}},
+\bauthor{\bsnm{Stupka}, \binits{E.}},
+\bauthor{\bsnm{Szustakowski}, \binits{J.}},
+\bauthor{\bsnm{Thierry-Mieg}, \binits{D.}},
+\bauthor{\bsnm{Thierry-Mieg}, \binits{J.}},
+\bauthor{\bsnm{Wagner}, \binits{L.}},
+\bauthor{\bsnm{Wallis}, \binits{J.}},
+\bauthor{\bsnm{Wheeler}, \binits{R.}},
+\bauthor{\bsnm{Williams}, \binits{A.}},
+\bauthor{\bsnm{Wolf}, \binits{Y.I.}},
+\bauthor{\bsnm{Wolfe}, \binits{K.H.}},
+\bauthor{\bsnm{Yang}, \binits{S.P.}},
+\bauthor{\bsnm{Yeh}, \binits{R.F.}},
+\bauthor{\bsnm{Collins}, \binits{F.}},
+\bauthor{\bsnm{Guyer}, \binits{M.S.}},
+\bauthor{\bsnm{Peterson}, \binits{J.}},
+\bauthor{\bsnm{Felsenfeld}, \binits{A.}},
+\bauthor{\bsnm{Wetterstrand}, \binits{K.A.}},
+\bauthor{\bsnm{Patrinos}, \binits{A.}},
+\bauthor{\bsnm{Morgan}, \binits{M.J.}},
+\bauthor{\bparticle{de} \bsnm{Jong}, \binits{P.}},
+\bauthor{\bsnm{Catanese}, \binits{J.J.}},
+\bauthor{\bsnm{Osoegawa}, \binits{K.}},
+\bauthor{\bsnm{Shizuya}, \binits{H.}},
+\bauthor{\bsnm{Choi}, \binits{S.}},
+\bauthor{\bsnm{Chen}, \binits{Y.J.}},
+\bauthor{\bsnm{Szustakowki}, \binits{J.}},
+\bauthor{\bsnm{Consortium}, \binits{I.H.G.S.}}:
+\batitle{{Initial sequencing and analysis of the human genome.}}
+\bjtitle{Nature}
+\bvolume{409}(\bissue{6822}),
+\bfpage{860}--\blpage{921}
+(\byear{2001})
 \end{barticle}
 \endbibitem
 
 %%% 2
-\bibitem{khar}
-\begin{botherref}
-\oauthor{\bsnm{Kharitonov}, \binits{S.A.}},
-\oauthor{\bsnm{Barnes}, \binits{P.J.}}:
-Clinical Aspects of Exhaled Nitric Oxide.
-in press
-\end{botherref}
+\bibitem{Arndt:2005p279}
+\begin{barticle}
+\bauthor{\bsnm{Arndt}, \binits{P.F.}},
+\bauthor{\bsnm{Hwa}, \binits{T.}}:
+\batitle{{Identification and measurement of neighbor-dependent nucleotide
+  substitution processes}}.
+\bjtitle{Bioinformatics (Oxford, England)}
+\bvolume{21}(\bissue{10}),
+\bfpage{2322}--\blpage{2328}
+(\byear{2005})
+\end{barticle}
 \endbibitem
 
 %%% 3
-\bibitem{zvai}
+\bibitem{Karro:2008p123}
 \begin{barticle}
-\bauthor{\bsnm{Zvaifler}, \binits{N.J.}},
-\bauthor{\bsnm{Burger}, \binits{J.A.}},
-\bauthor{\bsnm{Marinova-Mutafchieva}, \binits{L.}},
-\bauthor{\bsnm{Taylor}, \binits{P.}},
-\bauthor{\bsnm{Maini}, \binits{R.N.}}:
-\batitle{Mesenchymal cells, stromal derived factor-1 and rheumatoid arthritis
-  [abstract]}.
-\bjtitle{Arthritis Rheum}
-\bvolume{42},
-\bfpage{250}
-(\byear{1999})
+\bauthor{\bsnm{Karro}, \binits{J.E.}},
+\bauthor{\bsnm{Peifer}, \binits{M.}},
+\bauthor{\bsnm{Hardison}, \binits{R.C.}},
+\bauthor{\bsnm{Kollmann}, \binits{M.}},
+\bauthor{\bparticle{von} \bsnm{Gr{\"u}nberg}, \binits{H.H.}}:
+\batitle{{Exponential decay of GC content detected by strand-symmetric
+  substitution rates influences the evolution of isochore structure.}}
+\bjtitle{Molecular Biology and Evolution}
+\bvolume{25}(\bissue{2}),
+\bfpage{362}--\blpage{374}
+(\byear{2008})
 \end{barticle}
 \endbibitem
 
 %%% 4
-\bibitem{xjon}
-\begin{bchapter}
-\bauthor{\bsnm{Jones}, \binits{X.}}:
-\bctitle{Zeolites and synthetic mechanisms}.
-In: \beditor{\bsnm{Smith}, \binits{Y.}} (ed.)
-\bbtitle{Proceedings of the First National Conference on Porous Sieves: 27-30
-  June 1996; Baltimore},
-pp. \bfpage{16}--\blpage{27}
-(\byear{1996}).
-\bcomment{Stoneham: Butterworth-Heinemann}
-\end{bchapter}
+\bibitem{Mugal:2009p581}
+\begin{barticle}
+\bauthor{\bsnm{Mugal}, \binits{C.F.}},
+\bauthor{\bparticle{von} \bsnm{Gr{\"u}nberg}, \binits{H.H.}},
+\bauthor{\bsnm{Peifer}, \binits{M.}}:
+\batitle{{Transcription-Induced Mutational Strand Bias and Its Effect on
+  Substitution Rates in Human Genes}}.
+\bjtitle{Molecular Biology and Evolution}
+\bvolume{26}(\bissue{1}),
+\bfpage{131}--\blpage{142}
+(\byear{2008})
+\end{barticle}
 \endbibitem
 
 %%% 5
-\bibitem{marg}
-\begin{bbook}
-\bauthor{\bsnm{Margulis}, \binits{L.}}:
-\bbtitle{Origin of Eukaryotic Cells}.
-\bpublisher{Yale University Press},
-\blocation{New Haven}
-(\byear{1970})
-\end{bbook}
+\bibitem{Hardison:2003p97}
+\begin{barticle}
+\bauthor{\bsnm{Hardison}, \binits{R.C.}}:
+\batitle{{Covariation in Frequencies of Substitution, Deletion, Transposition,
+  and Recombination During Eutherian Evolution}}.
+\bjtitle{Genome research}
+\bvolume{13}(\bissue{1}),
+\bfpage{13}--\blpage{26}
+(\byear{2003})
+\end{barticle}
 \endbibitem
 
 %%% 6
-\bibitem{oreg}
+\bibitem{Jiang:2013jt}
 \begin{barticle}
-\bauthor{\bsnm{Orengo}, \binits{C.A.}},
-\bauthor{\bsnm{Bray}, \binits{J.E.}},
-\bauthor{\bsnm{Hubbard}, \binits{T.}},
-\bauthor{\bsnm{LoConte}, \binits{L.}},
-\bauthor{\bsnm{Sillitoe}, \binits{I.}}:
-\batitle{Analysis and assessment of ab initio three-dimensional prediction,
-  secondary structure, and contacts prediction}.
-\bjtitle{Proteins}
-\bvolume{Suppl 3},
-\bfpage{149}--\blpage{170}
-(\byear{1999})
+\bauthor{\bsnm{Jiang}, \binits{N.}}:
+\batitle{{Overview of repeat annotation and de novo repeat identification.}}
+\bjtitle{Methods in molecular biology (Clifton, N.J.)}
+\bvolume{1057}(\bissue{Chapter 20}),
+\bfpage{275}--\blpage{287}
+(\byear{2013})
 \end{barticle}
 \endbibitem
 
 %%% 7
-\bibitem{schn}
-\begin{bchapter}
-\bauthor{\bsnm{Schnepf}, \binits{E.}}:
-\bctitle{From prey via endosymbiont to plastids: comparative studies in
-  dinoflagellates}.
-In: \beditor{\bsnm{Lewin}, \binits{R.A.}} (ed.)
-\bbtitle{Origins of Plastids}
-vol. \bseriesno{2},
-\bedition{2nd} edn.,
-pp. \bfpage{53}--\blpage{76}.
-\bpublisher{Chapman and Hall},
-\blocation{New York}
-(\byear{1993})
-\end{bchapter}
+\bibitem{RepeatMaskerOpen:XkNxXSd7}
+\begin{botherref}
+\oauthor{\bsnm{Smit}, \binits{A.F.}},
+\oauthor{\bsnm{Hubley}, \binits{R.}},
+\oauthor{\bsnm{Green}, \binits{P.}}:
+{RepeatMasker Open 4.0}
+\end{botherref}
 \endbibitem
 
 %%% 8
-\bibitem{pond}
-\begin{botherref}
-Innovative Oncology
-\end{botherref}
+\bibitem{Wheeler:2013gj}
+\begin{barticle}
+\bauthor{\bsnm{Wheeler}, \binits{T.J.}},
+\bauthor{\bsnm{Eddy}, \binits{S.R.}}:
+\batitle{{nhmmer: DNA homology search with profile HMMs.}}
+\bjtitle{Bioinformatics (Oxford, England)}
+\bvolume{29}(\bissue{19}),
+\bfpage{2487}--\blpage{2489}
+(\byear{2013})
+\end{barticle}
 \endbibitem
 
 %%% 9
-\bibitem{smith}
-\begin{bbook}
-\beditor{\bsnm{Smith}, \binits{Y.}} (ed.):
-\bbtitle{Proceedings of the First National Conference on Porous Sieves: 27-30
-  June 1996; Baltimore}.
-\bpublisher{Butterworth-Heinemann},
-\blocation{Stoneham}
-(\byear{1996})
-\end{bbook}
+\bibitem{Pratchett:uw}
+\begin{botherref}
+\oauthor{\bsnm{Pratchett}, \binits{T.}}:
+{Hogfather: A Novel of Discworld}.
+HarperPrism,
+New York
+\end{botherref}
 \endbibitem
 
 %%% 10
-\bibitem{hunn}
-\begin{bchapter}
-\bauthor{\bsnm{Hunninghake}, \binits{G.W.}},
-\bauthor{\bsnm{Gadek}, \binits{J.E.}}:
-\bctitle{The alveloar macrophage}.
-In: \beditor{\bsnm{Harris}, \binits{T.J.R.}} (ed.)
-\bbtitle{Cultured Human Cells and Tissues},
-pp. \bfpage{54}--\blpage{56}.
-\bpublisher{Academic Press},
-\blocation{New York}
-(\byear{1995}).
-\bcomment{Stoner G (Series Editor): Methods and Perspectives in Cell Biology,
-  vol 1}
-\end{bchapter}
+\bibitem{Bao:2002}
+\begin{barticle}
+\bauthor{\bsnm{Bao}, \binits{Z.}},
+\bauthor{\bsnm{Eddy}, \binits{S.R.}}:
+\batitle{{Automated de novo identification of repeat sequence families in
+  sequenced genomes}}.
+\bjtitle{Genome research}
+\bvolume{12}(\bissue{8}),
+\bfpage{1269}--\blpage{1276}
+(\byear{2002})
+\end{barticle}
 \endbibitem
 
 %%% 11
-\bibitem{advi}
-\begin{botherref}
-Advisory Committee on Genetic Modification:
-Annual Report.
-London
-(1999).
-Advisory Committee on Genetic Modification
-\end{botherref}
+\bibitem{Edgar:2005p2365}
+\begin{barticle}
+\bauthor{\bsnm{Edgar}, \binits{R.C.}},
+\bauthor{\bsnm{Myers}, \binits{E.W.}}:
+\batitle{{PILER: identification and classification of genomic repeats.}}
+\bjtitle{Bioinformatics (Oxford, England)}
+\bvolume{21 Suppl 1}(\bissue{Suppl 1}),
+\bfpage{152}--\blpage{8}
+(\byear{2005})
+\end{barticle}
 \endbibitem
 
 %%% 12
-\bibitem{koha}
-\begin{botherref}
-\oauthor{\bsnm{Kohavi}, \binits{R.}}:
-Wrappers for performance enhancement and obvious decision graphs.
-PhD thesis,
-Stanford University, Computer Science Department
-(1995)
-\end{botherref}
+\bibitem{Lopez:2003td}
+\begin{barticle}
+\bauthor{\bsnm{Lopez}, \binits{R.}},
+\bauthor{\bsnm{Silventoinen}, \binits{V.}},
+\bauthor{\bsnm{Robinson}, \binits{S.}},
+\bauthor{\bsnm{Kibria}, \binits{A.}},
+\bauthor{\bsnm{Gish}, \binits{W.}}:
+\batitle{{WU-Blast2 server at the European Bioinformatics Institute.}}
+\bjtitle{Nucleic acids research}
+\bvolume{31}(\bissue{13}),
+\bfpage{3795}--\blpage{3798}
+(\byear{2003})
+\end{barticle}
 \endbibitem
 
 %%% 13
-\bibitem{mouse}
+\bibitem{Harris:2007uf}
 \begin{botherref}
-The Mouse Tumor Biology Database.
-\url{http://tumor.informatics.jax.org/cancer\_links.html}
+\oauthor{\bsnm{Harris}, \binits{R.S.}}:
+{Improved pairwise alignment of genomic DNA}.
+PhD thesis,
+The Pennsylvania State University
+(2007)
 \end{botherref}
+\endbibitem
+
+%%% 14
+\bibitem{Li:2005p3138}
+\begin{barticle}
+\bauthor{\bsnm{Li}, \binits{R.}},
+\bauthor{\bsnm{Ye}, \binits{J.}},
+\bauthor{\bsnm{Li}, \binits{S.}},
+\bauthor{\bsnm{Wang}, \binits{J.}},
+\bauthor{\bsnm{Han}, \binits{Y.}},
+\bauthor{\bsnm{Ye}, \binits{C.}},
+\bauthor{\bsnm{Wang}, \binits{J.}},
+\bauthor{\bsnm{Yang}, \binits{H.}},
+\bauthor{\bsnm{Yu}, \binits{J.}},
+\bauthor{\bsnm{Wong}, \binits{G.K.-S.}},
+\bauthor{\bsnm{Wang}, \binits{J.}}:
+\batitle{{ReAS: Recovery of ancestral sequences for transposable elements from
+  the unassembled reads of a whole genome shotgun.}}
+\bjtitle{PLoS computational biology}
+\bvolume{1}(\bissue{4}),
+\bfpage{43}
+(\byear{2005})
+\end{barticle}
+\endbibitem
+
+%%% 15
+\bibitem{Price:2005p1247}
+\begin{barticle}
+\bauthor{\bsnm{Price}, \binits{A.L.}},
+\bauthor{\bsnm{Jones}, \binits{N.C.}},
+\bauthor{\bsnm{Pevzner}, \binits{P.A.}}:
+\batitle{{De novo identification of repeat families in large genomes.}}
+\bjtitle{Bioinformatics (Oxford, England)}
+\bvolume{21 Suppl 1}(\bissue{Suppl 1}),
+\bfpage{351}--\blpage{8}
+(\byear{2005})
+\end{barticle}
+\endbibitem
+
+%%% 16
+\bibitem{Pevzner:2004p3157}
+\begin{barticle}
+\bauthor{\bsnm{Pevzner}, \binits{P.A.}},
+\bauthor{\bsnm{Pevzner}, \binits{P.A.}},
+\bauthor{\bsnm{Tang}, \binits{H.}},
+\bauthor{\bsnm{Tesler}, \binits{G.}}:
+\batitle{{De novo repeat classification and fragment assembly.}}
+\bjtitle{Genome research}
+\bvolume{14}(\bissue{9}),
+\bfpage{1786}--\blpage{1796}
+(\byear{2004})
+\end{barticle}
+\endbibitem
+
+%%% 17
+\bibitem{Zhi:2006p3199}
+\begin{barticle}
+\bauthor{\bsnm{Zhi}, \binits{D.}},
+\bauthor{\bsnm{Raphael}, \binits{B.J.}},
+\bauthor{\bsnm{Price}, \binits{A.L.}},
+\bauthor{\bsnm{Tang}, \binits{H.}},
+\bauthor{\bsnm{Pevzner}, \binits{P.A.}}:
+\batitle{{Identifying repeat domains in large genomes}}.
+\bjtitle{Genome biology}
+\bvolume{7}(\bissue{1}),
+\bfpage{7}
+(\byear{2006})
+\end{barticle}
+\endbibitem
+
+%%% 18
+\bibitem{Saha:2008dm}
+\begin{barticle}
+\bauthor{\bsnm{Saha}, \binits{S.}},
+\bauthor{\bsnm{Bridges}, \binits{S.}},
+\bauthor{\bsnm{Magbanua}, \binits{Z.V.}},
+\bauthor{\bsnm{Peterson}, \binits{D.G.}}:
+\batitle{{Empirical comparison of ab initio repeat finding programs.}}
+\bjtitle{Nucleic acids research}
+\bvolume{36}(\bissue{7}),
+\bfpage{2284}--\blpage{2294}
+(\byear{2008})
+\end{barticle}
+\endbibitem
+
+%%% 19
+\bibitem{Zheng:2005bl}
+\begin{bbook}
+\bauthor{\bsnm{Zheng}, \binits{J.}},
+\bauthor{\bsnm{Lonardi}, \binits{S.}}:
+\bbtitle{{Discovery of Repetitive Patterns in DNA with Accurate Boundaries}}.
+\bpublisher{IEEE}, \blocation{???}
+(\byear{2005})
+\end{bbook}
+\endbibitem
+
+%%% 20
+\bibitem{He:2006gpa}
+\begin{barticle}
+\bauthor{\bsnm{He}, \binits{D.}}:
+\batitle{{Using suffix tree to discover complex repetitive patterns in DNA
+  sequences.}}
+\bjtitle{Conference proceedings : ... Annual International Conference of the
+  IEEE Engineering in Medicine and Biology Society. IEEE Engineering in
+  Medicine and Biology Society. Conference}
+\bvolume{1},
+\bfpage{3474}--\blpage{3477}
+(\byear{2006})
+\end{barticle}
+\endbibitem
+
+%%% 21
+\bibitem{Huo:2009hoa}
+\begin{bchapter}
+\bauthor{\bsnm{Huo}, \binits{H.}},
+\bauthor{\bsnm{Wang}, \binits{X.}},
+\bauthor{\bsnm{Stojkovic}, \binits{V.}}:
+\bctitle{{An Adaptive Suffix Tree Based Algorithm for Repeats Recognition in a
+  DNA Sequence}}.
+In: \bbtitle{2009 International Joint Conference on Bioinformatics, Systems
+  Biology and Intelligent Computing},
+pp. \bfpage{181}--\blpage{184}.
+\bpublisher{IEEE}, \blocation{???}
+(\byear{2009})
+\end{bchapter}
+\endbibitem
+
+%%% 22
+\bibitem{Li:2004wl}
+\begin{barticle}
+\bauthor{\bsnm{Li}, \binits{M.}},
+\bauthor{\bsnm{Ma}, \binits{B.}},
+\bauthor{\bsnm{Kisman}, \binits{D.}},
+\bauthor{\bsnm{Tromp}, \binits{J.}}:
+\batitle{{Patternhunter II: highly sensitive and fast homology search.}}
+\bjtitle{Journal of bioinformatics and computational biology}
+\bvolume{2}(\bissue{3}),
+\bfpage{417}--\blpage{439}
+(\byear{2004})
+\end{barticle}
+\endbibitem
+
+%%% 23
+\bibitem{Figueroa:2014uk}
+\begin{botherref}
+\oauthor{\bsnm{Figueroa}, \binits{N.D.}}:
+{RAIDER: Rapid Ab Initio Detection of Elementary Repeats}
+(2014)
+\end{botherref}
+\endbibitem
+
+%%% 24
+\bibitem{Figueroa:2013cz}
+\begin{bchapter}
+\bauthor{\bsnm{Figueroa}, \binits{N.}},
+\bauthor{\bsnm{Liu}, \binits{X.}},
+\bauthor{\bsnm{Wang}, \binits{J.}},
+\bauthor{\bsnm{Karro}, \binits{J.}}:
+\bctitle{{RAIDER: Rapid Ab Initio Detection of Elementary Repeats}}.
+In: \bbtitle{Advances in Bioinformatics and Computational Biology},
+pp. \bfpage{170}--\blpage{180}.
+\bpublisher{Springer},
+\blocation{Cham}
+(\byear{2013})
+\end{bchapter}
+\endbibitem
+
+%%% 25
+\bibitem{Altschul:1997p843}
+\begin{barticle}
+\bauthor{\bsnm{Altschul}, \binits{S.}},
+\bauthor{\bsnm{Madden}, \binits{T.}},
+\bauthor{\bsnm{Schaffer}, \binits{A.}},
+\bauthor{\bsnm{Zhang}, \binits{J.}},
+\bauthor{\bsnm{Zhang}, \binits{Z.}},
+\bauthor{\bsnm{Miller}, \binits{W.}},
+\bauthor{\bsnm{Lipman}, \binits{D.}}:
+\batitle{{Gapped BLAST and PSI-BLAST: a new generation of protein database
+  search programs}}.
+\bjtitle{Nucleic acids research}
+\bvolume{25}(\bissue{17}),
+\bfpage{3389}
+(\byear{1997})
+\end{barticle}
 \endbibitem
 
 \end{thebibliography}
@@ -217,155 +660,629 @@ The Mouse Tumor Biology Database.
 <refgrp>
 
 <bibl id="B1">
-  <title><p>BRCA1 protein products: functional motifs</p></title>
+  <title><p>{Initial sequencing and analysis of the human genome.}</p></title>
   <aug>
-    <au><snm>Koonin</snm><fnm>E V</fnm></au>
-    <au><snm>Altschul</snm><fnm>S F</fnm></au>
+    <au><snm>Lander</snm><fnm>E S</fnm></au>
+    <au><snm>Linton</snm><fnm>L M</fnm></au>
+    <au><snm>Birren</snm><fnm>B</fnm></au>
+    <au><snm>Nusbaum</snm><fnm>C</fnm></au>
+    <au><snm>Zody</snm><fnm>M C</fnm></au>
+    <au><snm>Baldwin</snm><fnm>J</fnm></au>
+    <au><snm>Devon</snm><fnm>K</fnm></au>
+    <au><snm>Dewar</snm><fnm>K</fnm></au>
+    <au><snm>Doyle</snm><fnm>M</fnm></au>
+    <au><snm>FitzHugh</snm><fnm>W</fnm></au>
+    <au><snm>Funke</snm><fnm>R</fnm></au>
+    <au><snm>Gage</snm><fnm>D</fnm></au>
+    <au><snm>Harris</snm><fnm>K</fnm></au>
+    <au><snm>Heaford</snm><fnm>A</fnm></au>
+    <au><snm>Howland</snm><fnm>J</fnm></au>
+    <au><snm>Kann</snm><fnm>L</fnm></au>
+    <au><snm>Lehoczky</snm><fnm>J</fnm></au>
+    <au><snm>LeVine</snm><fnm>R</fnm></au>
+    <au><snm>McEwan</snm><fnm>P</fnm></au>
+    <au><snm>McKernan</snm><fnm>K</fnm></au>
+    <au><snm>Meldrim</snm><fnm>J</fnm></au>
+    <au><snm>Mesirov</snm><fnm>J P</fnm></au>
+    <au><snm>Miranda</snm><fnm>C</fnm></au>
+    <au><snm>Morris</snm><fnm>W</fnm></au>
+    <au><snm>Naylor</snm><fnm>J</fnm></au>
+    <au><snm>Raymond</snm><fnm>C</fnm></au>
+    <au><snm>Rosetti</snm><fnm>M</fnm></au>
+    <au><snm>Santos</snm><fnm>R</fnm></au>
+    <au><snm>Sheridan</snm><fnm>A</fnm></au>
+    <au><snm>Sougnez</snm><fnm>C</fnm></au>
+    <au><snm>Stange Thomann</snm><fnm>N</fnm></au>
+    <au><snm>Stojanovic</snm><fnm>N</fnm></au>
+    <au><snm>Subramanian</snm><fnm>A</fnm></au>
+    <au><snm>Wyman</snm><fnm>D</fnm></au>
+    <au><snm>Rogers</snm><fnm>J</fnm></au>
+    <au><snm>Sulston</snm><fnm>J</fnm></au>
+    <au><snm>Ainscough</snm><fnm>R</fnm></au>
+    <au><snm>Beck</snm><fnm>S</fnm></au>
+    <au><snm>Bentley</snm><fnm>D</fnm></au>
+    <au><snm>Burton</snm><fnm>J</fnm></au>
+    <au><snm>Clee</snm><fnm>C</fnm></au>
+    <au><snm>Carter</snm><fnm>N</fnm></au>
+    <au><snm>Coulson</snm><fnm>A</fnm></au>
+    <au><snm>Deadman</snm><fnm>R</fnm></au>
+    <au><snm>Deloukas</snm><fnm>P</fnm></au>
+    <au><snm>Dunham</snm><fnm>A</fnm></au>
+    <au><snm>Dunham</snm><fnm>I</fnm></au>
+    <au><snm>Durbin</snm><fnm>R</fnm></au>
+    <au><snm>French</snm><fnm>L</fnm></au>
+    <au><snm>Grafham</snm><fnm>D</fnm></au>
+    <au><snm>Gregory</snm><fnm>S</fnm></au>
+    <au><snm>Hubbard</snm><fnm>T</fnm></au>
+    <au><snm>Humphray</snm><fnm>S</fnm></au>
+    <au><snm>Hunt</snm><fnm>A</fnm></au>
+    <au><snm>Jones</snm><fnm>M</fnm></au>
+    <au><snm>Lloyd</snm><fnm>C</fnm></au>
+    <au><snm>McMurray</snm><fnm>A</fnm></au>
+    <au><snm>Matthews</snm><fnm>L</fnm></au>
+    <au><snm>Mercer</snm><fnm>S</fnm></au>
+    <au><snm>Milne</snm><fnm>S</fnm></au>
+    <au><snm>Mullikin</snm><fnm>J C</fnm></au>
+    <au><snm>Mungall</snm><fnm>A</fnm></au>
+    <au><snm>Plumb</snm><fnm>R</fnm></au>
+    <au><snm>Ross</snm><fnm>M</fnm></au>
+    <au><snm>Shownkeen</snm><fnm>R</fnm></au>
+    <au><snm>Sims</snm><fnm>S</fnm></au>
+    <au><snm>Waterston</snm><fnm>R H</fnm></au>
+    <au><snm>Wilson</snm><fnm>R K</fnm></au>
+    <au><snm>Hillier</snm><fnm>L W</fnm></au>
+    <au><snm>McPherson</snm><fnm>J D</fnm></au>
+    <au><snm>Marra</snm><fnm>M A</fnm></au>
+    <au><snm>Mardis</snm><fnm>E R</fnm></au>
+    <au><snm>Fulton</snm><fnm>L A</fnm></au>
+    <au><snm>Chinwalla</snm><fnm>A T</fnm></au>
+    <au><snm>Pepin</snm><fnm>K H</fnm></au>
+    <au><snm>Gish</snm><fnm>W R</fnm></au>
+    <au><snm>Chissoe</snm><fnm>S L</fnm></au>
+    <au><snm>Wendl</snm><fnm>M C</fnm></au>
+    <au><snm>Delehaunty</snm><fnm>K D</fnm></au>
+    <au><snm>Miner</snm><fnm>T L</fnm></au>
+    <au><snm>Delehaunty</snm><fnm>A</fnm></au>
+    <au><snm>Kramer</snm><fnm>J B</fnm></au>
+    <au><snm>Cook</snm><fnm>L L</fnm></au>
+    <au><snm>Fulton</snm><fnm>R S</fnm></au>
+    <au><snm>Johnson</snm><fnm>D L</fnm></au>
+    <au><snm>Minx</snm><fnm>P J</fnm></au>
+    <au><snm>Clifton</snm><fnm>S W</fnm></au>
+    <au><snm>Hawkins</snm><fnm>T</fnm></au>
+    <au><snm>Branscomb</snm><fnm>E</fnm></au>
+    <au><snm>Predki</snm><fnm>P</fnm></au>
+    <au><snm>Richardson</snm><fnm>P</fnm></au>
+    <au><snm>Wenning</snm><fnm>S</fnm></au>
+    <au><snm>Slezak</snm><fnm>T</fnm></au>
+    <au><snm>Doggett</snm><fnm>N</fnm></au>
+    <au><snm>Cheng</snm><fnm>J F</fnm></au>
+    <au><snm>Olsen</snm><fnm>A</fnm></au>
+    <au><snm>Lucas</snm><fnm>S</fnm></au>
+    <au><snm>Elkin</snm><fnm>C</fnm></au>
+    <au><snm>Uberbacher</snm><fnm>E</fnm></au>
+    <au><snm>Frazier</snm><fnm>M</fnm></au>
+    <au><snm>Gibbs</snm><fnm>R A</fnm></au>
+    <au><snm>Muzny</snm><fnm>D M</fnm></au>
+    <au><snm>Scherer</snm><fnm>S E</fnm></au>
+    <au><snm>Bouck</snm><fnm>J B</fnm></au>
+    <au><snm>Sodergren</snm><fnm>E J</fnm></au>
+    <au><snm>Worley</snm><fnm>K C</fnm></au>
+    <au><snm>Rives</snm><fnm>C M</fnm></au>
+    <au><snm>Gorrell</snm><fnm>J H</fnm></au>
+    <au><snm>Metzker</snm><fnm>M L</fnm></au>
+    <au><snm>Naylor</snm><fnm>S L</fnm></au>
+    <au><snm>Kucherlapati</snm><fnm>R S</fnm></au>
+    <au><snm>Nelson</snm><fnm>D L</fnm></au>
+    <au><snm>Weinstock</snm><fnm>G M</fnm></au>
+    <au><snm>Sakaki</snm><fnm>Y</fnm></au>
+    <au><snm>Fujiyama</snm><fnm>A</fnm></au>
+    <au><snm>Hattori</snm><fnm>M</fnm></au>
+    <au><snm>Yada</snm><fnm>T</fnm></au>
+    <au><snm>Toyoda</snm><fnm>A</fnm></au>
+    <au><snm>Itoh</snm><fnm>T</fnm></au>
+    <au><snm>Kawagoe</snm><fnm>C</fnm></au>
+    <au><snm>Watanabe</snm><fnm>H</fnm></au>
+    <au><snm>Totoki</snm><fnm>Y</fnm></au>
+    <au><snm>Taylor</snm><fnm>T</fnm></au>
+    <au><snm>Weissenbach</snm><fnm>J</fnm></au>
+    <au><snm>Heilig</snm><fnm>R</fnm></au>
+    <au><snm>Saurin</snm><fnm>W</fnm></au>
+    <au><snm>Artiguenave</snm><fnm>F</fnm></au>
+    <au><snm>Brottier</snm><fnm>P</fnm></au>
+    <au><snm>Bruls</snm><fnm>T</fnm></au>
+    <au><snm>Pelletier</snm><fnm>E</fnm></au>
+    <au><snm>Robert</snm><fnm>C</fnm></au>
+    <au><snm>Wincker</snm><fnm>P</fnm></au>
+    <au><snm>Smith</snm><fnm>D R</fnm></au>
+    <au><snm>Doucette Stamm</snm><fnm>L</fnm></au>
+    <au><snm>Rubenfield</snm><fnm>M</fnm></au>
+    <au><snm>Weinstock</snm><fnm>K</fnm></au>
+    <au><snm>Lee</snm><fnm>H M</fnm></au>
+    <au><snm>Dubois</snm><fnm>J</fnm></au>
+    <au><snm>Rosenthal</snm><fnm>A</fnm></au>
+    <au><snm>Platzer</snm><fnm>M</fnm></au>
+    <au><snm>Nyakatura</snm><fnm>G</fnm></au>
+    <au><snm>Taudien</snm><fnm>S</fnm></au>
+    <au><snm>Rump</snm><fnm>A</fnm></au>
+    <au><snm>Yang</snm><fnm>H</fnm></au>
+    <au><snm>Yu</snm><fnm>J</fnm></au>
+    <au><snm>Wang</snm><fnm>J</fnm></au>
+    <au><snm>Huang</snm><fnm>G</fnm></au>
+    <au><snm>Gu</snm><fnm>J</fnm></au>
+    <au><snm>Hood</snm><fnm>L</fnm></au>
+    <au><snm>Rowen</snm><fnm>L</fnm></au>
+    <au><snm>Madan</snm><fnm>A</fnm></au>
+    <au><snm>Qin</snm><fnm>S</fnm></au>
+    <au><snm>Davis</snm><fnm>R W</fnm></au>
+    <au><snm>Federspiel</snm><fnm>N A</fnm></au>
+    <au><snm>Abola</snm><fnm>A P</fnm></au>
+    <au><snm>Proctor</snm><fnm>M J</fnm></au>
+    <au><snm>Myers</snm><fnm>R M</fnm></au>
+    <au><snm>Schmutz</snm><fnm>J</fnm></au>
+    <au><snm>Dickson</snm><fnm>M</fnm></au>
+    <au><snm>Grimwood</snm><fnm>J</fnm></au>
+    <au><snm>Cox</snm><fnm>D R</fnm></au>
+    <au><snm>Olson</snm><fnm>M V</fnm></au>
+    <au><snm>Kaul</snm><fnm>R</fnm></au>
+    <au><snm>Shimizu</snm><fnm>N</fnm></au>
+    <au><snm>Kawasaki</snm><fnm>K</fnm></au>
+    <au><snm>Minoshima</snm><fnm>S</fnm></au>
+    <au><snm>Evans</snm><fnm>G A</fnm></au>
+    <au><snm>Athanasiou</snm><fnm>M</fnm></au>
+    <au><snm>Schultz</snm><fnm>R</fnm></au>
+    <au><snm>Roe</snm><fnm>B A</fnm></au>
+    <au><snm>Chen</snm><fnm>F</fnm></au>
+    <au><snm>Pan</snm><fnm>H</fnm></au>
+    <au><snm>Ramser</snm><fnm>J</fnm></au>
+    <au><snm>Lehrach</snm><fnm>H</fnm></au>
+    <au><snm>Reinhardt</snm><fnm>R</fnm></au>
+    <au><snm>McCombie</snm><fnm>W R</fnm></au>
+    <au><snm>La Bastide</snm><fnm>M</fnm></au>
+    <au><snm>Dedhia</snm><fnm>N</fnm></au>
+    <au><snm>Bl{\"o}cker</snm><fnm>H</fnm></au>
+    <au><snm>Hornischer</snm><fnm>K</fnm></au>
+    <au><snm>Nordsiek</snm><fnm>G</fnm></au>
+    <au><snm>Agarwala</snm><fnm>R</fnm></au>
+    <au><snm>Aravind</snm><fnm>L</fnm></au>
+    <au><snm>Bailey</snm><fnm>J A</fnm></au>
+    <au><snm>Bateman</snm><fnm>A</fnm></au>
+    <au><snm>Batzoglou</snm><fnm>S</fnm></au>
+    <au><snm>Birney</snm><fnm>E</fnm></au>
     <au><snm>Bork</snm><fnm>P</fnm></au>
+    <au><snm>Brown</snm><fnm>D G</fnm></au>
+    <au><snm>Burge</snm><fnm>C B</fnm></au>
+    <au><snm>Cerutti</snm><fnm>L</fnm></au>
+    <au><snm>Chen</snm><fnm>H C</fnm></au>
+    <au><snm>Church</snm><fnm>D</fnm></au>
+    <au><snm>Clamp</snm><fnm>M</fnm></au>
+    <au><snm>Copley</snm><fnm>R R</fnm></au>
+    <au><snm>Doerks</snm><fnm>T</fnm></au>
+    <au><snm>Eddy</snm><fnm>S R</fnm></au>
+    <au><snm>Eichler</snm><fnm>E E</fnm></au>
+    <au><snm>Furey</snm><fnm>T S</fnm></au>
+    <au><snm>Galagan</snm><fnm>J</fnm></au>
+    <au><snm>Gilbert</snm><fnm>J G</fnm></au>
+    <au><snm>Harmon</snm><fnm>C</fnm></au>
+    <au><snm>Hayashizaki</snm><fnm>Y</fnm></au>
+    <au><snm>Haussler</snm><fnm>D</fnm></au>
+    <au><snm>Hermjakob</snm><fnm>H</fnm></au>
+    <au><snm>Hokamp</snm><fnm>K</fnm></au>
+    <au><snm>Jang</snm><fnm>W</fnm></au>
+    <au><snm>Johnson</snm><fnm>L S</fnm></au>
+    <au><snm>Jones</snm><fnm>T A</fnm></au>
+    <au><snm>Kasif</snm><fnm>S</fnm></au>
+    <au><snm>Kaspryzk</snm><fnm>A</fnm></au>
+    <au><snm>Kennedy</snm><fnm>S</fnm></au>
+    <au><snm>Kent</snm><fnm>W J</fnm></au>
+    <au><snm>Kitts</snm><fnm>P</fnm></au>
+    <au><snm>Koonin</snm><fnm>E V</fnm></au>
+    <au><snm>Korf</snm><fnm>I</fnm></au>
+    <au><snm>Kulp</snm><fnm>D</fnm></au>
+    <au><snm>Lancet</snm><fnm>D</fnm></au>
+    <au><snm>Lowe</snm><fnm>T M</fnm></au>
+    <au><snm>McLysaght</snm><fnm>A</fnm></au>
+    <au><snm>Mikkelsen</snm><fnm>T</fnm></au>
+    <au><snm>Moran</snm><fnm>J V</fnm></au>
+    <au><snm>Mulder</snm><fnm>N</fnm></au>
+    <au><snm>Pollara</snm><fnm>V J</fnm></au>
+    <au><snm>Ponting</snm><fnm>C P</fnm></au>
+    <au><snm>Schuler</snm><fnm>G</fnm></au>
+    <au><snm>Schultz</snm><fnm>J</fnm></au>
+    <au><snm>Slater</snm><fnm>G</fnm></au>
+    <au><snm>Smit</snm><fnm>A F</fnm></au>
+    <au><snm>Stupka</snm><fnm>E</fnm></au>
+    <au><snm>Szustakowski</snm><fnm>J</fnm></au>
+    <au><snm>Thierry Mieg</snm><fnm>D</fnm></au>
+    <au><snm>Thierry Mieg</snm><fnm>J</fnm></au>
+    <au><snm>Wagner</snm><fnm>L</fnm></au>
+    <au><snm>Wallis</snm><fnm>J</fnm></au>
+    <au><snm>Wheeler</snm><fnm>R</fnm></au>
+    <au><snm>Williams</snm><fnm>A</fnm></au>
+    <au><snm>Wolf</snm><fnm>Y I</fnm></au>
+    <au><snm>Wolfe</snm><fnm>K H</fnm></au>
+    <au><snm>Yang</snm><fnm>S P</fnm></au>
+    <au><snm>Yeh</snm><fnm>R F</fnm></au>
+    <au><snm>Collins</snm><fnm>F</fnm></au>
+    <au><snm>Guyer</snm><fnm>M S</fnm></au>
+    <au><snm>Peterson</snm><fnm>J</fnm></au>
+    <au><snm>Felsenfeld</snm><fnm>A</fnm></au>
+    <au><snm>Wetterstrand</snm><fnm>K A</fnm></au>
+    <au><snm>Patrinos</snm><fnm>A</fnm></au>
+    <au><snm>Morgan</snm><fnm>M J</fnm></au>
+    <au><snm>Jong</snm><fnm>P</fnm></au>
+    <au><snm>Catanese</snm><fnm>J J</fnm></au>
+    <au><snm>Osoegawa</snm><fnm>K</fnm></au>
+    <au><snm>Shizuya</snm><fnm>H</fnm></au>
+    <au><snm>Choi</snm><fnm>S</fnm></au>
+    <au><snm>Chen</snm><fnm>Y J</fnm></au>
+    <au><snm>Szustakowki</snm><fnm>J</fnm></au>
+    <au><snm>Consortium</snm><fnm>IHGS</fnm></au>
   </aug>
-  <source>Nat Genet</source>
-  <pubdate>1996</pubdate>
-  <volume>13</volume>
-  <fpage>266</fpage>
-  <lpage>267</lpage>
+  <source>Nature</source>
+  <pubdate>2001</pubdate>
+  <volume>409</volume>
+  <issue>6822</issue>
+  <fpage>860</fpage>
+  <lpage>-921</lpage>
 </bibl>
 
 <bibl id="B2">
-  <title><p>Clinical aspects of exhaled nitric oxide</p></title>
+  <title><p>{Identification and measurement of neighbor-dependent nucleotide
+  substitution processes}</p></title>
   <aug>
-    <au><snm>Kharitonov</snm><fnm>S A</fnm></au>
-    <au><snm>Barnes</snm><fnm>P J</fnm></au>
+    <au><snm>Arndt</snm><fnm>PF</fnm></au>
+    <au><snm>Hwa</snm><fnm>T</fnm></au>
   </aug>
-  <source>Eur Respir J</source>
-  <inpress />
+  <source>Bioinformatics (Oxford, England)</source>
+  <pubdate>2005</pubdate>
+  <volume>21</volume>
+  <issue>10</issue>
+  <fpage>2322</fpage>
+  <lpage>-2328</lpage>
 </bibl>
 
 <bibl id="B3">
-  <title><p>Mesenchymal cells, stromal derived factor-1 and rheumatoid
-  arthritis [abstract]</p></title>
+  <title><p>{Exponential decay of GC content detected by strand-symmetric
+  substitution rates influences the evolution of isochore
+  structure.}</p></title>
   <aug>
-    <au><snm>Zvaifler</snm><fnm>N J</fnm></au>
-    <au><snm>Burger</snm><fnm>J A</fnm></au>
-    <au><snm>Marinova Mutafchieva</snm><fnm>L</fnm></au>
-    <au><snm>Taylor</snm><fnm>P</fnm></au>
-    <au><snm>Maini</snm><fnm>R N</fnm></au>
+    <au><snm>Karro</snm><fnm>J E</fnm></au>
+    <au><snm>Peifer</snm><fnm>M</fnm></au>
+    <au><snm>Hardison</snm><fnm>R C</fnm></au>
+    <au><snm>Kollmann</snm><fnm>M</fnm></au>
+    <au><snm>Gr{\"u}nberg</snm><fnm>H H</fnm></au>
   </aug>
-  <source>Arthritis Rheum</source>
-  <pubdate>1999</pubdate>
-  <volume>42</volume>
-  <fpage>s250</fpage>
+  <source>Molecular Biology and Evolution</source>
+  <pubdate>2008</pubdate>
+  <volume>25</volume>
+  <issue>2</issue>
+  <fpage>362</fpage>
+  <lpage>-374</lpage>
 </bibl>
 
 <bibl id="B4">
-  <title><p>Zeolites and synthetic mechanisms</p></title>
+  <title><p>{Transcription-Induced Mutational Strand Bias and Its Effect on
+  Substitution Rates in Human Genes}</p></title>
   <aug>
-    <au><snm>Jones</snm><fnm>X</fnm></au>
+    <au><snm>Mugal</snm><fnm>C F</fnm></au>
+    <au><snm>Gr{\"u}nberg</snm><fnm>H H</fnm></au>
+    <au><snm>Peifer</snm><fnm>M</fnm></au>
   </aug>
-  <source>Proceedings of the First National Conference on Porous Sieves: 27-30
-  June 1996; Baltimore</source>
-  <editor>Y Smith</editor>
-  <pubdate>1996</pubdate>
-  <fpage>16</fpage>
-  <lpage>27</lpage>
+  <source>Molecular Biology and Evolution</source>
+  <pubdate>2008</pubdate>
+  <volume>26</volume>
+  <issue>1</issue>
+  <fpage>131</fpage>
+  <lpage>-142</lpage>
 </bibl>
 
 <bibl id="B5">
-  <title><p>Origin of Eukaryotic Cells</p></title>
+  <title><p>{Covariation in Frequencies of Substitution, Deletion,
+  Transposition, and Recombination During Eutherian Evolution}</p></title>
   <aug>
-    <au><snm>Margulis</snm><fnm>L</fnm></au>
+    <au><snm>Hardison</snm><fnm>R C</fnm></au>
   </aug>
-  <publisher>New Haven: Yale University Press</publisher>
-  <pubdate>1970</pubdate>
+  <source>Genome research</source>
+  <pubdate>2003</pubdate>
+  <volume>13</volume>
+  <issue>1</issue>
+  <fpage>13</fpage>
+  <lpage>-26</lpage>
 </bibl>
 
 <bibl id="B6">
-  <title><p>Analysis and assessment of ab initio three-dimensional prediction,
-  secondary structure, and contacts prediction</p></title>
+  <title><p>{Overview of repeat annotation and de novo repeat
+  identification.}</p></title>
   <aug>
-    <au><snm>Orengo</snm><fnm>C A</fnm></au>
-    <au><snm>Bray</snm><fnm>J E</fnm></au>
-    <au><snm>Hubbard</snm><fnm>T</fnm></au>
-    <au><snm>LoConte</snm><fnm>L</fnm></au>
-    <au><snm>Sillitoe</snm><fnm>I</fnm></au>
+    <au><snm>Jiang</snm><fnm>N</fnm></au>
   </aug>
-  <source>Proteins</source>
-  <pubdate>1999</pubdate>
-  <volume>Suppl 3</volume>
-  <fpage>149</fpage>
-  <lpage>170</lpage>
+  <source>Methods in molecular biology (Clifton, N.J.)</source>
+  <pubdate>2013</pubdate>
+  <volume>1057</volume>
+  <issue>Chapter 20</issue>
+  <fpage>275</fpage>
+  <lpage>-287</lpage>
 </bibl>
 
 <bibl id="B7">
-  <title><p>From prey via endosymbiont to plastids: comparative studies in
-  dinoflagellates</p></title>
+  <title><p>{RepeatMasker Open 4.0}</p></title>
   <aug>
-    <au><snm>Schnepf</snm><fnm>E</fnm></au>
+    <au><snm>Smit</snm><fnm>A F</fnm></au>
+    <au><snm>Hubley</snm><fnm>R</fnm></au>
+    <au><snm>Green</snm><fnm>P</fnm></au>
   </aug>
-  <source>Origins of Plastids</source>
-  <publisher>New York: Chapman and Hall</publisher>
-  <editor>R A Lewin</editor>
-  <edition>2</edition>
-  <pubdate>1993</pubdate>
-  <volume>2</volume>
-  <fpage>53</fpage>
-  <lpage>76</lpage>
 </bibl>
 
 <bibl id="B8">
-  <title><p>Innovative oncology</p></title>
-  <source>Breast Cancer Res</source>
-  <editor>B Ponder and S Johnston and L Chodosh</editor>
-  <pubdate>1998</pubdate>
-  <volume>10</volume>
-  <fpage>1</fpage>
-  <lpage>72</lpage>
+  <title><p>{nhmmer: DNA homology search with profile HMMs.}</p></title>
+  <aug>
+    <au><snm>Wheeler</snm><fnm>TJ</fnm></au>
+    <au><snm>Eddy</snm><fnm>SR</fnm></au>
+  </aug>
+  <source>Bioinformatics (Oxford, England)</source>
+  <pubdate>2013</pubdate>
+  <volume>29</volume>
+  <issue>19</issue>
+  <fpage>2487</fpage>
+  <lpage>-2489</lpage>
 </bibl>
 
 <bibl id="B9">
-  <title><p>Proceedings of the First National Conference on Porous Sieves:
-  27-30 June 1996; Baltimore</p></title>
-  <publisher>Stoneham: Butterworth-Heinemann</publisher>
-  <editor>Y Smith</editor>
-  <pubdate>1996</pubdate>
+  <title><p>{Hogfather: A Novel of Discworld}</p></title>
+  <aug>
+    <au><snm>Pratchett</snm><fnm>T</fnm></au>
+  </aug>
+  <publisher>New York: HarperPrism</publisher>
 </bibl>
 
 <bibl id="B10">
-  <title><p>The alveloar macrophage</p></title>
+  <title><p>{Automated de novo identification of repeat sequence families in
+  sequenced genomes}</p></title>
   <aug>
-    <au><snm>Hunninghake</snm><fnm>G W</fnm></au>
-    <au><snm>Gadek</snm><fnm>J E</fnm></au>
+    <au><snm>Bao</snm><fnm>Z</fnm></au>
+    <au><snm>Eddy</snm><fnm>SR</fnm></au>
   </aug>
-  <source>Cultured Human Cells and Tissues</source>
-  <publisher>New York: Academic Press</publisher>
-  <editor>T J R Harris</editor>
-  <pubdate>1995</pubdate>
-  <fpage>54</fpage>
-  <lpage>56</lpage>
-  <note>Stoner G (Series Editor): Methods and Perspectives in Cell Biology, vol
-  1</note>
+  <source>Genome research</source>
+  <pubdate>2002</pubdate>
+  <volume>12</volume>
+  <issue>8</issue>
+  <fpage>1269</fpage>
+  <lpage>-1276</lpage>
 </bibl>
 
 <bibl id="B11">
-  <title><p>Annual Report</p></title>
-  <aug><au><cnm>Advisory Committee on Genetic Modification</cnm></au></aug>
-  <publisher>London</publisher>
-  <pubdate>1999</pubdate>
+  <title><p>{PILER: identification and classification of genomic
+  repeats.}</p></title>
+  <aug>
+    <au><snm>Edgar</snm><fnm>RC</fnm></au>
+    <au><snm>Myers</snm><fnm>EW</fnm></au>
+  </aug>
+  <source>Bioinformatics (Oxford, England)</source>
+  <pubdate>2005</pubdate>
+  <volume>21 Suppl 1</volume>
+  <issue>Suppl 1</issue>
+  <fpage>i152</fpage>
+  <lpage>-8</lpage>
 </bibl>
 
 <bibl id="B12">
-  <title><p>Wrappers for performance enhancement and obvious decision
-  graphs</p></title>
+  <title><p>{WU-Blast2 server at the European Bioinformatics
+  Institute.}</p></title>
   <aug>
-    <au><snm>Kohavi</snm><fnm>R</fnm></au>
+    <au><snm>Lopez</snm><fnm>R</fnm></au>
+    <au><snm>Silventoinen</snm><fnm>V</fnm></au>
+    <au><snm>Robinson</snm><fnm>S</fnm></au>
+    <au><snm>Kibria</snm><fnm>A</fnm></au>
+    <au><snm>Gish</snm><fnm>W</fnm></au>
   </aug>
-  <source>PhD thesis</source>
-  <publisher>Stanford University, Computer Science Department</publisher>
-  <pubdate>1995</pubdate>
+  <source>Nucleic acids research</source>
+  <pubdate>2003</pubdate>
+  <volume>31</volume>
+  <issue>13</issue>
+  <fpage>3795</fpage>
+  <lpage>-3798</lpage>
 </bibl>
 
 <bibl id="B13">
-  <title><p>The Mouse Tumor Biology Database</p></title>
-  <url>http://tumor.informatics.jax.org/cancer\_links.html</url>
+  <title><p>{Improved pairwise alignment of genomic DNA}</p></title>
+  <aug>
+    <au><snm>Harris</snm><fnm>RS</fnm></au>
+  </aug>
+  <source>PhD thesis</source>
+  <publisher>The Pennsylvania State University</publisher>
+  <pubdate>2007</pubdate>
+</bibl>
+
+<bibl id="B14">
+  <title><p>{ReAS: Recovery of ancestral sequences for transposable elements
+  from the unassembled reads of a whole genome shotgun.}</p></title>
+  <aug>
+    <au><snm>Li</snm><fnm>R</fnm></au>
+    <au><snm>Ye</snm><fnm>J</fnm></au>
+    <au><snm>Li</snm><fnm>S</fnm></au>
+    <au><snm>Wang</snm><fnm>J</fnm></au>
+    <au><snm>Han</snm><fnm>Y</fnm></au>
+    <au><snm>Ye</snm><fnm>C</fnm></au>
+    <au><snm>Wang</snm><fnm>J</fnm></au>
+    <au><snm>Yang</snm><fnm>H</fnm></au>
+    <au><snm>Yu</snm><fnm>J</fnm></au>
+    <au><snm>Wong</snm><fnm>GKS</fnm></au>
+    <au><snm>Wang</snm><fnm>J</fnm></au>
+  </aug>
+  <source>PLoS computational biology</source>
+  <pubdate>2005</pubdate>
+  <volume>1</volume>
+  <issue>4</issue>
+  <fpage>e43</fpage>
+</bibl>
+
+<bibl id="B15">
+  <title><p>{De novo identification of repeat families in large
+  genomes.}</p></title>
+  <aug>
+    <au><snm>Price</snm><fnm>AL</fnm></au>
+    <au><snm>Jones</snm><fnm>NC</fnm></au>
+    <au><snm>Pevzner</snm><fnm>PA</fnm></au>
+  </aug>
+  <source>Bioinformatics (Oxford, England)</source>
+  <pubdate>2005</pubdate>
+  <volume>21 Suppl 1</volume>
+  <issue>Suppl 1</issue>
+  <fpage>i351</fpage>
+  <lpage>-8</lpage>
+</bibl>
+
+<bibl id="B16">
+  <title><p>{De novo repeat classification and fragment assembly.}</p></title>
+  <aug>
+    <au><snm>Pevzner</snm><fnm>PA</fnm></au>
+    <au><snm>Pevzner</snm><fnm>PA</fnm></au>
+    <au><snm>Tang</snm><fnm>H</fnm></au>
+    <au><snm>Tesler</snm><fnm>G</fnm></au>
+  </aug>
+  <source>Genome research</source>
+  <pubdate>2004</pubdate>
+  <volume>14</volume>
+  <issue>9</issue>
+  <fpage>1786</fpage>
+  <lpage>-1796</lpage>
+</bibl>
+
+<bibl id="B17">
+  <title><p>{Identifying repeat domains in large genomes}</p></title>
+  <aug>
+    <au><snm>Zhi</snm><fnm>D</fnm></au>
+    <au><snm>Raphael</snm><fnm>BJ</fnm></au>
+    <au><snm>Price</snm><fnm>AL</fnm></au>
+    <au><snm>Tang</snm><fnm>H</fnm></au>
+    <au><snm>Pevzner</snm><fnm>PA</fnm></au>
+  </aug>
+  <source>Genome biology</source>
+  <pubdate>2006</pubdate>
+  <volume>7</volume>
+  <issue>1</issue>
+  <fpage>R7</fpage>
+</bibl>
+
+<bibl id="B18">
+  <title><p>{Empirical comparison of ab initio repeat finding
+  programs.}</p></title>
+  <aug>
+    <au><snm>Saha</snm><fnm>S</fnm></au>
+    <au><snm>Bridges</snm><fnm>S</fnm></au>
+    <au><snm>Magbanua</snm><fnm>ZV</fnm></au>
+    <au><snm>Peterson</snm><fnm>DG</fnm></au>
+  </aug>
+  <source>Nucleic acids research</source>
+  <pubdate>2008</pubdate>
+  <volume>36</volume>
+  <issue>7</issue>
+  <fpage>2284</fpage>
+  <lpage>-2294</lpage>
+</bibl>
+
+<bibl id="B19">
+  <title><p>{Discovery of repetitive patterns in DNA with accurate
+  boundaries}</p></title>
+  <aug>
+    <au><snm>Zheng</snm><fnm>J</fnm></au>
+    <au><snm>Lonardi</snm><fnm>S</fnm></au>
+  </aug>
+  <publisher>IEEE</publisher>
+  <pubdate>2005</pubdate>
+</bibl>
+
+<bibl id="B20">
+  <title><p>{Using suffix tree to discover complex repetitive patterns in DNA
+  sequences.}</p></title>
+  <aug>
+    <au><snm>He</snm><fnm>D</fnm></au>
+  </aug>
+  <source>Conference proceedings : ... Annual International Conference of the
+  IEEE Engineering in Medicine and Biology Society. IEEE Engineering in
+  Medicine and Biology Society. Conference</source>
+  <pubdate>2006</pubdate>
+  <volume>1</volume>
+  <fpage>3474</fpage>
+  <lpage>-3477</lpage>
+</bibl>
+
+<bibl id="B21">
+  <title><p>{An Adaptive Suffix Tree Based Algorithm for Repeats Recognition in
+  a DNA Sequence}</p></title>
+  <aug>
+    <au><snm>Huo</snm><fnm>H</fnm></au>
+    <au><snm>Wang</snm><fnm>X</fnm></au>
+    <au><snm>Stojkovic</snm><fnm>V</fnm></au>
+  </aug>
+  <source>2009 International Joint Conference on Bioinformatics, Systems
+  Biology and Intelligent Computing</source>
+  <publisher>IEEE</publisher>
+  <pubdate>2009</pubdate>
+  <fpage>181</fpage>
+  <lpage>-184</lpage>
+</bibl>
+
+<bibl id="B22">
+  <title><p>{Patternhunter II: highly sensitive and fast homology
+  search.}</p></title>
+  <aug>
+    <au><snm>Li</snm><fnm>M</fnm></au>
+    <au><snm>Ma</snm><fnm>B</fnm></au>
+    <au><snm>Kisman</snm><fnm>D</fnm></au>
+    <au><snm>Tromp</snm><fnm>J</fnm></au>
+  </aug>
+  <source>Journal of bioinformatics and computational biology</source>
+  <pubdate>2004</pubdate>
+  <volume>2</volume>
+  <issue>3</issue>
+  <fpage>417</fpage>
+  <lpage>-439</lpage>
+</bibl>
+
+<bibl id="B23">
+  <title><p>{RAIDER: Rapid Ab Initio Detection of Elementary
+  Repeats}</p></title>
+  <aug>
+    <au><snm>Figueroa</snm><fnm>ND</fnm></au>
+  </aug>
+  <pubdate>2014</pubdate>
+</bibl>
+
+<bibl id="B24">
+  <title><p>{RAIDER: Rapid Ab Initio Detection of Elementary
+  Repeats}</p></title>
+  <aug>
+    <au><snm>Figueroa</snm><fnm>N</fnm></au>
+    <au><snm>Liu</snm><fnm>X</fnm></au>
+    <au><snm>Wang</snm><fnm>J</fnm></au>
+    <au><snm>Karro</snm><fnm>J</fnm></au>
+  </aug>
+  <source>Advances in Bioinformatics and Computational Biology</source>
+  <publisher>Cham: Springer International Publishing</publisher>
+  <pubdate>2013</pubdate>
+  <fpage>170</fpage>
+  <lpage>-180</lpage>
+</bibl>
+
+<bibl id="B25">
+  <title><p>{Gapped BLAST and PSI-BLAST: a new generation of protein database
+  search programs}</p></title>
+  <aug>
+    <au><snm>Altschul</snm><fnm>SF</fnm></au>
+    <au><snm>Madden</snm><fnm>TL</fnm></au>
+    <au><snm>Schaffer</snm><fnm>AA</fnm></au>
+    <au><snm>Zhang</snm><fnm>J</fnm></au>
+    <au><snm>Zhang</snm><fnm>Z</fnm></au>
+    <au><snm>Miller</snm><fnm>W</fnm></au>
+    <au><snm>Lipman</snm><fnm>DJ</fnm></au>
+  </aug>
+  <source>Nucleic acids research</source>
+  <pubdate>1997</pubdate>
+  <volume>25</volume>
+  <issue>17</issue>
+  <fpage>3389</fpage>
 </bibl>
 
 </refgrp>
