@@ -180,7 +180,7 @@ def parse_params(args):
     raider2_argument.add_argument('--na', '--no_family_array', dest="family_array", action="store_false", help="Disable family array in Raider2", default=True)
     raider2_argument.add_argument('--ex', '--excise', dest="excising", action="store_true", help="Enable excising in RAIDER2", default=False)
     raider2_argument.add_argument('--no', '--no_overlaps', dest="overlaps", action="store_false", help="Do not require overlaps in RAIDER2", default=True)
-    raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", "Enable alternative tie ups", default=False)
+    raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", help="Enable alternative tie ups", default=False)
 
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -456,12 +456,16 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, age, age_only):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
 
     input_base = file_base(input_file).rstrip(".fa")
+    raider2_dir += "NO_FA." if not family_array else "FA."
+    raider2_dir += "EXC." if excise else "NO_EXC."
+    raider2_dir += "NO_OV." if not overlaps else "OV."
+    raider2_dir += "TU" if tieup else "NO_TU"
     output_dir = raider2_dir + "/" + input_base.upper() + ".s" + str(seed_num)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -471,9 +475,17 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
         seed_string = "-s " + " -s ".join(seed)
     else:
         seed_string = "-s {seed}".format(seed = seed)
-    
-    
-    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
+
+    opt_str = ""
+    if not age_only:
+        opt_str += "--na" if not family_array else ""
+        opt_str += "--e" if excise else ""
+        opt_str += "--no" if not overlaps else ""
+        opt_str += "--t" if tieup else ""
+    else:
+        opt_str += "--age " + str(age) 
+
+    cmd1 = "{raider2} -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -491,8 +503,8 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
-    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2." + str(age) + ".batch"
-    job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2.%d" % age) , input=re.sub("hg18.","",input_base), seed=seed_num)
+    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2.batch"
+    job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
                       output_location = output_dir, walltime= time_limit)
@@ -504,7 +516,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
 
     p.tool_resources = [0]*4
 
-    p.description = "raider2.{version}".format(version = age)
+    p.description = "raider2"
     p.tools_resources = [0]*4
     p.seed = seed
     p.seed_num = seed_num
@@ -1347,25 +1359,31 @@ if __name__ == "__main__":
                      for file in file_list]
         
         if args.run_raider2:
-            raider2_ages = [0,1,2]
+            #raider2_ages = [0,1,2]
+            
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-            if args.all_ages:
-                if not args.multi_seed:
-                    jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
-                                for file in file_list]
-                else:
-                    jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file,
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for curr_age in raider2_ages
-                                for file in file_list]
-            else:
-                if not args.multi_seed:
-                    jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for i,seed in enumerate(seed_list)
-                                for file in file_list]
-                else:
-                    jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for file in file_list]
+            
+            
+            jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
+                                 raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
+                                 overlaps = args.overlaps, tieup = args.tieup, age=args.age, age_only=True) for i,seed in enumerate(seed_list) for file in file_list]
+            #if args.all_ages:
+            #    if not args.multi_seed:
+            #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
+            #                    for file in file_list]
+            #    else:
+            #        jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file,
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for curr_age in raider2_ages
+            #                    for file in file_list]
+            #else:
+            #    if not args.multi_seed:
+            #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for i,seed in enumerate(seed_list)
+            #                    for file in file_list]
+            #    else:
+            #        jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for file in file_list]
 
         if args.run_repscout:
             if args.rs_filters == 3:
@@ -1440,10 +1458,8 @@ if __name__ == "__main__":
 
     
     job_dic['raider'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2'].sort(key = lambda x: x.seed_num)
     job_dic['araider'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.0'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.1'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.2'].sort(key = lambda x: x.seed_num)
     
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
@@ -1457,7 +1473,7 @@ if __name__ == "__main__":
     
     ######
     # Create copy of seed file (if RAIDER is being used)
-    if job_dic['raider'] or job_dic['araider'] or job_dic['raider2.0'] or job_dic['raider2.1'] or job_dic['raider2.2']:
+    if job_dic['raider'] or job_dic['araider'] or job_dic['raider2']:
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
