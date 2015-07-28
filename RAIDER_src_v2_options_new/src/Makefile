@@ -1,6 +1,6 @@
 # Nathan Figueroa
 
-CC = g++ -std=c++11
+CC = g++ -std=c++11 -Wno-deprecated-declarations
 
 CXXFLAGS+=-Wall -W -O3 -DNDEBUG
 
