@@ -137,11 +137,11 @@ def parse_params(args):
     parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('--R2', '--raider2_on', dest = 'run_raider2', action = 'store_true', help = 'Turn RAIDERV2 on', default = False)
     parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
-    parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAINDER on', default = False)
+    parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
     parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
-    parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tolls on (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tolls on except araider (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tools on (overide all other tool arguments)', default = False)
+    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tools on except araider (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
@@ -176,13 +176,17 @@ def parse_params(args):
     raider2_argument = parser.add_argument_group("RAIDER2 parameters")
     raider2_argument.add_argument('--age', type = int, help="Use older version of raider2", default=1) 
     raider2_argument.add_argument('--aa', '--all_ages', dest="all_ages", action="store_true", help="Run all ages of raider2", default=False) # type = int, help="Use older version of raider", default=0)
-    raider2_argument.add_argument('--multi', '--multi_seed', dest="multi_seed", action="store_true", help="Run all seeds in seed file concurrently",default=False)
+    #raider2_argument.add_argument('--multi', '--multi_seed', dest="multi_seed", action="store_true", help="Run all seeds in seed file concurrently",default=False)
+    raider2_argument.add_argument('--na', '--no_family_array', dest="family_array", action="store_false", help="Disable family array in Raider2", default=True)
+    raider2_argument.add_argument('--ex', '--excise', dest="excising", action="store_true", help="Enable excising in RAIDER2", default=False)
+    raider2_argument.add_argument('--no', '--no_overlaps', dest="overlaps", action="store_false", help="Do not require overlaps in RAIDER2", default=True)
+    raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", help="Enable alternative tie ups", default=False)
 
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
-    raider_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
-    raider_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat length for repscout.", default = 3)
-    raider_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 3)
+    repscout_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
+    repscout_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat length for repscout.", default = 3)
+    repscout_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 3)
     #raider_argument.add_argument('--uff', '--use_first_filter', dest = "use_first_filter", action = "store_true", help = "Use the first RepScout filter", default = True)
     #raider_argument.add_argument('--usf', '--use_second_filter', dest = "use_second_filter", action = "store_true", help = "Use the second RepScout filter", default = True)
 
@@ -357,11 +361,9 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     batch_name = data_dir + "/" + output_file + ".sim.batch"
     job_name = "simulation.%d" % (get_job_index("simulation"))
     
-    #print("Sim batch: %s\n" % (batch_name))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
                       output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
-    #p.submit(preserve=True)
     if not timing_jobs:
         p.submit(preserve=True)
     else:
@@ -373,12 +375,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     p.index = file_index
     return p
 
-# def run_raider_chrom(p, seed, f, m, output_dir):
-#    """Given the pbs object used to start simulated chromosome job as well as 
-#    raider parameters, wait until the job is done and then call run_raider 
-#    on the newly generated chromosome output file"""
-#    p.wait()
-#    return run_raider(seed, f, m, p.chrom_output, output_dir, p.curr_dir)
+
 def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
@@ -405,12 +402,10 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
 
     batch_name = raider_dir + "/" + input_base + ".raider.batch"
     job_name = "R.{input}.{seed}.{num}".format( num = get_job_index("raider") , input=re.sub("hg18.","",input_base), seed=seed_num)
-    #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
                       output_location = output_dir, walltime = time_limit, mem = mem, #ppn = 8 if mem else 1, 
                       arch_type = ['n09'])
-    #p.submit(preserve=True)
     if not timing_jobs:
         p.submit(preserve=True)
     else:
@@ -454,7 +449,6 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
 
     p.description = "composites.finder"
     p.elementsFile = elements_file
@@ -462,12 +456,16 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, age, age_only):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
 
     input_base = file_base(input_file).rstrip(".fa")
+    raider2_dir += "NO_FA." if not family_array else "FA."
+    raider2_dir += "EXC." if excise else "NO_EXC."
+    raider2_dir += "NO_OV." if not overlaps else "OV."
+    raider2_dir += "TU" if tieup else "NO_TU"
     output_dir = raider2_dir + "/" + input_base.upper() + ".s" + str(seed_num)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -477,9 +475,17 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
         seed_string = "-s " + " -s ".join(seed)
     else:
         seed_string = "-s {seed}".format(seed = seed)
-    
-    
-    cmd1 = "{raider2} -q -c {f} --age {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = age, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
+
+    opt_str = ""
+    if not age_only:
+        opt_str += "--na" if not family_array else ""
+        opt_str += "--e" if excise else ""
+        opt_str += "--no" if not overlaps else ""
+        opt_str += "--t" if tieup else ""
+    else:
+        opt_str += "--age " + str(age) 
+
+    cmd1 = "{raider2} -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -497,10 +503,8 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
-    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2." + str(age) + ".batch"
-    #job_name = "raider2.%d.%d" % (age, get_job_index("raider2.%d" % age))
-    job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2.%d" % age) , input=re.sub("hg18.","",input_base), seed=seed_num)
-    #progress_fp.write("Sim batch: " + batch_name + "\n")
+    batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2.batch"
+    job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
                       output_location = output_dir, walltime= time_limit)
@@ -509,11 +513,10 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
 
     p.tool_resources = [0]*4
 
-    p.description = "raider2.{version}".format(version = age)
+    p.description = "raider2"
     p.tools_resources = [0]*4
     p.seed = seed
     p.seed_num = seed_num
@@ -521,6 +524,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, age):
     p.lib_file = lib_file
 
     return p
+
 def run_araider(seed, seed_num, f, m, input_file, araider_dir):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
@@ -551,7 +555,6 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
 
     batch_name = araider_dir + "/" + input_base + ".araider.batch"
     job_name = "araider.%d" % get_job_index("araider")
-    #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".araider.stdout", stderr_file = input_base + ".araider.stderr",
                       output_location = output_dir, walltime = time_limit)
@@ -560,7 +563,6 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
 
     p.tool_resources = [0]*4
 
@@ -608,7 +610,6 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
 
     p.description = "bigfoot"
     p.tool_resources = [0]*4
@@ -645,7 +646,6 @@ def run_piler(input_file, piler_dir):
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
 
     p.description = "piler"
     p.tool_resources = [0]*4
@@ -653,19 +653,6 @@ def run_piler(input_file, piler_dir):
     p.lib_file = piler_dir + "/" + lib_file
 
     return p
-
-# def create_raider_consensus(p, output):
-#     """Given the pbs object (from redhawk.py) used to start a RAIDER job, this
-#     waits until the job is done, then invokes consensus_seq.py on the ouput and
-#     writes the results to the output directory."""
-#     p.wait();
-#     cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.seq_file, p.raider_output, output)
-#     #cmd = "python3.3 consensus_seq.py -s %s -e %s/elements %s" % (p.file, p.raider_output, output)
-#     if show_progress:
-#     p2.submit(preserve=True)
-#     p2.seq_file = p.seq_file
-#     p2.output = output
-#     return p2
 
 
 def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_second_filter, threshold):
@@ -686,14 +673,6 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     if use_first_filter:
         filter_stage_output = output_dir + "/" + input_name.rstrip(".fa") + ".repscout.filtered.fa"
         cmd3 = "{filter} {input} > {filter_output}".format(input=rptscout_output, filter = Locations['filter_stage-1'], filter_output = filter_stage_output)
-    
-        #if use_second_filter:
-        #    RM_output_dir = file_dir(filter_stage_output) + "/" + file_base(filter_stage_output).upper() + ".RM"
-        #    if not os.path.exists(RM_output_dir):
-        #        os.makedirs(RM_output_dir)
-        #    cmd3 = cmd3 + "\n" +  "RepeatMasker {input} -lib {filtered} -dir {dir}".format(input=input_file, filtered=filter_stage_output, dir=RM_output_dir)
-        #    filter_stage2_output = output_dir + "/" + input_name.rstrip(".fa") + ".repscout.filtered2.fa"
-        #    cmd3 = cmd3 + "\n" +  "cat {filtered}  | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}".format(filtered=filter_stage_output, filter=Locations['filter_stage-2'], filter_output= filter_stage2_output, thresh=threshold, rm_output = RM_output_dir + "/" + file_base(input_file) + ".out")
     else:
         cmd3 = ""
 
@@ -705,8 +684,6 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.{input}.{num}".format( num = get_job_index("repscout") , input=file_base(input_file))
-    #job_name = "rptscout.%d" % (get_job_index("repscout"))
-    #progress_fp.write("Sim batch: " + batch_name + "\n")
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = ["RepeatMasker", "python-3.3.3"],
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
@@ -715,7 +692,6 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
         p.submit(preserve=True)
     else:
         p.submit_timed_job(preserve=True)
-    #p.submit(preserve=True)
     p.description = "rep_scout" if not use_first_filter else "rep_scout1" if not use_second_filter else "rep_scout12"
     p.tool_resources = [0,0,0,0]
 
@@ -725,21 +701,8 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     p.threshold = threshold
     p.stage = "1"
     p.lib_file = filter_stage_output if use_first_filter else rptscout_output
-    #p.lib_file = filter_stage2_output if use_second_filter else filter_stage_output if use_first_filter else rptscout_output
-
     return p
 
-    # output_file = re.sub(".fa$", ".scout.fa",os.path.basename(input_file))
-    
-    # output_path = "%s/%s" %(curr_dir, output_file)
-    # cmd = "./RunRepeatScout.sh {sequence} {length} {output} {min}".format(sequence=input_file, length=m, output=output_path, min=f)
-    # print(cmd)
-    # p = pbsJobHandler(batch_file = "%s.batch" % output_file, executable = cmd)
-    # p.submit(preserve=True)
-    # p.seq_file = input_file
-    # p.scout_output = output_path
-    # p.curr_dir = curr_dir
-    # return p
 
 def run_scout_second_filter_RM(p, num_processors):
     if p.should_filter_stage2:
@@ -779,8 +742,8 @@ def run_scout_second_filter(p):
         p2.description = p.description#"rep_scout"
         p2.stage = "2"
         print("RM resources : " + str(p.getResources(cleanup=False)))
-        #p2.tool_resources = p.tool_resources + p.getResources(cleanup=False) #should we include the RM inside RS in timing? #p.getResources(cleanup=False)
-        p2.tool_resources = [x + y for x, y in zip(p.tool_resources, p.getResources(cleanup=False))] #j.tool_resources + j.getResources(cleanup = False)
+
+        p2.tool_resources = [x + y for x, y in zip(p.tool_resources, p.getResources(cleanup=False))]
         print("F1 + RM resources : " + str(p2.tool_resources))
         p2.seq_file = p.seq_file
         p2.lib_file = filter_stage2_output
@@ -804,8 +767,6 @@ def scout_second_filter(p, min_freq):
 
     batch_name = file_dir(p.rm_output) + "/" + file_base(p.seq_file).rstrip(".fa") + ".repscout2.fa"
     job_name = "filter2%d" % get_job_index("filter2")
-
-    #print("Sim batch: " + batch_name + "\n")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
@@ -845,12 +806,11 @@ def run_repeat_masker(p, num_processors):
     progress_fp.flush()
 
     batch_name = p.lib_file.rstrip(".fa") + ".rm.batch"
-    #job_name = "repmask.%d" % get_job_index("repmask")
-    #print("Sim batch: " + batch_name + "\n"
-    #job_name = "repmask.{num}.{input}.{tool}".format( num = get_job_index("repmask") , input=input_base, tool=p.description)
+
     tool_name = p.description if not "raider" in p.description else "R" if p.description == "raider" else "R2" 
     job_name = "RM.{input}.{tool}.{num}".format( num = get_job_index("repmask") , input=re.sub("hg18.","",input_base), tool=tool_name)
     ppn_arg = 4*num_processors if num_processors == 1 else num_processors
+
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd, nodes = 1, ppn = ppn_arg, RHmodules = ["RepeatMasker", "python-3.3.3"],
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir, walltime = rm_time_limit, always_outputs=False);
@@ -866,9 +826,7 @@ def run_repeat_masker(p, num_processors):
     p2.lib_file = p.lib_file
     p2.seq_file = p.seq_file
     p2.rm_output = output_dir + "/" + file_base(p.seq_file) + ".out"
-    #p.tool_resources = tool_job.getResources(cleanup=False)
-    p2.tool_resources = [x + y for x, y in zip(p.tool_resources, p.getResources(cleanup=False))] #j.tool_resources + j.getResources(cleanup = False)
-    #p2.tool_resources = p.tool_resources
+    p2.tool_resources = [x + y for x, y in zip(p.tool_resources, p.getResources(cleanup=False))]
     p2.tool_description = p.description
     return p2
 
@@ -1071,7 +1029,6 @@ def run_pra_analysis(tool_job, database_job):
     This function will wait on completion of both jobs."""
 
     cmd = "./pra_analysis {consensus_file} {rm_fa_file} {database_file} {output_file}"
-    #tool_job.wait()
     database_job.wait()
 
 
@@ -1145,8 +1102,6 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
     if/when all jobs complete, returns list of paths to resulting simulation files.""" 
     chrom_job_set = {j for j in jobs}
     finished_jobs = set()
-    #while chrom_job_set:
-    #t2 = None
     time_est = None
     for j in chrom_job_set: 
         t1 = time.time()
@@ -1166,8 +1121,6 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
         if timing and not have_time_for_another_run(time_est):
             save_timed_chrom_sim_jobs(chrom_job_set, finished_jobs, flist)            
             exit_now()
-            #write_chrom_jobs_to_checkpoint(chrom_job_set, finished_jobs)
-            #if flist:
     return [j.sim_output for j in finished_jobs]
 
 def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_jobs=None):
@@ -1251,9 +1204,7 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
             t1 = time.time()
             for j in rm_job_set:
                 if not j.isJobRunning():
-                    #new_finished_jobs.add(j)
                     job_dic[j.tool_description].append(j)
-                    #stats_jobs.add(run_perform_stats(j))
                     finished_rm_jobs.add(j)
                 #else:
             for j in pra_job_set:
@@ -1366,26 +1317,10 @@ if __name__ == "__main__":
         next_step = old_checkpoint_fp.readline().rstrip() 
         if next_step == flist_start:
             file_list, next_step = recover_file_list()
-            #logging_fp.write("Reading file list from old checkpoint file\n")
-            #flush_files()
-            #fname = old_checkpoint_fp.readline().rstrip()
-            #while fname != flist_end:
-            #    file_list.append(fname)
-            #    fname = old_checkpoint_fp.readline().rstrip()
-            #next_step = old_checkpoint_fp.readline().rstrip() 
 
         if next_step == csjobs_start:
             chrom_job_set, next_step = recover_sim_jobs()
-            #logging_fp.write("Reading in chrom sim jobs from old checkpoint file\n")
-            #chrom_job_set = set()
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != csjobs_end:
-            #    j = loadPBS(open(pickname, "rb"))
-            #    #j.submit()
-            #    chrom_job_set.add(j)#redhawk.loadPBS(open(pickname, "rb")))#pickle.load(pickname))
-            #    pickname = old_checkpoint_fp.readline().rstrip()
             run_timed_chrom_sim_jobs(chrom_job_set, file_list)
-            #next_step = old_checkpoint_fp.readline().rstrip()
         flush_files()
 
 
@@ -1397,15 +1332,6 @@ if __name__ == "__main__":
     else:
         if next_step == blast_db_start:
             BLAST_DATABASE, next_step = recover_blast_db()
-            #logging_fp.write("Reading in blast database from old checkpoint file\n")
-            #BLAST_DATABASE = {}
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != jobdic_end:
-            #    seq_fname = os.path.splitext(os.path.splitext(pickname)[0])[1] #CARLY: still unsure of whether this will work.. maybe need to store basename of seq_file
-            #    BLAST_DATABASE[seq_fname] = loadPBS(open(pickname, 'rb'))
-            #    pickname = old_checkpoint_fp.readline().rstrip()
-            #flush_files()
-            #next_step = old_checkpoint_fp.readline().rstrip()
         if timing:
             write_blast_db_to_checkpoint(BLAST_DATABASE, args.results_dir)
 
@@ -1433,25 +1359,31 @@ if __name__ == "__main__":
                      for file in file_list]
         
         if args.run_raider2:
-            raider2_ages = [0,1,2]
+            #raider2_ages = [0,1,2]
+            
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
-            if args.all_ages:
-                if not args.multi_seed:
-                    jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
-                                for file in file_list]
-                else:
-                    jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file,
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for curr_age in raider2_ages
-                                for file in file_list]
-            else:
-                if not args.multi_seed:
-                    jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for i,seed in enumerate(seed_list)
-                                for file in file_list]
-                else:
-                    jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file, 
-                                raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for file in file_list]
+            
+            
+            jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
+                                 raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
+                                 overlaps = args.overlaps, tieup = args.tieup, age=args.age, age_only=True) for i,seed in enumerate(seed_list) for file in file_list]
+            #if args.all_ages:
+            #    if not args.multi_seed:
+            #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for i,seed in enumerate(seed_list) for curr_age in raider2_ages
+            #                    for file in file_list]
+            #    else:
+            #        jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file,
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(curr_age), age=curr_age) for curr_age in raider2_ages
+            #                    for file in file_list]
+            #else:
+            #    if not args.multi_seed:
+            #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for i,seed in enumerate(seed_list)
+            #                    for file in file_list]
+            #    else:
+            #        jobs += [run_raider2(seed = seed_list, seed_num = "all", f = args.f, m = args.raider_min, input_file = file, 
+            #                    raider2_dir = args.results_dir + "/" + args.raider2_dir + "." + str(args.age), age=args.age) for file in file_list]
 
         if args.run_repscout:
             if args.rs_filters == 3:
@@ -1483,26 +1415,6 @@ if __name__ == "__main__":
             
         ############## Third: Launch repeatmasker jobs
         job_set = {j for j in jobs}
-
-        ### KARRO: This is where we run the pre-rm analysis tool.  I'm setting this up
-        ### so that run_timed_tool_jobs won't be started until all these jobs are launched.
-        ### Technically this is unnecessary.  But its higly unlikely to matter, and a lot
-        ### less code this way. 
-        ### Have not done anything for check-pointing.
-
-        ### KARRO: This is absolutely the wrong way to do the run_pra_analysis lunch.  This will force
-        ### the repeat maksert runs to wait on the completion of ALL database jobs and ALL tool jobs.  (That is,
-        ### the first one won't start until all are done.  The database jobs are really quick and irrelevant, 
-        ### but there is no reason to make the RM run for one tool wait on the completion of another tool.
-        ###
-        ### Nothing is dependent on the PRA_JOBS, though at the end of the code I have added a wiit on each of tose jobs
-        ### just so the RAIDER_eval.py doesn't terminate until everything is done.
-        #if args.pra:
-        #    PRA_JOBS = {run_pra_analysis(j, BLAST_DATABASE[j.seq_file]) for j in job_set}
-
-
-        ### KARRO_END
-
         RM_jobs, PRA_jobs = run_timed_tool_jobs(jobs, args.repmask, args.pa, args.pra, BLAST_DATABASE)
 
     else:
@@ -1514,42 +1426,15 @@ if __name__ == "__main__":
             jobs, next_step = recover_tool_jobs()
         if next_step == prajobs_start:
             PRA_jobs, next_step = recover_pra_jobs()
-            #logging_fp.write("Reading in tool jobs from old checkpoint file\n")
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != tjobs_end:
-            #    j = loadPBS(open(pickname, "rb"))
-            #    logging_fp.write("Read in job {id} from pickle file {pick}\n".format(id=j.jobname,pick=pickname));
-            #    jobs.append(j)
-            #    pickname = old_checkpoint_fp.readline().rstrip()
-            #next_step = old_checkpoint_fp.readline().rstrip()
         if next_step == rmjobs_start:
             RM_jobs, next_step = recover_rm_jobs()
-            #logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != rmjobs_end:
-            #    j = loadPBS(open(pickname, "rb"))
-            #    logging_fp.write("Read in repeatmasker job {id} from pickle file {pick}\n".format(id=j.jobname, pick=pickname));
-            #    RM_jobs.add(j)
-            #    pickname = old_checkpoint_fp.readline().rstrip()
-            #next_step = old_checkpoint_fp.readline().rstrip()
-        #if next_step == pra_jobs_start:
-        #    logging_fp.write("Reading in pra jobs from old checkpoint file\n")
-        #    pickname = old_checkpoint_fp.readline().rstrip()
-        #    while pickname != pra_jobs_end:
-        #        j = loadPBS(open(pickname, "rb"))
-        #        logging_fp.write("Read in pra job {id} from pickle file {pick}\n".format(id=j.jobname, pick=pickname));
-        #        PRA_jobs.add(j)
-        #        pickname = old_checkpoint_fp.readline().rstrip()
-        #    next_step = old_checkpoint_fp.readline().rstrip()
         flush_files()
         RM_jobs, PRA_jobs = run_timed_tool_jobs(jobs, args.repmask, args.pa, args.pra, BLAST_DATABASE)
 
     if not continue_prev or next_step == '':
         ########## Need to run analysis jobs
+
         job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(args.repmask, args.pra, RM_jobs, PRA_jobs, args.results_dir)
-        #job_dic = run_timed_analysis_jobs(RM_jobs, PRA_jobs, args.results_dir)
-
-
     else:
         PRA_jobs = set()
         RM_jobs = set()
@@ -1559,41 +1444,22 @@ if __name__ == "__main__":
             PRA_jobs, next_step = recover_pra_jobs()
         if next_step == rmjobs_start:
             RM_jobs, next_step = recover_rm_jobs()
-            #logging_fp.write("Reading in repeatmasker jobs from old checkpoint file\n")
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != rmjobs_end:
-            #    j = loadPBS(open(pickname, "rb"))
-            #    RM_jobs.add(j)
-            #    pickname = old_checkpoint_fp.readline().rstrip()
-            #next_step = old_checkpoint_fp.readline().rstrip()
         if next_step == stats_start:
             stats_jobs, next_step = recover_stats_jobs()
         if next_step == jobdic_start:
             old_job_dic, next_step = recover_job_dic()
-            #logging_fp.write("Reading in job dict from old checkpoint file\n")
-            #old_job_dic = {tool:[] for tool in test_tools}
-            #pickname = old_checkpoint_fp.readline().rstrip()
-            #while pickname != jobdic_end:
-            #    tname = os.path.splitext(os.path.splitext(pickname)[0])[1]
-            #    old_job_dic[tname] = loadPBS(open(pickname, 'rb'))
-            #    pickname = old_checkpoint_fp.readline().rstrip()
-            #flush_files()
             if not RM_jobs:
                 job_dic = old_job_dic
             else:
                 job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(args.repmask, args.pra, RM_jobs, PRA_jobs, args.results_dir, stats_jobs, old_job_dic)
-            #next_step = old_checkpoint_fp.readline().rstrip()
         else:
             flush_files()
             job_dic, stats_jobs, PRA_jobs = run_timed_analysis_jobs(args.repmask, args.pra, RM_jobs, PRA_jobs, args.results_dir, stats_jobs)
-            #job_dic = run_timed_RM_jobs(RM_jobs, args.results_dir)    
 
     
     job_dic['raider'].sort(key = lambda x: x.seed_num)
+    job_dic['raider2'].sort(key = lambda x: x.seed_num)
     job_dic['araider'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.0'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.1'].sort(key = lambda x: x.seed_num)
-    job_dic['raider2.2'].sort(key = lambda x: x.seed_num)
     
     # Print output files log
     with open(args.results_dir + "/file_log.txt", "w") as fp:
@@ -1607,7 +1473,7 @@ if __name__ == "__main__":
     
     ######
     # Create copy of seed file (if RAIDER is being used)
-    if job_dic['raider'] or job_dic['araider'] or job_dic['raider2.0'] or job_dic['raider2.1'] or job_dic['raider2.2']:
+    if job_dic['raider'] or job_dic['araider'] or job_dic['raider2']:
         with open(args.results_dir + "/seed_file.txt", "w") as fp:
             fp.write("\n".join(["{index:<5}{seed}".format(index=i,seed=s) for i,s in enumerate(seed_list)]) + "\n")
             
@@ -1636,7 +1502,7 @@ if __name__ == "__main__":
                     if args.repmask:
                         progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
                         try:
-                            Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None) # args.family_file)
+                            Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                             Stats = [round(x,5) for x in Stats]
                             RMResources = list(p.getResources(cleanup=False))
                             if args.hooke_jeeves:
@@ -1652,7 +1518,6 @@ if __name__ == "__main__":
                                 if len(matches) > 0:
                                     Coverage = matches[0]
                                 CoverageResources = list(p.pra_job.getResources(cleanup=False))
-                                #Coverage = regex.findall(open(p.pra_job.pra_output, "r").read()).group(0)
                             except Exception as E:
                                 progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
                     else:
@@ -1661,17 +1526,9 @@ if __name__ == "__main__":
                             if len(matches) > 0:
                                 Coverage = matches[0]
                             CoverageResources = list(p.getResources(cleanup=False))
-                            #Coverage = regex.findall(open(p.pra_job.pra_output, "r").read()).group(0)
                         except Exception as E:
                             progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
 
-                    print(key)
-                    print(str(Counts))
-                    print(str(Stats))
-                    print(str(p.tool_resources))
-                    print(str(RMResources))
-                    print(str(Coverage))
-                    print(str(CoverageResources))
                     fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [Coverage] + list(CoverageResources))))
 
                 except Exception as E:
