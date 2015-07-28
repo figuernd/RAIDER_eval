@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <iostream>
 
+using namespace std;
+
 #ifndef uint
 typedef unsigned int uint;
 #endif
@@ -13,36 +15,58 @@ class Family;
 class LmerVector {
 public:
   
-  LmerVector(uint position);
-  ~LmerVector() { }
+  LmerVector(uint position) {
+    family = nullptr;
+    push_back(position);
+  }
   
-  void push_back(uint val);
+  ~LmerVector() {
+  }
+  
+  void push_back(uint val) {
+    if(lmers.size() > 0){
+      previous = back();
+    }
+    lmers.push_back(val);
+  }
   
   uint operator [](uint i) const { return lmers[i]; }
-  uint & operator [](uint i) { return lmers[i]; }
+  uint & operator [](uint i)     { return lmers[i]; }
   
-  uint prev() const { return previous; }
-  uint back() const { return lmers.back(); }
+  uint prev()  const { return previous; }
+  uint back()  const { return lmers.back(); }
   uint front() const { return lmers.front(); }
   
-  uint getPosition() const { return position; }
-  void setPosition(uint i) { position = i; }
-  
   uint getOff() const { return off; }
-  void setOff(uint i) { off = i; }
+  void setOff(uint i) { off = i;    }
   
   uint size() const { return lmers.size(); }
   
-  Family* getFamily() const { return family; }
-  void setFamily(Family *fam) { family = fam; }
+  Family* getFamily() const   { return family; }
+  void setFamily(Family *fam) {
+    if (family) {
+      prevFamily = family;
+    }
+    family = fam;
+  }
   
-  friend std::ostream &operator<<( std::ostream &output, const LmerVector &L);
+  Family* getPrevFamily() const   { return prevFamily; }
+  void setPrevFamily(Family *fam) { prevFamily = fam;  }
   
-  std::vector<uint> lmers;
-  Family* family;
+  friend ostream &operator<<( ostream &output, const LmerVector &L) {
+    output  << "(\tFront:\t" << L.front()
+    << "\tBack:\t" << L.back()
+    << "\tSize:\t" << L.size()
+    << "\tOffset In Family\t" << L.getOff()
+    << "\tFamily:\t" << L.getFamily() << "\t)";
+    return output;
+  }
+  
+  vector<uint> lmers;
   uint previous;
-  uint position;
   uint off;
+  Family* family;
+  Family* prevFamily;
 };
 
 #endif //LMER_VECTOR_H

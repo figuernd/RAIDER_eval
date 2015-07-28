@@ -52,13 +52,17 @@ struct AppOptions {
   bool overlaps;
   // Whether or not to allow for modified tie up
   bool tieup;
+  // Do cleanup while going
+  bool proactive_split;
+  // Keep track of previous family
+  bool prev_fam;
   
   seqan::CharString seed;
   seqan::CharString sequence_file;
   seqan::CharString output_directory;
   
   AppOptions() :
-  verbosity(1), age(1), family_array(true), excising(false), overlaps(true), tieup(false){}
+  verbosity(1), age(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive(false), prevFam(false){}
 };
 
 // ==========================================================================
@@ -111,7 +115,8 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   addOption(parser, seqan::ArgParseOption("e", "excise", "Enable excising (disabled by default)."));
   addOption(parser, seqan::ArgParseOption("no", "nooverlaps", "Do not require overlaps (required by default)."));
   addOption(parser, seqan::ArgParseOption("t", "tieup", "Enable alternate tie up (disabled by default)."));
-
+  addOption(parser, seqan::ArgParseOption("ps", "prosplit", "Enable proactive splitting(disabled by default)."));
+  addOption(parser, seqan::ArgParseOption("pf", "prevfam", "Enable pointers to prev family (disabled by default)."));
   
   // Add Examples Section.
   addTextSection(parser, "Examples");
@@ -176,6 +181,14 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   
   if (isSet(parser, "tieup")){
     options.tieup = true;
+  }
+  
+  if (isSet(parser, "prosplit")){
+    options.proactive_split = true;
+  }
+  
+  if (isSet(parser, "prevfam")){
+    options.prev_fam = true;
   }
   
   // Ensure a trailing /
@@ -403,7 +416,7 @@ int main(int argc, char const ** argv) {
   seeds.push_back(options.seed);
   
 
-  getElementaryFamilies(sequence, seeds, families, options.verbosity, options.family_array, options.excising, options.overlaps, options.tieup);
+  getElementaryFamilies(sequence, seeds, families, options);
   
   if (options.verbosity > 0) {
     cout << "Writing results elements..." << endl;
