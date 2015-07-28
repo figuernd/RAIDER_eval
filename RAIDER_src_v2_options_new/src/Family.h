@@ -110,7 +110,7 @@ public:
   void removeOne(LmerVector* v){
     std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), v);
     (*(start+1))->setOff((*(start+1))->front() - (*(start-1))->front());
-    vectors.erase(start, start+1, vectors.end()); // no longer part of backbone of this family
+    vectors.erase(start, start+1); // no longer part of backbone of this family
     vectors.shrink_to_fit();
   }
 
@@ -135,4 +135,3 @@ public:
 };
 
 #endif //FAMILY_H
->>>>>>> b2cb1aabbca0804265664c37b15c9782a2bf08ba
