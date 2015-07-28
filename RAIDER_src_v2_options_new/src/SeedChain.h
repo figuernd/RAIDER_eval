@@ -113,6 +113,22 @@ LmerVector* getAndInsert(LmerMap &lmers, size_t seed, uint index) {
   return v;
 }
 
+bool equalOffsets(LmerVector* v1, LmerVector* v2) {
+  uint f1 = v1->front();
+  uint b1 = v1->back();
+  uint f2 = v2->front();
+  uint b2 = v2->back();
+  return (b1-f1 == b2-f2);
+}
+
+bool closeEnough(LmerVector* v1, LmerVector* v2, uint L, bool overlaps){
+  if (overlaps){
+    return v2->back() < v1->back() + L;
+  }
+  else{
+    return v2->back() <= v1->back() + L;
+  }
+}
 
 // Determines whether lmervector v belongs to family fam.
 bool isNewFamily(Family* fam, LmerVector* v, bool overlaps) {
@@ -123,19 +139,13 @@ bool isNewFamily(Family* fam, LmerVector* v, bool overlaps) {
   }
   assert(fam->size() == 2);
   
-  LmerVector* suffix = fam->getSuffix();
-  uint s1 = suffix->front();
-  uint s2 = suffix->back();
-  uint prev = v->front();
-  uint index = v->back();
-  
   // Ensure both lmers' location pairs are the same distance apart
-  if (index - prev != s2 - s1) {
+  if (!equalOffsets(fam->getSuffix(), v)) {
     return true;
   }
   // Ensure v's most recent location is less than L from the last location added to fam
   // (or equal to L if overlaps not required)
-  if (index > fam->getExpectedEnd() || (overlaps && index == fam->getExpectedEnd())) {
+  if (v->back() > fam->getExpectedEnd() || (overlaps && v->back() == fam->getExpectedEnd())) {
     return true;
   }
   return false;
@@ -166,13 +176,14 @@ uint getFamilyIndex(LmerVector* v, Family* curr_fams[], int curr_index, int L, b
 }
 
 
-Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) {
-  if(verbosity > 2) prettyPrintMethodState(1, "Excise Repeats by Lmer", v, fam, false, false);
+
+Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, AppOptions options) {
+  if(options.verbosity > 2) prettyPrintMethodState(1, "Excise Repeats by Lmer", v, fam, false, false);
   
   assert(fam == v->getFamily());
   vector<LmerVector*> *lmers = fam->getLmers();
   LmerVector* currLast = fam->getLast();
-  Family *newFam = new Family;
+  Family *newFam = new Family();
   uint numRemoved = 0;
   uint oldLength = lmers->size();
   uint offset = oldLength;
@@ -187,7 +198,7 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) 
       numRemoved++;
     }
     if (i > offset){
-      if (u->size() == v->size() - 1 && u->back() <= newFam->getLast()->back() + L ) {
+      if (u->size() == v->size() - 1 && closeEnough(newFam->getLast(), u, L, options.overlaps)) {
         newFam->adopt(u, L);
         numRemoved++;
       }
@@ -203,25 +214,21 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, uint verbosity) 
     fam->adopt(toKeep->at(i), L);
   }
   fam->setLast(currLast);
-  fam->setExpectedEnd(fam->getPrefix()->back() + fam->repeatLength(L));
-  fam->setOffset(fam->getSuffix()->front() - fam->getPrefix()->front());
-  fam->setRepeatLength(L + fam->getOffset());
+  fam->setExpectedEnd(fam->getSuffix()->back() + L);
   
   newFam->setLast(v);
   newFam->setExpectedEnd(v->back() + newFam->repeatLength(L));
   
-  if (verbosity > 2){
+  if (options.verbosity > 2){
     prettyPrintFamily(2, fam, false, true);
     prettyPrintFamily(2, newFam, true, false);
   }
   return newFam;
   
-  
-  
 }
 
-Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint verbosity, bool excising) {
-  if(verbosity > 2) prettyPrintMethodState(1, "Split Repeats by Lmer", v, fam, false, false);
+Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOptions options) {
+  if(options.verbosity > 2) prettyPrintMethodState(1, "Split Repeats by Lmer", v, fam, false, false);
   
   assert(fam == v->getFamily());
   vector<LmerVector*> *lmers = fam->getLmers();
@@ -236,7 +243,6 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
     LmerVector *u = lmers->at(i);
     
     if (u == v) {
-      // assert(i != 0); // CARLY: commented this out because it seems incorrect...
       offset = i;
     }
     
@@ -253,19 +259,13 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
   fam->setLast(fam->getSuffix());
   fam->setExpectedEnd(fam->getSuffix()->back() + L);
   
-  //TODO: shouldn't this be everywhere???
-  if (excising) {
-    fam->setOffset(fam->getSuffix()->front() - fam->getPrefix()->front());
-    fam->setRepeatLength(L + fam->getOffset());
-  }
-  
-  // Reset last and expected end of new family if it will contain v
+  // Reset last and expected end of new family if it will contain v (as prefix)
   if (!keepV) {
     newFam->setLast(v);
     newFam->setExpectedEnd(v->back() + newFam->repeatLength(L));
   }
   
-  if (verbosity > 2){
+  if (options.verbosity > 2){
     prettyPrintFamily(2, fam, false, true);
     prettyPrintFamily(2, newFam, true, false);
   }
@@ -273,11 +273,11 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, uint 
   return newFam;
 }
 
-bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity, bool excising) {
-  if(verbosity > 2) prettyPrintMethodState(1, "Repeat Expects", v, fam, false, false);
+bool repeatExpects(Family *fam, LmerVector* v, uint L, AppOptions options) {
+  if(options.verbosity > 2) prettyPrintMethodState(1, "Repeat Expects", v, fam, false, false);
 
   const uint index = v->back();
-  const uint length = fam->repeatLength(1);
+  const uint length = fam->repeatLength(L);
   uint dist_to_end = fam->getExpectedEnd() - index;
   
   // The last location of v cannot be beyond the expected end of the family and
@@ -285,15 +285,6 @@ bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity, bool exci
   if (index > fam->getExpectedEnd() || dist_to_end > length) {
     return false;
   }
-
-  // If excising and the previous location of v is before the last index of the family
-  //else if (excising && v->prev() < fam->getLastIndex()){
-  //  if (verbosity > 2){
-  //    prettyPrintTabbing(tabbing + 1);
-  //    cout << "The previous location of lmer is before the last index of the family." << endl;
-  //  }
-  //  return false;
-  //}
 
   // The lmer's alleged position in the family can be calculated. It must match
   // the lmer found in the family at this position
@@ -305,67 +296,41 @@ bool repeatExpects(Family *fam, LmerVector* v, uint L, uint verbosity, bool exci
 }
 
 
-bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, uint verbosity, bool excising) {
+
+
+bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, AppOptions options) {
   Family* fam = v->getFamily();
   assert(fam);
-  if(verbosity > 2) prettyPrintMethodState(0, "Fragment Split", v, fam, false, false);
+  if(options.verbosity > 2) prettyPrintMethodState(0, "Fragment Split", v, fam, false, false);
   
   // If expecting to start a new repeat instance for this family, this lmer must
   // be the family prefix. If not, split family into prefix...(v-1) and v...suffix
   if (fam->lastRepeatComplete()) {
     if (v != fam->getPrefix()) {
-      Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
+      Family* newFam = splitRepeatsByLmer(fam, v, false, L, options);
       families.push_back(newFam);
       return true;
     }
   }
   
   // If v occurs after it is supposed to (over L past the last index of the family),
-  // split the family into prefix---last, (last+1)---suffix
-  else if (v->back() > fam->getLastIndex() + L) {
-    // **************FROM NEW:
-    //// if v was placed in newFamily but should have stayed where it was
-    //if (v->back() <= prevFam->getLastIndex() + L && v->size() == prevFam->size()) {
-    //    if (verbosity > 2){
-    //        prettyPrintTabbing(tabbing + 1);
-    //        cout << "The last location of the lmer is over L (" << L << ") past the last index of new family, but not prev. Revert." << endl;
-    //    }
-    //    v->setFamily(prevFam);
-    //    return false;
-    //}
-    Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity, excising);
-    families.push_back(newFam);
-    //NOT IN OLD OR OLDEST
-    //Family* newFam2 = splitRepeatsByLmer(newFam, newFam->getLast(), false, L, verbosity, excising);
-    //families.push_back(newFam2);
-    return true;
-  }
-  
-  // if it was previously skipped in forming a family instance
-  else if (excising && v->prev() < fam->getLast()->prev() && v->size() < fam->size() ) {
-    if (verbosity > 2){
-      prettyPrintTabbing(1);
-      cout << "The lmer was skipped in a previous iteration" << endl;
+  // split the family into prefix...last, (last+1)...suffix
+  else if (!closeEnough(fam->getLast(), v, L, options.overlaps)) {
+    if (options.prev_fam && v->getPrevFamily() && closeEnough(v->getPrevFamily()->getLast(), v , L, options.overlaps)){
+      fam->removeOne(v);
+      v->getPrevFamily()->adopt(v,L);
     }
-    // OLDEST (1):
-    // Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
-    Family* newFam = exciseRepeatsByLmer(fam, v, L, verbosity);
-    families.push_back(newFam);
-    return true;
+    else {
+      Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
+      families.push_back(newFam);
+      // If splitting proactively, we know (last+1)...(v-1) did not
+      if (options.proactive_split){
+        Family* newFam2 = splitRepeatsByLmer(newFam, v, false, L, options);
+        families.push_back(newFam2);
+      }
+      return true;
+    }
   }
-  
-  // OLDEST
-  // if it occurs after it is supposed to
-  //else if (!excising && v->prev() < fam->getLast()->prev()) {
-  //    if (verbosity > 2){
-  //        prettyPrintTabbing(tabbing + 1);
-  //        cout << "The previous location of the lmer is before the last index of the family." << endl;
-  //    }
-  
-  //    Family* newFam = splitRepeatsByLmer(fam, v, false, L, verbosity, excising);
-  //    families.push_back(newFam);
-  //    return true;
-  //}
   return false;
 }
 
@@ -384,20 +349,47 @@ bool isPrefix(LmerVector *v) {
   return v->getFamily()->getPrefix() == v;
 }
 
-void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, bool excising) {
-  if (verbosity > 2){
-    cout << "--- Tying Loose Ends ---" << endl;
+bool canMergeSkipped(Family* fam, uint L, bool overlaps) {
+  if (fam->getSkipped()->size() > 0){
+    return closeEnough(fam->getSkipped()->back(), fam->getOneAfterLast(), L, overlaps);
   }
+  return true;
+}
+
+Family* mergeIntoFamily(vector<LmerVector*> &lmers, uint L){
+  Family* newFam = new Family();
+  for (LmerVector * v : fam->popSkipped()){
+    newFam->adopt(v,L);
+  }
+  return newFam;
+}
+
+
+void tieLooseEnds(vector<Family*> &families, uint L, uint verbosity, AppOptions options) {
+  if (options.verbosity > 2) cout << "--- Tying Loose Ends ---" << endl;
   for (auto fam : families) {
+    
+    if (options.tieup){
+      if (!canMergeSkipped(fam, L, overlaps)){
+        families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+      }
+    }
     if (!fam->lastRepeatComplete()) {
-      Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, verbosity, excising);
+      Family* newFam;
+      if (options.tieup){
+        fam->setRemainingSkipped();
+        newFam = mergeIntoFamily(fam->popSkipped(), L));
+      }
+      else{
+        newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
+      }
       families.push_back(newFam);
     }
   }
 }
 
 
-void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, int verbosity, bool family_array, bool excising, bool overlaps, bool tieup) {
+void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, AppOptions options) {
   
   const uint seqLength = seqan::length(sequence);
   const seqan::CharString mask = masks.front();
@@ -426,7 +418,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
     if (v->size() == 2) {
       // If family_array enabled, search for corresponding family within L of this instance.
       if(family_array){
-        int fam_index = getFamilyIndex(v, curr_families, curr_fam, signed_L, overlaps);
+        int fam_index = getFamilyIndex(v, curr_families, curr_fam, signed_L, options.overlaps);
         if (fam_index == signed_L) {
           fam = new Family();
           curr_fam = (curr_fam + 1) % L;
@@ -439,7 +431,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
       }
       // Else, check to see if this lmer is a part of most recent family
       else{
-        if (isNewFamily(fam, v, overlaps)) {
+        if (isNewFamily(fam, v, options.overlaps)) {
           fam = new Family();
           families.push_back(fam);
         }
@@ -449,7 +441,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
     
     // If lmer has more than 2 occurrences, it is already associated with a family.
     // Check that this latest occurrence does not violate defn of elementary repeat.
-    else if (v->size() > 2 && !fragmentSplit(v, L, families, verbosity, excising)) {
+    else if (v->size() > 2 && !fragmentSplit(v, L, families, options)) {
       Family* fam = v->getFamily();
       
       if (isPrefix(v)) {
@@ -457,13 +449,23 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
         fam->setExpectedEnd(v->back() + fam->repeatLength(L));
       }
       
-      else if (repeatExpects(fam, v, L, verbosity, excising)) {
+      else if (repeatExpects(fam, v, L, options)) {
+        // proactively get rid of waste if we just finished the repeat instance (anything unused)
+        if (options.proactive_split){
+          if (!canMoveSkippedRange(fam, L, options.overlaps)){
+            families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+          }
+          fam->moveSkippedRange(v);
+        }
         fam->setLast(v);
+        if (options.proactive_split && fam->lastRepeatComplete() && fam->getSkipped()->size() > 0){
+          families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+        }
       }
     }
   }
   
-  tieLooseEnds(families, L, verbosity, excising);
+  tieLooseEnds(families, L, options);
 }
 
 #endif //RAIDER2_SEEDCHAIN_H
