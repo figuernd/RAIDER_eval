@@ -5,6 +5,7 @@
 // Based off of original RAIDER by Nathan Figueroa
 // ==========================================================================
 
+
 #include <seqan/basic.h>
 #include <seqan/sequence.h>
 #include <seqan/arg_parse.h>
@@ -16,6 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unordered_map>
+#include <set>
+#include <numeric>
 
 #include "SeedChain.h"
 #include "Family.h"
@@ -83,6 +86,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   addOption(parser, seqan::ArgParseOption("t", "tieup", "Enable alternate tie up (disabled by default)."));
   addOption(parser, seqan::ArgParseOption("ps", "prosplit", "Enable proactive splitting(disabled by default)."));
   addOption(parser, seqan::ArgParseOption("pf", "prevfam", "Enable pointers to prev family (disabled by default)."));
+  addOption(parser, seqan::ArgParseOption("sbl", "skipbacklist", "Enable skip back list (disabled by default)."));
   
   // Add Examples Section.
   addTextSection(parser, "Examples");
@@ -155,6 +159,10 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   
   if (isSet(parser, "prevfam")){
     options.prev_fam = true;
+  }
+
+  if (isSet(parser, "sbl")){
+    options.sbl = true;
   }
   
   // Ensure a trailing /
@@ -360,6 +368,46 @@ void writeResults(vector<Family*> &families, vector<idThreshold> &thresholds, Ap
 }
 
 
+// Create the skip-back list for the seed.  
+vector<int> createSBL(vector<seqan::CharString> seeds, bool sbl) {
+  int l = accumulate(seeds.cbegin(), seeds.cend(), 0, [](int x, seqan::CharString s) {return max(x, (int)length(s));});
+  set<int> S({1, l+1});
+
+  if (not sbl) {
+    vector<int> SBL(l+1);
+    iota(SBL.begin(), SBL.end(), 1);
+    return SBL;
+  }
+
+  set<int> V;
+
+
+
+  for (auto i=seeds.begin(); i!=seeds.end(); i++)
+    for (int j=0; j < (int)length(*i); j++)
+      if ((*i)[j]=='0')
+	V.insert(j);
+
+
+  set<int> V2(V);
+  V2.insert(-1);
+
+  for (int i=2; i <= l; i++)
+    for (set<int>::iterator j=V.begin(); j!=V.end(); j++) {
+      if (V2.find(*j - i) != V2.end()) {
+	S.insert(i);
+	break;
+      }
+    }
+
+  S.insert(l+1);
+  
+  vector<int> SBL(S.size());
+  copy(S.begin(), S.end(), SBL.begin());
+  return SBL;
+}
+
+
 int main(int argc, char const ** argv) {
   AppOptions options;
   parseCommandLine(options, argc, argv);
@@ -380,7 +428,11 @@ int main(int argc, char const ** argv) {
   vector<Family*> families;
   vector<seqan::CharString> seeds;
   seeds.push_back(options.seed);
-  
+  seeds.push_back("1011111");
+
+
+  vector<int> SBL = createSBL(seeds, options.sbl);
+
 
   getElementaryFamilies(sequence, seeds, families, options);
   
