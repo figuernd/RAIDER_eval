@@ -181,6 +181,8 @@ def parse_params(args):
     raider2_argument.add_argument('--ex', '--excise', dest="excising", action="store_true", help="Enable excising in RAIDER2", default=False)
     raider2_argument.add_argument('--no', '--no_overlaps', dest="overlaps", action="store_false", help="Do not require overlaps in RAIDER2", default=True)
     raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", help="Enable alternative tie ups", default=False)
+    raider2_argument.add_argument('--ps', '--prosplit', dest="prosplit", action="store_true", help="Enable proactive splitting(disabled by default).", default=False)
+    raider2_argument.add_argument("--pf", "--prevfam", dest="prevfam", action="store_true", help="Enable pointers to prev family (disabled by default).", default=False)
 
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -456,16 +458,18 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, age, age_only):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
 
     input_base = file_base(input_file).rstrip(".fa")
-    raider2_dir += "NO_FA." if not family_array else "FA."
-    raider2_dir += "EXC." if excise else "NO_EXC."
-    raider2_dir += "NO_OV." if not overlaps else "OV."
-    raider2_dir += "TU" if tieup else "NO_TU"
+    #raider2_dir += "NO_FA." if not family_array else "FA."
+    #raider2_dir += "EXC." if excise else "NO_EXC."
+    #raider2_dir += "NO_OV." if not overlaps else "OV."
+    #raider2_dir += "TU." if tieup else "NO_TU."
+    #raider2_dir += "PS" if prosplit else "NO_PS."
+    #raider2_dir += "PF" if prevfam else "NO_PF"
     output_dir = raider2_dir + "/" + input_base.upper() + ".s" + str(seed_num)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -478,14 +482,16 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
 
     opt_str = ""
     if not age_only:
-        opt_str += "--na" if not family_array else ""
-        opt_str += "--e" if excise else ""
-        opt_str += "--no" if not overlaps else ""
-        opt_str += "--t" if tieup else ""
+        opt_str += "--na " if not family_array else ""
+        opt_str += "--e " if excise else ""
+        opt_str += "--no " if not overlaps else ""
+        opt_str += "--t " if tieup else ""
+        opt_str += "--ps " if prosplit else ""
+        opt_str += "--pf " if prevfam else ""
     else:
         opt_str += "--age " + str(age) 
 
-    cmd1 = "{raider2} -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} --vv -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -1366,7 +1372,8 @@ if __name__ == "__main__":
             
             jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
                                  raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
-                                 overlaps = args.overlaps, tieup = args.tieup, age=args.age, age_only=True) for i,seed in enumerate(seed_list) for file in file_list]
+                                 overlaps = args.overlaps, tieup = args.tieup, prosplit=args.prosplit, prevfam=args.prevfam,
+                                 age=args.age, age_only=False) for i,seed in enumerate(seed_list) for file in file_list]
             #if args.all_ages:
             #    if not args.multi_seed:
             #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
