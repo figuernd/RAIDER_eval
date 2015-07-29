@@ -74,45 +74,66 @@ public:
     last_index = v->back();
   }
   
-  LmerVector* getOneAfterLast(){
-    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
-    return *(start+1);
-  }
+  //LmerVector* getOneAfterLast(){
+  //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
+  //  return *(start+1);
+  //}
   
   uint getExpectedEnd() const { return expected_end; }
   void setExpectedEnd(uint expected) { expected_end = expected; }
   
-  std::vector<LmerVector*>* getSkipped() { return &skipped; }
-
+  void resetOffs(){
+    for (uint i = 0; i < vectors.size(); i++){
+      if (v != vectors.front()){
+        v->setOff(v->front() - vectors.at(i-1)->front());
+      }
+    }
+  }
+  
   std::vector<LmerVector*> popSkipped() {
-    std::vector<LmerVector*> ret(skipped);
-    skipped.clear();
-    return ret;
+    //std::vector<LmerVector*> ret(skipped);
+    //skipped.clear();
+    std::vector<LmerVector*> skipped(vectors.size());
+    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return v->gotSkipped()});
+    vectors.shrink_to_fit();
+    skipped.shrink_to_fit();  // shrink container to new size
+    resetOffs();
+    return skipped;
+  }
+  
+
+  
+  void setSkippedRange(LmerVector* lastSeen){
+    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
+    std::vector<LmerVector*>::iterator end = std::find(vectors.begin(), vectors.end(), lastSeen);
+    std::for_each(start+1, end, setSkipped);
   }
   
   void setRemainingSkipped(){
-    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
-    std::move(start+1, vectors.end(), std::back_inserter(skipped));
-    vectors.erase(start+1, vectors.end()); // no longer part of backbone of this family
-    vectors.shrink_to_fit();
+    setSkippedRange(vectors.back());
   }
+  //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
+  //  std::move(start+1, vectors.end(), std::back_inserter(skipped));
+  //  vectors.erase(start+1, vectors.end()); // no longer part of backbone of this family
+  //  vectors.shrink_to_fit();
+  //}
   
   
-  void moveSkippedRange(LmerVector* lastSeen){
-    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
-    std::vector<LmerVector*>::iterator end = std::find(vectors.begin(), vectors.end(), lastSeen);
-    std::move(start+1, end, std::back_inserter(skipped));
-    vectors.erase(start+1, end); // no longer part of backbone of this family
-    vectors.shrink_to_fit();
-    lastSeen->setOff(lastSeen->front() - last->front());  // adjust offset
-  }
+  //void moveSkippedRange(LmerVector* lastSeen){
+  //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
+  //  std::vector<LmerVector*>::iterator end = std::find(vectors.begin(), vectors.end(), lastSeen);
+  //  std::move(start+1, end, std::back_inserter(skipped));
+  //  vectors.erase(start+1, end); // no longer part of backbone of this family
+  //  vectors.shrink_to_fit();
+  //  lastSeen->setOff(lastSeen->front() - last->front());  // adjust offset
+  //}
   
-  void removeOne(LmerVector* v){
-    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), v);
-    (*(start+1))->setOff((*(start+1))->front() - (*(start-1))->front());
-    vectors.erase(start, start+1); // no longer part of backbone of this family
-    vectors.shrink_to_fit();
-  }
+  //void removeOne(LmerVector* v){
+  //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), v);
+  //  (*(start+1))->setOff((*(start+1))->front() - (*(start-1))->front());
+  //  vectors.erase(start, start+1); // no longer part of backbone of this family
+  //  vectors.shrink_to_fit();
+  //}
 
   
   friend std::ostream &operator<< (std::ostream &output, const Family &F){
@@ -130,8 +151,8 @@ public:
   LmerVector* last;
   uint last_index;
   uint expected_end;
-  vector<LmerVector*> vectors;
-  std::vector<LmerVector*> skipped;
+  std::vector<LmerVector*> vectors;
+  // std::vector<LmerVector*> skipped;
 };
 
 #endif //FAMILY_H
