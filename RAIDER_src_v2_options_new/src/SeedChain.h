@@ -355,7 +355,7 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, AppOptions 
     //   fam->removeOne(v);
     //   v->getPrevFamily()->adopt(v,L);
     // }
-    else {
+    //else {
       Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
       families.push_back(newFam);
       // If splitting proactively, we know (last+1)...(v-1) did not
@@ -364,7 +364,7 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, AppOptions 
         families.push_back(newFam2);
       }
       return true;
-    }
+    //}
   }
   return false;
 }
@@ -385,15 +385,15 @@ bool isPrefix(LmerVector *v) {
 }
 
 bool canMergeSkipped(Family* fam, uint L, bool overlaps) {
-  if (fam->getSkipped()->size() > 0){
-    return closeEnough(fam->getSkipped()->back(), fam->getOneAfterLast(), L, overlaps);
+  if (fam->getLastSkipped() && fam->getOneAfterLast()){
+    return closeEnough(fam->getLastSkipped(), fam->getOneAfterLast(), L, overlaps);
   }
   return true;
 }
 
-Family* mergeIntoFamily(vector<LmerVector*> lmers, uint L){
+Family* mergeIntoFamily(Family* fam, uint L){
   Family* newFam = new Family();
-  for (LmerVector* v : lmers){
+  for (LmerVector* v : fam->popSkipped()){
     newFam->adopt(v,L);
   }
   return newFam;
@@ -406,14 +406,15 @@ void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
     
     if (options.tieup){
       if (!canMergeSkipped(fam, L, options.overlaps)){
-        families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+         
+        families.push_back(mergeIntoFamily(fam, L));
       }
     }
     if (!fam->lastRepeatComplete()) {
       Family* newFam;
       if (options.tieup){
         fam->setRemainingSkipped();
-        newFam = mergeIntoFamily(fam->popSkipped(), L);
+        newFam = mergeIntoFamily(fam, L);
       }
       else{
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
@@ -488,13 +489,13 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
         // proactively get rid of waste if we just finished the repeat instance (anything unused)
         if (options.proactive_split){
           if (!canMergeSkipped(fam, L, options.overlaps)){
-            families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+            families.push_back(mergeIntoFamily(fam, L));
           }
           fam->setSkippedRange(v);
         }
         fam->setLast(v);
-        if (options.proactive_split && fam->lastRepeatComplete() && fam->getSkipped()->size() > 0){
-          families.push_back(mergeIntoFamily(fam->popSkipped(), L));
+        if (options.proactive_split && fam->lastRepeatComplete()){
+          families.push_back(mergeIntoFamily(fam, L));
         }
       }
     }
