@@ -40,14 +40,15 @@ struct AppOptions {
   bool prev_fam;
   // Do we use a skip-back list?
   bool sbl;
-  // 
+  // Trun on masking
+  bool mask;
   
   seqan::CharString seed;
   seqan::CharString sequence_file;
   seqan::CharString output_directory;
   
   AppOptions() :
-  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false), sbl(false){}
+  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false), sbl(false), mask(false) {}
 };
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
