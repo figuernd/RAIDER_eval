@@ -44,14 +44,17 @@ public:
   
   Family* getFamily() const   { return family; }
   void setFamily(Family *fam) {
-    if (family) {
-      prevFamily = family;
-    }
+    //if (family) {
+    //  prevFamily = family;
+    //}
     family = fam;
+    skipped = false;
   }
   
-  Family* getPrevFamily() const   { return prevFamily; }
-  void setPrevFamily(Family *fam) { prevFamily = fam;  }
+  bool gotSkipped() const { return skipped; }
+  void setSkipped() { skipped = true; }
+  //Family* getPrevFamily() const   { return prevFamily; }
+  //void setPrevFamily(Family *fam) { prevFamily = fam;  }
   
   friend ostream &operator<<( ostream &output, const LmerVector &L) {
     output  << "(\tFront:\t" << L.front()
@@ -66,7 +69,8 @@ public:
   uint previous;
   uint off;
   Family* family;
-  Family* prevFamily;
+  bool skipped;
+  //Family* prevFamily;
 };
 
 #endif //LMER_VECTOR_H

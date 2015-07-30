@@ -354,10 +354,10 @@ bool fragmentSplit(LmerVector* v, uint L, vector<Family*> &families, AppOptions 
   // If v occurs after it is supposed to (over L past the last index of the family),
   // split the family into prefix...last, (last+1)...suffix
   else if (!closeEnough(fam->getLast(), v, L, options.overlaps)) {
-    if (options.prev_fam && v->getPrevFamily() && closeEnough(v->getPrevFamily()->getLast(), v , L, options.overlaps)){
-      fam->removeOne(v);
-      v->getPrevFamily()->adopt(v,L);
-    }
+    // if (options.prev_fam && v->getPrevFamily() && closeEnough(v->getPrevFamily()->getLast(), v , L, options.overlaps)){
+    //   fam->removeOne(v);
+    //   v->getPrevFamily()->adopt(v,L);
+    // }
     else {
       Family* newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
       families.push_back(newFam);
@@ -493,7 +493,7 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
           if (!canMergeSkipped(fam, L, options.overlaps)){
             families.push_back(mergeIntoFamily(fam->popSkipped(), L));
           }
-          fam->moveSkippedRange(v);
+          fam->setSkippedRange(v);
         }
         fam->setLast(v);
         if (options.proactive_split && fam->lastRepeatComplete() && fam->getSkipped()->size() > 0){
