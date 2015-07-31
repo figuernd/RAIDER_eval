@@ -64,6 +64,11 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
             parser,
             seqan::ArgParseOption("s", "seed", "Spaced seed/mask to use. Defaults to 111110011111110001111111000000000000011111.",
                                   seqan::ArgParseOption::STRING));
+
+  addOption(
+	    parser,
+	    seqan::ArgParseOption("mf", "mask_file", "Masked sequence file.Default: off",
+				  seqan::ArgParseOption::STRING));
   
   addOption(
             parser,
@@ -122,6 +127,11 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
     seqan::getOptionValue(options.seed, parser, "seed");
   else
     options.seed = "111110011111110001111111000000000000011111";
+
+  if (isSet(parser, "mask_file"))
+    seqan::getOptionValue(options.mask_file, parser, "mask_file");
+  else
+    options.seed = "";
   
   if (isSet(parser, "min"))
     seqan::getOptionValue(options.min, parser, "min");
@@ -164,6 +174,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   if (isSet(parser, "sbl")){
     options.sbl = true;
   }
+
   
   // Ensure a trailing /
   if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {
@@ -420,6 +431,10 @@ int main(int argc, char const ** argv) {
     // TODO throw exceptions
     return 1;
   }
+
+
+  cout << sequence[20] << endl;
+  exit(1);
   
   if (options.verbosity > 0) {
     cout << "BASE PAIRS\t" << seqan::length(sequence) << endl;
