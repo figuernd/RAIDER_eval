@@ -22,6 +22,7 @@ public:
       v->setOff(off - 1);
     }
     else{
+      lastSkipped = nullptr;
       v->setOff(0);
     }
     vectors.push_back(v);
@@ -74,16 +75,21 @@ public:
     last_index = v->back();
   }
   
-  //LmerVector* getOneAfterLast(){
-  //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
-  //  return *(start+1);
-  //}
+  LmerVector* getOneAfterLast(){
+    std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
+    return *(start+1);
+  }
+
+  LmerVector* getLastSkipped(){
+    return lastSkipped;
+  }
   
   uint getExpectedEnd() const { return expected_end; }
   void setExpectedEnd(uint expected) { expected_end = expected; }
   
   void resetOffs(){
     for (uint i = 0; i < vectors.size(); i++){
+      LmerVector* v = vectors.at(i);
       if (v != vectors.front()){
         v->setOff(v->front() - vectors.at(i-1)->front());
       }
@@ -94,7 +100,7 @@ public:
     //std::vector<LmerVector*> ret(skipped);
     //skipped.clear();
     std::vector<LmerVector*> skipped(vectors.size());
-    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return v->gotSkipped()});
+    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return v->gotSkipped();});
     vectors.shrink_to_fit();
     skipped.shrink_to_fit();  // shrink container to new size
     resetOffs();
@@ -106,11 +112,14 @@ public:
   void setSkippedRange(LmerVector* lastSeen){
     std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
     std::vector<LmerVector*>::iterator end = std::find(vectors.begin(), vectors.end(), lastSeen);
-    std::for_each(start+1, end, setSkipped);
+    std::for_each(start+1, end, [](LmerVector* v){ v->setSkipped(); });
+    lastSkipped = *(end-1);
   }
   
   void setRemainingSkipped(){
     setSkippedRange(vectors.back());
+    vectors.back()->setSkipped();
+    lastSkipped = vectors.back();
   }
   //  std::vector<LmerVector*>::iterator start = std::find(vectors.begin(), vectors.end(), last);
   //  std::move(start+1, vectors.end(), std::back_inserter(skipped));
@@ -149,6 +158,7 @@ public:
   }
   
   LmerVector* last;
+  LmerVector* lastSkipped;
   uint last_index;
   uint expected_end;
   std::vector<LmerVector*> vectors;
