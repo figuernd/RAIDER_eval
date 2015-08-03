@@ -1,8 +1,8 @@
 # Nathan Figueroa
 
-CC = g++ -std=c++11 -Wno-deprecated-declarations
+CC = g++ -std=c++11 -Wno-deprecated-declarations -Wno-header-guard -Wno-deprecated-register
 
-CXXFLAGS+=-Wall -W -O3 -DNDEBUG
+CXXFLAGS+=-Wall -W -g -DNDEBUG 
 
 CPPINCL+=-I../../seqan/include
 CPPINCL+=-I../../seqan/extras/include
@@ -14,7 +14,10 @@ all: main
 
 main: Family.h LmerVector.h SeedChain.h main.cpp
 	@echo compiling RAIDER; 
-	$(CC) $(CPPINCL) $(CXXFLAGS) $^ -o ../../raiderv2_options
+	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o raiderv2_options
+
+test: test.cpp
+	$(CC) $(CPPINCL) $(CXXFLAGS) test.cpp -o test
 
 ############################################################
 # GOOGLE TEST SETUP
@@ -51,3 +54,7 @@ tests: Family.h LmerVector.h SeedChain.h tests.o gtest_main.a
 
 clean:
 	rm *.o ../raider tests
+
+
+check-syntax:
+	gcc -o nul -S ${CHK_SOURCES}
