@@ -14,10 +14,7 @@ all: main
 
 main: Family.h LmerVector.h SeedChain.h main.cpp
 	@echo compiling RAIDER; 
-	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o raiderv2_options
-
-test: test.cpp
-	$(CC) $(CPPINCL) $(CXXFLAGS) test.cpp -o test
+	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o ../../raiderv2_options
 
 ############################################################
 # GOOGLE TEST SETUP
