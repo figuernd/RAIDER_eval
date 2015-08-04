@@ -5,6 +5,7 @@
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <unordered_set>
 
 class Family {
 public:
@@ -163,6 +164,11 @@ public:
   uint expected_end;
   std::vector<LmerVector*> vectors;
   // std::vector<LmerVector*> skipped;
+
+  // Instances which are "removed" in post-processing, by LmetVector index.
+  // Removal only occurs in post-processing -- not relevant to RAIDER algorithm.
+  unordered_set<uint> excluded;  
+  
 };
 
 #endif //FAMILY_H

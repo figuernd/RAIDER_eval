@@ -2,7 +2,7 @@
 
 CC = g++ -std=c++11 -Wno-deprecated-declarations -Wno-header-guard -Wno-deprecated-register
 
-CXXFLAGS+=-Wall -W -g -DNDEBUG 
+CXXFLAGS+=-Wall -W -O3 -DNDEBUG 
 
 CPPINCL+=-I../../seqan/include
 CPPINCL+=-I../../seqan/extras/include

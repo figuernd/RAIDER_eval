@@ -10,6 +10,7 @@
 #include <seqan/sequence.h>
 #include <seqan/arg_parse.h>
 #include <seqan/seq_io.h>
+#include <seqan/gff_io.h>
 
 #include <iostream>
 #include <sstream>
@@ -18,6 +19,7 @@
 #include <stdio.h>
 #include <unordered_map>
 #include <set>
+#include <unordered_set>
 #include <numeric>
 
 #include "SeedChain.h"
@@ -26,13 +28,15 @@
 
 using namespace std;
 
-typedef pair<uint, seqan::CharString> idThreshold;
+typedef pair<uint, string> idThreshold;
 
 const string OUTPUT_ELEMENTARY_REPEATS_FILENAME = "elements";
 const string OUTPUT_REPEAT_FAMILIES_FILENAME = "families";
 const string OUTPUT_COMPOSITES_FILENAME = "composites";
 const string OUTPUT_SUMMARY_FILENAME = "summary_info";
 
+
+typedef pair<int,int> Interval;
 
 // ==========================================================================
 // Functions
@@ -67,8 +71,13 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 
   addOption(
 	    parser,
-	    seqan::ArgParseOption("mf", "mask_file", "Masked sequence file.Default: off",
+	    seqan::ArgParseOption("mf", "mask_file", "Masked sequence file. Default: none",
 				  seqan::ArgParseOption::STRING));
+
+  addOption(
+	     parser,
+	     seqan::ArgParseOption("ff", "filter_file", "Filter file. Default: none",
+				   seqan::ArgParseOption::STRING));
   
   addOption(
             parser,
@@ -132,6 +141,11 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
     seqan::getOptionValue(options.mask_file, parser, "mask_file");
   else
     options.mask_file = "";
+
+  if (isSet(parser, "filter_file"))
+    seqan::getOptionValue(options.filter_file, parser, "filter_file");
+  else
+    options.filter_file = "";
   
   if (isSet(parser, "min"))
     seqan::getOptionValue(options.min, parser, "min");
@@ -188,9 +202,15 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
  * Given a sequence stream, read in all sequences and concatenate into a master sequence
  */
 bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> &thresholds,
-                          vector<pair<uint,uint>>& seq_coords, seqan::Dna5String &outSequence, int verbosity, int L) {
+                          vector<pair<uint,uint>>& seq_coords, unordered_map<string,uint>& chr2start,
+			  seqan::Dna5String &outSequence, int verbosity, int L) {
   thresholds.clear();
   seq_coords.clear();
+  chr2start.clear();
+  seqan::Dna5String buffer;
+  for (int i=0; i < L; i++) // Better way to do this?
+    seqan::append(buffer, "N");
+  
   seqan::CharString id;
   if (seqan::readRecord(id, outSequence, seqStream) != 0) {
     return false;
@@ -199,13 +219,12 @@ bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> 
     cout << "Preparing " << id << endl;
   }
   uint currentThreshold = seqan::length(outSequence);
-  thresholds.push_back(make_pair(currentThreshold, id));
+  thresholds.push_back(make_pair(currentThreshold + L, toCString(id)));
   seqan::Dna5String other;
   seq_coords.push_back(make_pair<uint,uint>(0, seqan::length(outSequence)));
+  chr2start[toCString(id)] = 0;
 
-  seqan::Dna5String buffer;
-  for (int i=0; i < L + 1; i++) // Better way to do this?
-    seqan::append(buffer, "N");
+
 
   while (seqan::readRecord(id, other, seqStream) == 0) {
     if (verbosity > 0) {
@@ -217,7 +236,8 @@ bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> 
     uint start = seqan::length(outSequence);
     uint finish = start + length(other);
     seq_coords.push_back(make_pair(start,finish));
-    thresholds.push_back(make_pair(currentThreshold, id));
+    thresholds.push_back(make_pair(currentThreshold + L, toCString(id)));
+    chr2start[toCString(id)] = start;
     seqan::append(outSequence, other);
   }
 
@@ -229,13 +249,13 @@ bool concatenateSequences(seqan::SequenceStream &seqStream, vector<idThreshold> 
  * list of thresholds: indices into the master sequence paired with sequence IDs to mark where each
  * individual sequence begins.
  */
-bool getSequence(seqan::CharString file, seqan::Dna5String &sequence, vector<idThreshold> &thresholds, vector<pair<uint,uint>>& seq_coords, int verbosity, int L) {
+bool getSequence(seqan::CharString file, seqan::Dna5String &sequence, vector<idThreshold> &thresholds, vector<pair<uint,uint> >& seq_coords, unordered_map<string,uint>& chr2start, int verbosity, int L) {
   if (verbosity > 0) {
     cout << "Loading sequence..." << endl;
   }
   
   seqan::SequenceStream seqStream(seqan::toCString(file));
-  if (!seqan::isGood(seqStream) || !concatenateSequences(seqStream, thresholds, seq_coords, sequence, verbosity, L)) {
+  if (!seqan::isGood(seqStream) || !concatenateSequences(seqStream, thresholds, seq_coords, chr2start, sequence, verbosity, L)) {
     cout << "Error: unable to open sequence." << endl;
     return false;
   }
@@ -302,8 +322,8 @@ void writeFamilies(vector<Family*> &families, AppOptions &options) {
   ofile << "#  fam\tnum_copies\tcopy_length" << endl;
   for (uint i = 0; i < families.size(); i++) {
     Family* fam = families[i];
-    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
-      ofile << i << "\t" << fam->size() << "\t" << fam->repeatLength(options.min) << endl;
+    if (fam->repeatLength(options.min) >= options.min && fam->size() - fam->excluded.size() >= options.count) {
+      ofile << i << "\t" << fam->size() - fam->excluded.size() << "\t" << fam->repeatLength(options.min) << endl;
     }
   }
 }
@@ -322,17 +342,19 @@ void writeRepeats(vector<Family*> &families, vector<idThreshold> &thresholds, Ap
   ofile.open(repeatsFilePath.c_str());
   
   ofile << "#  fam\tele\tdir\tsequence\tstart\tend" << endl;
-  
+
   for (uint i = 0; i < families.size(); i++) {
     Family* fam = families[i];
  
-    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+    if (fam->repeatLength(options.min) >= options.min && fam->size() - fam->excluded.size() >= options.count) {
       int famId = i;
       int repId = repCount;
       repCount += fam->size();
       
       LmerVector* prefix = fam->getPrefix();
       for (uint i = 0; i < prefix->size(); i++) {
+	if (fam->excluded.find(i) != fam->excluded.end())
+	  continue;
         repId++;
         uint index = (*prefix)[i];
         uint trueIndex = getSeqIndex(index, thresholds);
@@ -365,13 +387,14 @@ void writeSummary(vector<Family*> &families, AppOptions &options) {
   
   for (uint i = 0; i < families.size(); i++) {
     Family* fam = families[i];
-    if (fam->repeatLength(options.min) >= options.min && fam->size() >= options.count) {
+    uint fam_size = fam->size() - fam->excluded.size();
+    if (fam->repeatLength(options.min) >= options.min && fam_size >= options.count) {
       famCount++;
-      repCount += fam->size();
+      repCount += fam_size;
       
       if (fam->size() > maxSize) {
         maxSecondSize = maxSize;
-        maxSize = fam->size();
+        maxSize = fam_size;
       }
       
       if (fam->repeatLength(options.min) > maxLen) {
@@ -388,11 +411,12 @@ void writeSummary(vector<Family*> &families, AppOptions &options) {
 }
 
 void writeResults(vector<Family*> &families, vector<idThreshold> &thresholds, AppOptions &options) {
+  cout << "Y: " << families[0]->size() << endl;
   writeFamilies(families, options);
   writeRepeats(families, thresholds, options);
   writeSummary(families, options);
 }
-
+ 
 
 // Create the skip-back list for the seed.  
 vector<int> createSBL(vector<seqan::CharString> seeds, bool sbl) {
@@ -433,14 +457,54 @@ vector<int> createSBL(vector<seqan::CharString> seeds, bool sbl) {
   return SBL;
 }
 
+// Remove lmers that are overlapping exons.  Remove families which are not left with a sufficient number of lmers.
+// IMPORTANT: New copies of families are not fully definied.  The vectors property is properly coppied.  Nothing else is.
+void filter_families(const vector<Family*>& families, unordered_map<string,uint>& chr2start, AppOptions& options, uint L) {
+  assert(options.filter_file != "");
+  
+  vector<Interval> exon_list;
+  seqan::GffStream gffIn(toCString(options.filter_file));
+  seqan::GffRecord R;
+  while (!atEnd(gffIn)) {
+    seqan::readRecord(R, gffIn);
+    uint offset = chr2start[toCString(R.ref)];
+    exon_list.push_back(make_pair<uint,uint>(R.beginPos + offset, R.endPos + offset));
+  }
+  sort(exon_list.begin(), exon_list.end());
+
+  vector<Family*> new_families;
+  for (Family* f : families) {
+    LmerVector* l = f->vectors.front();
+    uint len = f->repeatLength(L);
+    unordered_set<uint> filtered;
+    for (uint i=0; i < l->lmers.size(); i++) {
+      uint c = l->lmers[i];
+      Interval I = make_pair(c, c + len);
+      vector<Interval>::iterator p = lower_bound(exon_list.begin(), exon_list.end(), I);
+      if ((p != exon_list.end() && p->first < I.second) || (p != exon_list.begin() && (p-1)->second >= I.first))
+	f->excluded.insert(i);
+    }
+  }
+}
+      
+      
+
+  
+
 
 void mask_sequence(const vector<Family*>& families, seqan::Dna5String& sequence,
 		   vector<idThreshold> thresholds, vector<pair<uint,uint>>& seq_coords,
-		   seqan::CharString output, int L) {
+		   seqan::CharString output, int L, uint count) {
   for (Family* f : families) {
-    for (uint start : f->getPrefix()->lmers)
-      for (uint i = 0; i < f->repeatLength(L); i++)
-	sequence[start + i] = 'N';
+    if (f->size() - f->excluded.size() < count)
+      continue;
+    for (uint i=0; i < f->getPrefix()->lmers.size(); i++) {
+      if (f->excluded.find(i) == f->excluded.end()) {
+	uint start = f->getPrefix()->lmers[i];
+	for (uint i = 0; i < f->repeatLength(L); i++)
+	  sequence[start + i] = 'N';
+      }
+    }
   }
 
   ofstream out(seqan::toCString(output));
@@ -453,6 +517,8 @@ void mask_sequence(const vector<Family*>& families, seqan::Dna5String& sequence,
   }
 }
   
+
+ 
 
 int main(int argc, char const ** argv) {
   AppOptions options;
@@ -468,9 +534,10 @@ int main(int argc, char const ** argv) {
   // Load sequences into master sequence, mark where each sequence ID begins within the master
   vector<idThreshold> thresholds;
   vector<pair<uint,uint>> seq_coords;
+  unordered_map<string, uint> chr2start;
   int L = seqan::length(seeds[0]);   // TO DO: What is there are multiple seeds?
   seqan::Dna5String sequence;
-  if (getSequence(options.sequence_file, sequence, thresholds, seq_coords, options.verbosity, L) == false) {
+  if (getSequence(options.sequence_file, sequence, thresholds, seq_coords, chr2start, options.verbosity, L) == false) {
     // TODO throw exceptions
     return 1;
   }
@@ -480,8 +547,7 @@ int main(int argc, char const ** argv) {
   }
   
 
-
-  vector<int> SBL = createSBL(seeds, options.sbl);
+  //vector<int> SBL = createSBL(seeds, options.sbl);
 
   getElementaryFamilies(sequence, seeds, families, options);
 
@@ -489,11 +555,17 @@ int main(int argc, char const ** argv) {
     cout << "Writing results elements..." << endl;
   }
 
+  if (options.filter_file != "") 
+    // IMPORTANT: This "ruins" the families -- only the vector property is left intact. (Shouldn't 
+    // matter, since the the algorithm is done.)  Also a potential source of memory leaks.  (Also
+    // shouldn't matter.)
+    filter_families(families, chr2start, options, L);
 
   if (options.mask_file != "") {
-    mask_sequence(families, sequence, thresholds, seq_coords, options.mask_file, L);
+    mask_sequence(families, sequence, thresholds, seq_coords, options.mask_file, L, options.count);
   }
-  
+
+  cout << "X: " << families[0]->size() << endl;
   writeResults(families, thresholds, options);
   
   return 0;

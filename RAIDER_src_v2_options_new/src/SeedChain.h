@@ -42,13 +42,15 @@ struct AppOptions {
   bool sbl;
   // File name for masked file (if specified)
   seqan::CharString mask_file;
+  // File name for filter_file (if specified)
+  seqan::CharString filter_file;
   
   seqan::CharString seed;
   seqan::CharString sequence_file;
   seqan::CharString output_directory;
   
   AppOptions() :
-  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false), sbl(false), mask_file("") {}
+  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false), sbl(false), mask_file(""), filter_file("") {}
 };
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
