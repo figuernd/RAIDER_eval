@@ -1,0 +1,76 @@
+Description of all of the scripts I have written and any other resources that may
+be helpful in the testing of phRAIDER.
+
+in the RAIDER_eval/aseed_files directory:
+  subdir aseeds:    Contains all of the various spaced seed files I have used
+                    while testing phRAIDER. The most recent files are in this
+                    main directory, not in the subdirectories. File names are
+                    pretty descriptive. W used in any file name denotes weight
+                    L used in any file name denotes length. patternhunter.txt
+                    contains the seed used by the original PatternHunter paper,
+                    patternhunter_modified* files are modifications I made based
+                    on hunches from previous results. Same for raider_paper.txt
+                    and raider_paper_modified* files.
+  subdir programs:  Contains python and bash scripts I created when originally
+                    testing phRAIDER. Back when I thought the best seeds would
+                    be palindromic.
+      -> create_all.py:       generates all spaced seeds possible of specified
+                              length and weight. unrealistically long seed file
+                              when |length - weight| gets large.
+                              Optional arguments:   '-l'/'--length'
+                                                    '-w', '--weight'
+                              Positional arguments: seed_file
+      -> create_all_pals.py:  see create_all.py. only generates palindromic seeds
+      -> create_all_palls.sh: bash script wrapper to create palindromic seed files
+                              of all combinations of weight and length between
+                              specified min and max weight (minw, maxw) and
+                              specified min and max length (minl, maxl).
+                              Arguments: minw maxw minl maxl
+      -> create_pals.sh:      given a string (rep), creates all seeds that are the result
+                              of continuously concatenating string with itself.
+                              Puts seeds of length greater than (min) but less
+                              than (max) into file (fname)
+                              Arguments: rep min max fname
+in RAIDER_eval directory:
+
+  MAINTAIN
+    cleanup.sh: shell script that will remove all extra files from an output
+                directory after running RAIDER_eval. Removes all tool-specific
+                output directories. Keeps debug.txt, seed_file.txt, and stats files
+
+  ANALYZE
+    R files:
+      -> sorted_analyze.R   :   helper R script for formatting stats data from RAIDER_eval.
+                                provides functions for sorting data, as well as adding extra/
+                                removing excess information to/from the data. also includes
+                                function for outputting data to file/stdout.
+      -> doSortedAnalysis.R :   script for sorting stats data from  RAIDER_eval output.
+                                Allows options for adding/removing/formatting data.
+                                  Arguments:
+                                    -v/--verbose  specifies whether output will print to stdout. default = True
+                                    -f/--fname    specifies stats file path
+                                    -o/--output   specifies file to print output to
+                                    --formula     specifies sorting formula for output. default = ~-tpr (Descending by sensitivity)
+                                    -a/--auto_out specifies to print output to default file in same directory
+                                    -t/--add_type specifies to add info about whether analyzing seq/sim data
+                                    -c/--add_chrom specifies to add info about chromosome being analyzed
+                                    -s/--suppress_seeds specifies not to add seed specific information
+                                    -i            specifies to not include time/space complexity information
+                                    -m            specifies to include directory information
+      -> doCombinedAnalysis.R : script for combining stats data from multiple RAIDER_eval
+                                output directories. Recursively searches for all files in
+                                specified directory that are named "stats.txt". Combines all
+                                data together, and allows options foradding/removing/formatting data.
+                                    Arguments: same as doSortedAnalysis.R, except -f/--fname
+                                        is replaced by -d/--dirname
+
+    AUTOMATE
+      rev_sf.sh :   shell script that automates the process of naming RAIDER_eval output directory,
+                    running the RAIDER_eval program, cleaning up the output directory, and
+                    creating a formatted statistics output file.
+                      Arguments:
+                        $dir - base directory for output dir, to be modified
+                        $sfile OR $seed - depending on which, adjusts naming of output dir to indicate
+                        $freq
+                        $data
+                        $type (default is seq_files)
