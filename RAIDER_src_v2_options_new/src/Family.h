@@ -1,3 +1,20 @@
+// Family.h is part of phRAIDER.
+//
+// phRAIDER is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// phRAIDER is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with phRAIDER.  If not, see <http://www.gnu.org/licenses/>.
+
+// Created by Carly Schaeffer, Nathan Figueroa, and John Karro
+
 #ifndef FAMILY_H
 #define FAMILY_H
 #include <vector>
@@ -101,7 +118,7 @@ public:
     //std::vector<LmerVector*> ret(skipped);
     //skipped.clear();
     std::vector<LmerVector*> skipped(vectors.size());
-    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return v->gotSkipped();});
+    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return !v->gotSkipped();});
     vectors.shrink_to_fit();
     skipped.shrink_to_fit();  // shrink container to new size
     resetOffs();

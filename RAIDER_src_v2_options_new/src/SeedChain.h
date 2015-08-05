@@ -1,3 +1,20 @@
+// SeedChain.h is part of phRAIDER.
+//
+// phRAIDER is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// phRAIDER is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with phRAIDER.  If not, see <http://www.gnu.org/licenses/>.
+
+// Created by Carly Schaeffer, Nathan Figueroa, and John Karro
+
 #ifndef RAIDER2_SEEDCHAIN_H
 #define RAIDER2_SEEDCHAIN_H
 
@@ -80,6 +97,11 @@ void prettyPrintFamily(uint t, Family* fam, bool isNew, bool isMod){
   else{
     cout << "Family:\t" << *fam << endl;
   }
+}
+
+void prettyPrintModifiedFamily(uint t, Family* fam1, Family* fam2){
+  prettyPrintFamily(t, fam1, false, true);
+  prettyPrintFamily(t, fam2, true, false);
 }
 
 void prettyPrintMethodState(uint t, string methodname, LmerVector* v, Family* fam, bool isNew, bool isMod){
@@ -259,11 +281,10 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, AppOptions optio
   
   newFam->setLast(v);
   newFam->setExpectedEnd(v->back() + newFam->repeatLength(L));
-  
-  if (options.verbosity > 2){
-    prettyPrintFamily(2, fam, false, true);
-    prettyPrintFamily(2, newFam, true, false);
-  }
+ 
+
+  if (options.verbosity > 2)
+    prettyPrintModifiedFamily(2, fam, newFam);
   return newFam;
   
 }
@@ -306,10 +327,8 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOp
     newFam->setExpectedEnd(v->back() + newFam->repeatLength(L));
   }
   
-  if (options.verbosity > 2){
-    prettyPrintFamily(2, fam, false, true);
-    prettyPrintFamily(2, newFam, true, false);
-  }
+  if (options.verbosity > 2)
+    prettyPrintModifiedFamily(2, fam, newFam);
   
   return newFam;
 }
@@ -397,11 +416,19 @@ bool canMergeSkipped(Family* fam, uint L, bool overlaps) {
   return true;
 }
 
-Family* mergeIntoFamily(Family* fam, uint L){
+Family* mergeIntoFamily(Family* fam, uint L, uint verbosity){
+  if (verbosity > 2){
+    cout << "-- Merge Into Family --" << endl;
+    prettyPrintFamily(1, fam, false, false);   
+  }
   Family* newFam = new Family();
   for (LmerVector* v : fam->popSkipped()){
-    newFam->adopt(v,L);
+    if (v)
+      newFam->adopt(v,L);
   }
+  if(newFam->size() == 0)
+    return 0;
+  if (verbosity > 2) prettyPrintModifiedFamily(1, fam, newFam);
   return newFam;
 }
 
@@ -413,14 +440,14 @@ void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
     if (options.tieup){
       if (!canMergeSkipped(fam, L, options.overlaps)){
          
-        families.push_back(mergeIntoFamily(fam, L));
+        families.push_back(mergeIntoFamily(fam, L, options.verbosity));
       }
     }
     if (!fam->lastRepeatComplete()) {
       Family* newFam;
       if (options.tieup){
         fam->setRemainingSkipped();
-        newFam = mergeIntoFamily(fam, L);
+        newFam = mergeIntoFamily(fam, L, options.verbosity);
       }
       else{
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
@@ -495,13 +522,13 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
         // proactively get rid of waste if we just finished the repeat instance (anything unused)
         if (options.proactive_split){
           if (!canMergeSkipped(fam, L, options.overlaps)){
-            families.push_back(mergeIntoFamily(fam, L));
+            families.push_back(mergeIntoFamily(fam, L, options.verbosity));
           }
           fam->setSkippedRange(v);
         }
         fam->setLast(v);
         if (options.proactive_split && fam->lastRepeatComplete()){
-          families.push_back(mergeIntoFamily(fam, L));
+          families.push_back(mergeIntoFamily(fam, L, options.verbosity));
         }
       }
     }
