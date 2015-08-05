@@ -718,7 +718,7 @@ def run_scout_second_filter_RM(p, num_processors):
         p2.input_name = p.input_name
         p2.stage = "RM"
         p2.description = p.description#"rep_scout"
-        print("F1 resources : " + str(p2.tool_resources))
+        #print("F1 resources : " + str(p2.tool_resources))
         return p2
         
     else:
@@ -747,10 +747,10 @@ def run_scout_second_filter(p):
             p2.submit_timed_job(preserve=True)
         p2.description = p.description#"rep_scout"
         p2.stage = "2"
-        print("RM resources : " + str(p.getResources(cleanup=False)))
+        #print("RM resources : " + str(p.getResources(cleanup=False)))
 
         p2.tool_resources = [x + y for x, y in zip(p.tool_resources, p.getResources(cleanup=False))]
-        print("F1 + RM resources : " + str(p2.tool_resources))
+        #print("F1 + RM resources : " + str(p2.tool_resources))
         p2.seq_file = p.seq_file
         p2.lib_file = filter_stage2_output
         p2.should_filter_stage2 = p.should_filter_stage2
@@ -1158,10 +1158,10 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
                         added_jobs.add(run_scout_second_filter(j))
                 else:
                     if "rep_scout" in j.description and j.stage == "2":
-                        print("F2 resources : " + str(list(j.getResources(cleanup=False))))
+                        #print("F2 resources : " + str(list(j.getResources(cleanup=False))))
                         #j.tool_resources = j.tool_resources + j.getResources(cleanup=False) #should we include the RM inside RS in timing? #p.getResources(cleanup=False)
                         j.tool_resources = [x + y for x, y in zip(j.tool_resources, j.getResources(cleanup=False))] #j.tool_resources + j.getResources(cleanup = False)
-                        print("F1 + RM + F2 resources : " + str(j.tool_resources))
+                        #print("F1 + RM + F2 resources : " + str(j.tool_resources))
                     rm_job = None
                     pra_job = None
                     if run_rm:
@@ -1227,7 +1227,7 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
                 exit_now()
             pra_job_set = pra_job_set - finished_pra_jobs
             rm_job_set = rm_job_set-finished_rm_jobs
-    print(str(job_dic))
+    #print(str(job_dic))
     return job_dic, stats_jobs, pra_job_set
 
 
