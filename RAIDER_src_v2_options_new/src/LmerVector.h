@@ -58,8 +58,12 @@ public:
   
   friend ostream &operator<<( ostream &output, const LmerVector &L) {
     output  << "(\tFront:\t" << L.front()
-    << "\tBack:\t" << L.back()
-    << "\tSize:\t" << L.size()
+    << "\tBack:\t" << L.back() << "\tLocations:\t";
+    for (uint loc : L.lmers){
+      output << loc << " ";
+    }
+    output << "\tSize:\t" << L.size()
+    << "\tSkipped?\t" << L.gotSkipped()
     << "\tOffset In Family\t" << L.getOff()
     << "\tFamily:\t" << L.getFamily() << "\t)";
     return output;

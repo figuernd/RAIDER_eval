@@ -100,7 +100,7 @@ public:
     //std::vector<LmerVector*> ret(skipped);
     //skipped.clear();
     std::vector<LmerVector*> skipped(vectors.size());
-    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return v->gotSkipped();});
+    std::remove_copy_if (vectors.begin(),vectors.end(),skipped.begin(), [](LmerVector* v){return !v->gotSkipped();});
     vectors.shrink_to_fit();
     skipped.shrink_to_fit();  // shrink container to new size
     resetOffs();
