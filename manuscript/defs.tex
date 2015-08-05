@@ -46,6 +46,15 @@ pattern.)
 {\bf Note: } I'm not sure if we should be allowing $r''_i=*$.
 
 \begin{definition}
+ \begin{itemize}
+ \item Two refds $r$ and $r'$ match if for all $i$ either $r_i = r'_i$, $r_i=*$, or $r'_i = *$.
+ \item Two refds $r$ and $r'$ overlap if (w.l.o.g.) $r$ has a suffix that matchs a prefix of equal length of $r'$.
+ \end{itemize}
+\end{definition}
+$AAACC*CC$ overlaps $CCTC*GGG$.
+
+
+\begin{definition}
   We say an refd $r$ {\it matches} a genome $G$ at position $i$ if, for
   all $j$ such that $r_j \neq *$, $r_j = G_{i+j}$.
 \end{definition}

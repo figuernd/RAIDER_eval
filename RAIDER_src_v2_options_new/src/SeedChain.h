@@ -38,13 +38,16 @@ struct AppOptions {
   bool proactive_split;
   // Keep track of previous family
   bool prev_fam;
+  // Do we use a skip-back list?
+  bool sbl;
+  // 
   
   seqan::CharString seed;
   seqan::CharString sequence_file;
   seqan::CharString output_directory;
   
   AppOptions() :
-  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false){}
+  age(1), verbosity(1), family_array(true), excising(false), overlaps(true), tieup(false), proactive_split(false), prev_fam(false), sbl(false){}
 };
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
