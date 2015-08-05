@@ -420,7 +420,6 @@ void writeSummary(vector<Family*> &families, AppOptions &options) {
 }
 
 void writeResults(vector<Family*> &families, vector<idThreshold> &thresholds, AppOptions &options) {
-  cout << "Y: " << families[0]->size() << endl;
   writeFamilies(families, options);
   writeRepeats(families, thresholds, options);
   writeSummary(families, options);
@@ -574,7 +573,6 @@ int main(int argc, char const ** argv) {
     mask_sequence(families, sequence, thresholds, seq_coords, options.mask_file, L, options.count);
   }
 
-  cout << "X: " << families[0]->size() << endl;
   writeResults(families, thresholds, options);
   
   return 0;
