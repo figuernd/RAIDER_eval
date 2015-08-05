@@ -1,3 +1,20 @@
+// Family.h is part of phRAIDER.
+//
+// phRAIDER is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// phRAIDER is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with phRAIDER.  If not, see <http://www.gnu.org/licenses/>.
+
+// Created by Carly Schaeffer, Nathan Figueroa, and John Karro
+
 #ifndef FAMILY_H
 #define FAMILY_H
 #include <vector>
@@ -5,6 +22,7 @@
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <unordered_set>
 
 class Family {
 public:
@@ -163,6 +181,11 @@ public:
   uint expected_end;
   std::vector<LmerVector*> vectors;
   // std::vector<LmerVector*> skipped;
+
+  // Instances which are "removed" in post-processing, by LmetVector index.
+  // Removal only occurs in post-processing -- not relevant to RAIDER algorithm.
+  unordered_set<uint> excluded;  
+  
 };
 
 #endif //FAMILY_H

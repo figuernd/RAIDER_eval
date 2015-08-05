@@ -1,8 +1,23 @@
-# Nathan Figueroa
+# Makefile is part of phRAIDER.
+#
+# phRAIDER is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# phRAIDER is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with phRAIDER.  If not, see <http://www.gnu.org/licenses/>.
 
-CC = g++ -std=c++11 -Wno-deprecated-declarations
+# Created by Carly Schaeffer, Nathan Figueroa, and John Karro
 
-CXXFLAGS+=-Wall -W -g -DNDEBUG
+CC = g++ -std=c++11 -Wno-deprecated-declarations -Wno-header-guard -Wno-deprecated-register
+
+CXXFLAGS+=-Wall -W -O3 -DNDEBUG 
 
 CPPINCL+=-I../../seqan/include
 CPPINCL+=-I../../seqan/extras/include
@@ -14,7 +29,7 @@ all: main
 
 main: Family.h LmerVector.h SeedChain.h main.cpp
 	@echo compiling RAIDER; 
-	$(CC) $(CPPINCL) $(CXXFLAGS) $^ -o ../../raiderv2_options
+	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o ../../raiderv2_options
 
 ############################################################
 # GOOGLE TEST SETUP
@@ -51,3 +66,7 @@ tests: Family.h LmerVector.h SeedChain.h tests.o gtest_main.a
 
 clean:
 	rm *.o ../raider tests
+
+
+check-syntax:
+	gcc -o nul -S ${CHK_SOURCES}
