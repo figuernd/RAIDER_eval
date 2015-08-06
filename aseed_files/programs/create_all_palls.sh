@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# create_all_palls.sh: Wrapper to create seed files of all combinations of weight
+# and length between specified min and max weight (minw, maxw) and specified min
+# and max length (minl, maxl). Arguments: minw maxw minl maxl
+# by Carly Schaeffer
 
-#pass in minw maxw minl maxl
 
 aseed_dir='../aseeds/'
 dir=${aseed_dir}L_${minl}_${maxl}_W_${minw}_${maxw}
@@ -23,4 +26,3 @@ while [[ $currl -le $maxl ]]; do
     done
     let currl=currl+1
 done
-

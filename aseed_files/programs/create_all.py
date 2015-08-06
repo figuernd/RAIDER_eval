@@ -1,10 +1,15 @@
 #!/software/python/3.3.3/bin/python3.3
 
+# create_all.py: generate all spaced seeds possible of specified length and weight
+# unrealistically long seed file when |length - weight| gets large.
+# Arguments:    optionally specify length (-l/--length) and weight (-w/--weight)
+#               must specify seed_file (output file path)
+# by Carly Schaeffer
+
 import itertools
 import argparse
 
-
-def generate_seed_file(seed_file, length, weight): 
+def generate_seed_file(seed_file, length, weight):
     f = open(seed_file, 'w')
     for bits in itertools.combinations(range(length - 2), weight - 2):
         s = ['0'] * length
