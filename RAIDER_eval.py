@@ -1,17 +1,28 @@
-#!/software/python/3.3.3/bin/python3.3
 import sys
 import subprocess
 import os
 import os.path
 import shutil
 import argparse
-from redhawk import *
 import tempfile
 import re
 import perform_stats
 import time
 import pickle
 from checkpoint_jobs import *
+
+try:
+    fp = open("locations.txt")
+except: 
+    sys.stderr.println("locations.txt file not present.")
+    exit(1);
+
+location = fp.readline().strip()
+if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
+    sys.stderr.println("location.txt: Bad content")
+    exit(1)
+
+
 
 #################################################################
 # The following global variables are related to debugging issues.
@@ -66,7 +77,9 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'bigfoot':'./bigfoot',
                 'python':'python3.4',
                 'araider':'./araider',
-                'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
+                'raider2': './raiderv2_options',
+                'rm_modules': [],
+                'RepeatMasker' : 'RepeatMasker'}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -76,7 +89,21 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'bigfoot':'./bigfoot',
                     'python':'python3.3',
                     'araider':'./araider',
-                    'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
+                    'raider2': './raiderv2_options',
+                    'rm_modules' : ['RepeatMasker', 'python-3.3.3'],
+                    'RepeatMasker' : 'RepeatMasker'}
+OakleyLocations = {'build_lmer_table':'./build_lmer_table',
+                   'RptScout':'./RepeatScout',
+                   'filter_stage-1':'./filter-stage-1.prl',
+                   'filter_stage-2':'./filter-stage-2.prl',
+                   'raider':'./raider',
+                   'raider_pre':'./raider_pre',
+                   'bigfoot':'./bigfoot',
+                   'python':'python3.3',
+                   'araider':'./araider',
+                   'raider2': './raiderv2_options',
+                   'rm_modules' : [],
+                   'RepeatMasker' : 'RepeatMasker'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 
@@ -85,7 +112,7 @@ Locations = None;    # This will be set to one of the above two, and references 
 def sum_resources(T1, T2):
     if T1[0] == -1 or T2[0] == -1:
         return [-1]*4
-    return [T1[0] + T2[0], T1[1] + T2[1], max(T1[2], T2[2]), max(T1[3], T2[3])]
+    return [T1[0] + T2[0], T1[1] + T2[1], max(T1[2], T2[2]), max(T1[3], T2[3])] 
 
 def get_job_index(s):
     global job_index
@@ -690,7 +717,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.{input}.{num}".format( num = get_job_index("repscout") , input=file_base(input_file))
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = Locations['rm_modules'],
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
 
@@ -803,7 +830,7 @@ def run_repeat_masker(p, num_processors):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
+    cmd = "{RepeatMasker} -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(RepeatMasker = Locations['RepeatMasker'], library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
         sys.stderr.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
@@ -1246,18 +1273,23 @@ if __name__ == "__main__":
     # found, we assume we are running on the Mac.  If not, we check for in the Redhawk 
     # location, and if found assume we are running on redhawk.  Otherwise we print and 
     # error and quit.
-    if os.path.exists(MacLocations["RptScout"]):
+
+    if location.lower() == "oakley":
+        Locations = OakleyLocations;
+        assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on oakley (%d)" % (args.pa)
+    elif location.lower() == "osx":
         Locations = MacLocations
-    elif os.path.exists(RedhawkLocations['RptScout']):
+    elif location.lower() == "redhawk":
         Locations = RedhawkLocations
         assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
     else:
-        assert False, "Could not determine host."
+        sys.stderr.println("locations.txt file: bad content")
+        exit(1);
     ###
 
     
     data_dir = args.results_dir + "/" + args.data_dir    
-     
+      
     if not continue_prev:
         if args.nuke and os.path.exists(args.results_dir):
             subprocess.call("rm -r %s" % args.results_dir, shell = True)

@@ -23,7 +23,6 @@ import pickle
 import tempfile
 import logging
 
-
 epilogue_str = """#!/bin/sh
 echo "Redhawk Epilogue Args:" >&2
 echo "Job ID: $1" >&2
@@ -44,17 +43,18 @@ Redhawk Epilogue Args:
 Resources Used: cput=00:00:00,mem=0kb,vmem=0kb,walltime=00:00:00
 """
 
+
 ############################################################
 # Library-global variables
-log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
 uid = os.getuid()
 current_user = pwd.getpwuid(uid)[0]  # When run on redhawk with a nohup, os.getlogin() does not work
 try:
-    subprocess.check_call(["qstat"], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    subprocess.check_call(["qstat > /dev/null"], shell = True)
 except:
     pbs_present = False
 else:
     pbs_present = True
+
 
 job_list = set()    # Global list of all jobs that have been submitted and not yet identified as having quit
 
@@ -762,6 +762,9 @@ def relaunch(args = sys.argv, force = False, walltime = "40:00:00", python = "py
         sys.stderr.write("STDERR: " + e)
         return True
     return False
+
+
+
         
 ############## Allow for a direct launch of a program
 if __name__ == "__main__":
