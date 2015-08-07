@@ -99,7 +99,7 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'raider':'./raider',
                    'raider_pre':'./raider_pre',
                    'bigfoot':'./bigfoot',
-                   'python':'python3.3',
+                   'python':'python',
                    'araider':'./araider',
                    'raider2': './raiderv2_options',
                    'rm_modules' : [],
@@ -518,7 +518,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     else:
         opt_str += "--age " + str(age) 
 
-    cmd1 = "{raider2} --vv -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -787,7 +787,7 @@ def run_scout_second_filter(p):
 
 def scout_second_filter(p, min_freq):
     """NOT CURRENTLY WORKING!!! Does not run correctly, and does not properly adjust time"""
-    p.wait()
+    p.wait(100)
 
     filter2_stage_output = p.seq_file.rstrip(".fa") + ".repscout.filtered2.fa"
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
@@ -821,7 +821,7 @@ def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait()
+    p.wait(100)
     p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
@@ -869,7 +869,7 @@ def run_perform_stats(p, exclusion_file = None):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait()
+    p.wait(100)
     p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
@@ -1062,7 +1062,7 @@ def run_pra_analysis(tool_job, database_job):
     This function will wait on completion of both jobs."""
 
     cmd = "./pra_analysis {consensus_file} {rm_fa_file} {database_file} {output_file}"
-    database_job.wait()
+    database_job.wait(100)
 
 
     analysis_cmd = cmd.format(python = Locations["python"], consensus_file = tool_job.lib_file, 
@@ -1144,9 +1144,9 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
                 save_timed_chrom_sim_jobs(chrom_job_set, finished_jobs, flist)            
                 exit_now()
         if not timing_jobs:
-            j.wait()
+            j.wait(100)
         else:
-            j.timed_wait()
+            j.timed_wait(100)
         t2 = time.time()
         finished_jobs.add(j)
         time_est = t2 - t1
@@ -1226,6 +1226,10 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
     for tool in test_tools:
         if tool not in job_dic.keys():
             job_dic[tool] = []
+
+
+    pra_job_set = {}
+    rm_job_set = {}
     if RM_jobs or PRA_jobs:
         pra_job_set = {j for j in PRA_jobs}
         rm_job_set = {j for j in RM_jobs}
@@ -1539,7 +1543,7 @@ if __name__ == "__main__":
                 CoverageResources = [0,0,0,0]
                 try:
                     if args.repmask:
-                        progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
+                        progress_fp.write("Calling: perform_stats.py(%s, %s, None)" % (p.seq_file + ".out", p.rm_output))
                         try:
                             Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                             Stats = [round(x,5) for x in Stats]
