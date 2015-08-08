@@ -79,7 +79,8 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'araider':'./araider',
                 'raider2': './raiderv2_options',
                 'rm_modules': [],
-                'RepeatMasker' : 'RepeatMasker'}
+                'RepeatMasker' : 'RepeatMasker',
+                'proc_per_node' : 1}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -91,7 +92,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'araider':'./araider',
                     'raider2': './raiderv2_options',
                     'rm_modules' : ['RepeatMasker', 'python-3.3.3'],
-                    'RepeatMasker' : 'RepeatMasker'}
+                    'RepeatMasker' : 'RepeatMasker',
+                    'proc_per_node' : 4}
 OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RptScout':'./RepeatScout',
                    'filter_stage-1':'./filter-stage-1.prl',
@@ -103,7 +105,8 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'araider':'./araider',
                    'raider2': './raiderv2_options',
                    'rm_modules' : [],
-                   'RepeatMasker' : 'RepeatMasker'}
+                   'RepeatMasker' : 'RepeatMasker',
+                   'proc_per_node' : 12}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 
@@ -209,7 +212,8 @@ def parse_params(args):
     raider2_argument.add_argument('--no', '--no_overlaps', dest="overlaps", action="store_false", help="Do not require overlaps in RAIDER2", default=True)
     raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", help="Enable alternative tie ups", default=False)
     raider2_argument.add_argument('--ps', '--prosplit', dest="prosplit", action="store_true", help="Enable proactive splitting(disabled by default).", default=False)
-    raider2_argument.add_argument("--pf", "--prevfam", dest="prevfam", action="store_true", help="Enable pointers to prev family (disabled by default).", default=False)
+    raider2_argument.add_argument("--pf", '--prevfam', dest="prevfam", action="store_true", help="Enable pointers to prev family (disabled by default).", default=False)
+    raider2_arugment.add_arggument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor (disabled by default).", default=False)
 
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
@@ -243,7 +247,6 @@ def parse_params(args):
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
-    ### KARRO: New switches
     # ANALYSIS 
     parser_analysis = parser.add_argument_group("Analysis options")
     parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
@@ -485,7 +488,7 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only, max_nodes):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -540,7 +543,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
-                      output_location = output_dir, walltime= time_limit)
+                      output_location = output_dir, walltime= time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1)
 
     if not timing_jobs:
         p.submit(preserve=True)
@@ -1552,7 +1555,8 @@ if __name__ == "__main__":
                                 print(Counts[1]+Counts[2])
                         except:
                             progress_fp.write("performance Exception: " + str(E) + "\n");
-                            fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+                            fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\t"]))
+                            fp.write("Resources: \t" + "\t".join(p.getResources(cleanup=False)) + "\n");
                             continue
                         
                         if p.pra_job:
