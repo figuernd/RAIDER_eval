@@ -1412,7 +1412,7 @@ if __name__ == "__main__":
             jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
                                  raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
                                  overlaps = args.overlaps, tieup = args.tieup, prosplit=args.prosplit, prevfam=args.prevfam,
-                                 age=args.age, age_only=False) for i,seed in enumerate(seed_list) for file in file_list]
+                                 age=args.age, age_only=False, max_nodes=args.max_nodes) for i,seed in enumerate(seed_list) for file in file_list]
             #if args.all_ages:
             #    if not args.multi_seed:
             #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
