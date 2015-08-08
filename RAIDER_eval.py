@@ -1262,6 +1262,8 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
             pra_job_set = pra_job_set - finished_pra_jobs
             rm_job_set = rm_job_set-finished_rm_jobs
 
+    return job_dic, stats_jobs, pra_job_set
+
 
 
 
