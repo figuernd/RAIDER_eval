@@ -175,7 +175,7 @@ def parse_params(args):
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tools on (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tools on except araider (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
-    sarser_tools.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
+    parser_tools.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
 
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
@@ -679,7 +679,7 @@ def run_piler(input_file, piler_dir, max_nodes):
     stderr_file = input_base + ".piler.stderr";
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = piler_dir, walltime = time_limit, ppn = Locations['proc_per_node'] if max_nodes ? 1])
+                      output_location = piler_dir, walltime = time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1)
 
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
@@ -725,7 +725,7 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     job_name = "rptscout.{input}.{num}".format( num = get_job_index("repscout") , input=file_base(input_file))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = Locations['rm_modules'],
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'], ppn = Locations['proc_per_node'] ? max_nodes : 1)
+                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'], ppn = Locations['proc_per_node'] if max_nodes else 1)
 
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
@@ -810,9 +810,9 @@ def scout_second_filter(p, min_freq):
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
     if not timing_jobs:
-        p2.submit(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
     p2.description = "rep_scout"
     p2.time_resources = p.time_resources + p.getResources(cleanup=False)
     p2.lib_file = p.lib_file
@@ -854,9 +854,9 @@ def run_repeat_masker(p, num_processors):
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir, walltime = rm_time_limit, always_outputs=False);
     if not timing_jobs:
-        p2.submit(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
 
     p2.description = "RptMasker"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
@@ -899,9 +899,9 @@ def run_perform_stats(p, exclusion_file = None):
                        job_name = job_name, stdout_file = input_base + ".stats.stdout", stderr_file = input_base + ".stats.stderr",
                        output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
     if not timing_jobs:
-        p2.submit(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True, delay = wait_time, delay = wait_time)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
 
     p2.description = "Stats"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
@@ -1053,7 +1053,7 @@ def create_blast_db(file_list):
     for o in BLAST_DATABASE.values():
         #o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
         if not timing_jobs:
-            o.submit(preserve=True, delay = wait_time, delay = wait_time)
+            o.submit(preserve=True, delay = wait_time)
         else:
             o.submit_timed_job(preserve=True, delay = wait_time)
 
@@ -1397,13 +1397,13 @@ if __name__ == "__main__":
         if args.run_raider:
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem, args.max_nodes) for i,seed in enumerate(seed_list)
+                                raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem, max_nodes = args.max_nodes) for i,seed in enumerate(seed_list)
                      for file in file_list]
 
         if args.run_araider:
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             jobs += [run_araider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
+                                araider_dir = args.results_dir + "/" + args.araider_dir, max_nodes = args.max_nodes) for i,seed in enumerate(seed_list)
                      for file in file_list]
         
         if args.run_raider2:
@@ -1437,11 +1437,11 @@ if __name__ == "__main__":
         if args.run_repscout:
             if args.rs_filters == 3:
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = False, use_second_filter = False, threshold = args.f) for file in file_list]
+                                        use_first_filter = False, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "1", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = False, threshold = args.f) for file in file_list]
+                                        use_first_filter = True, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "12", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = True, threshold = args.f) for file in file_list]
+                                        use_first_filter = True, use_second_filter = True, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
             else:
                 use_first_filter = (args.rs_filters >= 1)
                 use_second_filter = (args.rs_filters >= 2)
