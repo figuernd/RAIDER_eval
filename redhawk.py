@@ -88,13 +88,13 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True, oakley_bigmem):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.
            * nodes: number of nodes required for the job.   Default = 1.
            * ppn: number of processors needed for the job.  Default = 1.
-           * mem: Using 128 Gb machine.  Default = False.
+           * mem: Using 128 Gb machine.  Default = False -- don't use.  Other values: 'redhawk' or 'oakley'.
            * walltime: Maximum allowed runtime for the job (hours:minutes:seconds).  Default = 40:00:00.  Max. allowed: 400:00:00.
            * mail = when to send email.  Any combination of:
              b   send mail when job begins
@@ -112,7 +112,8 @@ class pbsJobHandler:
                            possible (specifically: if qstat can be run on the machine)
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
-           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem), 
+           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem)
+           $ oakley_bigmem: Run on the big-mem server (oakley server only)
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
@@ -164,11 +165,14 @@ class pbsJobHandler:
         
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
-        if self.mem:
+        if self.mem == 'redhawk':
             s += ":m128"
         if self.arch_type:
             s += ":" + ":".join(arch_type)
         s += "\n"
+        f.write(s)
+        if self.mem == 'oakley':
+            s="#PBS -l mem=192GB\n"
         f.write(s)
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)

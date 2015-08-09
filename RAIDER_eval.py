@@ -82,7 +82,9 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'raider2': './phRAIDER',
                 'rm_modules': [],
                 'RepeatMasker' : 'RepeatMasker',
-                'proc_per_node' : 1}
+                'proc_per_node' : 1,
+                'basic_arch_type' : [],
+                'high_mem_arch' : []}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -95,7 +97,9 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'raider2': './phRAIDER',
                     'rm_modules' : ['RepeatMasker', 'python-3.3.3'],
                     'RepeatMasker' : 'RepeatMasker',
-                    'proc_per_node' : 4}
+                    'proc_per_node' : 4,
+                    'basic_arch_type' : ["n09","bigmem"],
+                    'high_mem_arch' : 'redhawk'}
 OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RptScout':'./RepeatScout',
                    'filter_stage-1':'./filter-stage-1.prl',
@@ -108,7 +112,9 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'raider2': './phRAIDER',
                    'rm_modules' : [],
                    'RepeatMasker' : 'RepeatMasker',
-                   'proc_per_node' : 12}
+                   'proc_per_node' : 12,
+                   'basic_arch_type' : [],
+                   'high_mem_arch' : 'oakley'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 
@@ -398,7 +404,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
+                      output_location = data_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'])
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
     else:
@@ -439,8 +445,8 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem, max_nodes):
     job_name = "R.{input}.{seed}.{num}".format( num = get_job_index("raider") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir, walltime = time_limit, mem = mem, ppn = Locations['proc_per_node'] if max_nodes else 1,
-                      arch_type = ['n09'])
+                      output_location = output_dir, walltime = time_limit, mem = Locations['high_mem_arch'] if mem else False, ppn = Locations['proc_per_node'] if max_nodes else 1,
+                      arch_type = Locations['basic_arch_type'] if not mem else False)
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
     else:
@@ -491,7 +497,7 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only, max_nodes):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only, max_nodes, mem):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -546,7 +552,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
-                      output_location = output_dir, walltime= time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1)
+                      output_location = output_dir, walltime= time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1, mem = Locations['high_mem_arch'] if mem else False)
 
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
@@ -694,7 +700,7 @@ def run_piler(input_file, piler_dir, max_nodes):
     return p
 
 
-def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_second_filter, threshold, max_nodes):
+def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_second_filter, threshold, max_nodes, mem):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -725,7 +731,8 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     job_name = "rptscout.{input}.{num}".format( num = get_job_index("repscout") , input=file_base(input_file))
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = Locations['rm_modules'],
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'], ppn = Locations['proc_per_node'] if max_nodes else 1)
+                      output_location = output_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'] if not mem else [], ppn = Locations['proc_per_node'] if max_nodes else 1,
+                      mem = Locations['high_mem_arch'] if mem else False)
 
     if not timing_jobs:
         p.submit(preserve=True, delay = wait_time)
@@ -897,7 +904,7 @@ def run_perform_stats(p, exclusion_file = None):
     job_name = "stats.%d" % get_job_index("stats")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd,
                        job_name = job_name, stdout_file = input_base + ".stats.stdout", stderr_file = input_base + ".stats.stderr",
-                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
+                       output_location = output_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'])
     if not timing_jobs:
         p2.submit(preserve=True, delay = wait_time)
     else:
@@ -1415,7 +1422,7 @@ if __name__ == "__main__":
             jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
                                  raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
                                  overlaps = args.overlaps, tieup = args.tieup, prosplit=args.prosplit, prevfam=args.prevfam,
-                                 age=args.age, age_only=False, max_nodes=args.max_nodes) for i,seed in enumerate(seed_list) for file in file_list]
+                                 age=args.age, age_only=False, max_nodes=args.max_nodes, mem=args.mem) for i,seed in enumerate(seed_list) for file in file_list]
             #if args.all_ages:
             #    if not args.multi_seed:
             #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
@@ -1437,11 +1444,11 @@ if __name__ == "__main__":
         if args.run_repscout:
             if args.rs_filters == 3:
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = False, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
+                                        use_first_filter = False, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "1", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
+                                        use_first_filter = True, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "12", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = True, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
+                                        use_first_filter = True, use_second_filter = True, threshold = args.f, max_nodes = args.max_nodes, mem=args.mem) for file in file_list]
             else:
                 use_first_filter = (args.rs_filters >= 1)
                 use_second_filter = (args.rs_filters >= 2)
