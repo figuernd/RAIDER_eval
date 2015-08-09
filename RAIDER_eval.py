@@ -1556,7 +1556,7 @@ if __name__ == "__main__":
                             RMResources = list(p.getResources(cleanup=False))
                             if args.hooke_jeeves:
                                 print(Counts[1]+Counts[2])
-                        except:
+                        except Exception as E:
                             progress_fp.write("performance Exception: " + str(E) + "\n");
                             fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\t"]))
                             fp.write("Resources: \t" + "\t".join(p.getResources(cleanup=False)) + "\n");
