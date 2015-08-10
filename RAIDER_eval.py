@@ -9,6 +9,7 @@ import re
 import perform_stats
 import time
 import pickle
+from parse_pra_output import parse_pra_output
 from checkpoint_jobs import *
 
 try:
@@ -260,6 +261,7 @@ def parse_params(args):
     parser_analysis = parser.add_argument_group("Analysis options")
     parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
     parser_analysis.add_argument('--RA', '--rm_analysis_off', dest = 'repmask', action = 'store_false', help = 'Turn off RM stats. analysis', default = True) 
+    parser_analysis.add_argument('--ce', '--class_exclude', dest = 'exclude', action = 'store', help = 'File of family classes to exclude from PRA analysis', default = 'exclude.txt')
     ### KARRO END
 
 
@@ -1085,7 +1087,7 @@ def run_pra_analysis(tool_job, database_job):
     if show_progress:
         sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
         sys.stderr.flush()
-    progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+    progress_fp.write("\n\npre-rm analysis:\n%s\n" % (analysis_cmd))
     progress_fp.flush()
 
     job_name = "pra.%d" % get_job_index("pra")
@@ -1543,9 +1545,11 @@ if __name__ == "__main__":
     
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "".join("{:<14}"*4) + "\n"
+
+    #print_str: tool       seed      tp/fp/fn/tn           tpr - fdr              ToolCpuTime - RVMem  Con/QuCoverage
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}"*2 + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "Cover", "CoverCpuTime", "CoverWallTime", "CoverMem", "CoverVMem"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "ConCoverage", "QuCoverage"))
         
         for key in test_tools:
             for p in job_dic[key]:
@@ -1571,22 +1575,23 @@ if __name__ == "__main__":
                         
                         if p.pra_job:
                             try:
-                                matches = regex.findall(open(p.pra_job.pra_output, "r").read())
-                                if len(matches) > 0:
-                                    Coverage = matches[0]
-                                CoverageResources = list(p.pra_job.getResources(cleanup=False))
+                                consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_job.pra_output, args.exclude)
+                                #matches = regex.findall(open(p.pra_job.pra_output, "r").read())
+                                #if len(matches) > 0:
+                                #    Coverage = matches[0]
                             except Exception as E:
                                 progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
                     else:
                         try:
-                            matches = regex.findall(open(p.pra_output, "r").read())
-                            if len(matches) > 0:
-                                Coverage = matches[0]
-                            CoverageResources = list(p.getResources(cleanup=False))
+                            consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_output, args.exclude)
+                            #matches = regex.findall(open(p.pra_output, "r").read())
+                            #if len(matches) > 0:
+                            #    Coverage = matches[0]
+                            #CoverageResources = list(p.getResources(cleanup=False))
                         except Exception as E:
                             progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
 
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [Coverage] + list(CoverageResources))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [consensus_coverage] + [query_coverage])))
 
                 except Exception as E:
                     progress_fp.write("performance Exception: " + str(E) + "\n");
