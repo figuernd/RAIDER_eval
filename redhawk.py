@@ -88,7 +88,7 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True, oakley_bigmem):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.

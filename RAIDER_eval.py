@@ -1454,7 +1454,7 @@ if __name__ == "__main__":
                 use_second_filter = (args.rs_filters >= 2)
                 dir_addon = ".F1F2" if use_second_filter else ".F1" if use_first_filter else ""
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + dir_addon, min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min, 
-                                   use_first_filter = use_first_filter, use_second_filter = use_second_filter, threshold = args.f, max_nodes = args.max_nodes) for file in file_list]
+                                   use_first_filter = use_first_filter, use_second_filter = use_second_filter, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
 
         if args.run_bigfoot:
             bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
