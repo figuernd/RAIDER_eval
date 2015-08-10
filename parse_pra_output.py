@@ -28,6 +28,8 @@ def parse_pra_output(file, CLASS_Exclude = None):
             found += int(b1)
             total += int(b2)
         line = fp.readline()
+        if not line:
+            return -1, -1, CLASSES_Used
 
     return consensus_cover, (1.0*found) / total if total > 0 else -1, CLASSES_Used
 
