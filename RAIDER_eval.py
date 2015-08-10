@@ -80,11 +80,11 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'python':'python3.4',
                 'araider':'./araider',
                 'raider2': './phRAIDER',
-                'rm_modules': [],
+                'rm_modules': None,
                 'RepeatMasker' : 'RepeatMasker',
                 'proc_per_node' : 1,
-                'basic_arch_type' : [],
-                'high_mem_arch' : []}
+                'basic_arch_type' : None,
+                'high_mem_arch' : None}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -110,10 +110,10 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'python':'python',
                    'araider':'./araider',
                    'raider2': './phRAIDER',
-                   'rm_modules' : [],
+                   'rm_modules' : None,
                    'RepeatMasker' : 'RepeatMasker',
                    'proc_per_node' : 12,
-                   'basic_arch_type' : [],
+                   'basic_arch_type' : None,
                    'high_mem_arch' : 'oakley'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
