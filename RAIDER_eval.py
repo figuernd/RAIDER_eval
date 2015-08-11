@@ -9,6 +9,7 @@ import re
 import perform_stats
 import time
 import pickle
+from parse_pra_output import parse_pra_output
 from checkpoint_jobs import *
 
 try:
@@ -67,6 +68,10 @@ stats_end = "END_STATS_JOBS"
 
 
 #################################################################
+def print_time():
+    return time.strftime("%x %X", time.localtime())
+                         
+
 
 #################################################################
 # These global variables have to do with executable locations.
@@ -260,6 +265,7 @@ def parse_params(args):
     parser_analysis = parser.add_argument_group("Analysis options")
     parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
     parser_analysis.add_argument('--RA', '--rm_analysis_off', dest = 'repmask', action = 'store_false', help = 'Turn off RM stats. analysis', default = True) 
+    parser_analysis.add_argument('--ce', '--class_exclude', dest = 'exclude', action = 'store', help = 'File of family classes to exclude from PRA analysis', default = 'exclude.txt')
     ### KARRO END
 
 
@@ -396,6 +402,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     if show_progress:
         sys.stderr.write("Creating simulation:\n%s\n" % (cmd))
         sys.stderr.flush()
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("Creating simulation:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -438,6 +445,8 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem, max_nodes):
     if show_progress:
         sys.stderr.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -477,6 +486,8 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
     if show_progress:
         sys.stderr.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -545,6 +556,8 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     if show_progress:
         sys.stderr.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -595,6 +608,8 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
     if show_progress:
         sys.stderr.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -637,6 +652,8 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if show_progress:
         sys.stderr.write("\nLaunching bigfoot:\n%s\n" % (cmd))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching bigfoot:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -676,6 +693,8 @@ def run_piler(input_file, piler_dir, max_nodes):
     if show_progress:
         sys.stderr.write("\nLaunching Piler:\n%s\n" % (cmd))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching Piler:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -724,6 +743,8 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     if show_progress:
         sys.stderr.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
     progress_fp.flush()
         
@@ -772,6 +793,8 @@ def run_scout_second_filter(p):
         if show_progress:
             sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
             sys.stderr.flush()
+
+        progress_fp.write(print_time() + "\n")
         progress_fp.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         progress_fp.flush()
 
@@ -808,6 +831,8 @@ def scout_second_filter(p, min_freq):
     if show_progress:
         sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nRepeatScout Filter2:\n%s\n" % cmd)
     progress_fp.flush()
 
@@ -848,6 +873,8 @@ def run_repeat_masker(p, num_processors):
     if show_progress:
         sys.stderr.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
     progress_fp.flush()
 
@@ -897,6 +924,8 @@ def run_perform_stats(p, exclusion_file = None):
     if show_progress:
         sys.stderr.write("\nLaunch perform_stats: %s\n" % (cmd))
         sys.stderr.flush()
+
+    progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunch perform_stats: %s\n" % (cmd))
     progress_fp.flush()
 
@@ -1043,8 +1072,10 @@ def create_blast_db(file_list):
         if show_progress:
             sys.stderr.write("\nLaunching create_database: %s\n\n" % (cmd))
             sys.stderr.flush()
-            progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
-            progress_fp.flush()
+
+        progress_fp.write(print_time() + "\n")
+        progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
+        progress_fp.flush()
 
         batch_name = file + "blast_db.batch"
         job_name = "create_db.%d" % (i)
@@ -1085,7 +1116,9 @@ def run_pra_analysis(tool_job, database_job):
     if show_progress:
         sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
         sys.stderr.flush()
-    progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+
+    progress_fp.write(print_time() + "\n")
+    progress_fp.write("\n\npre-rm analysis:\n%s\n" % (analysis_cmd))
     progress_fp.flush()
 
     job_name = "pra.%d" % get_job_index("pra")
@@ -1320,6 +1353,7 @@ if __name__ == "__main__":
         ### Generate simulated file(s) and run to completion
         ### Set up the debugging log file (if needed)
         progress_fp = open(args.results_dir + "/debug.txt", "w")
+        progress_fp.write(print_time() + "\n")        
         progress_fp.write(" ".join(sys.argv) + "\n\n");
         
         if not os.path.exists(data_dir):
@@ -1364,7 +1398,9 @@ if __name__ == "__main__":
             logging_fp = open(log_fname, "w")
             logging_fp.write("Continuing previous run\n")
             flush_files()
+
         progress_fp = open(args.results_dir + "/debug.txt", "a")
+        progress_fp.write(print_time() + "\n")
         progress_fp.write(" ".join(sys.argv) + "\n\n");
         
         # Get file list from old checkpoint file
@@ -1543,9 +1579,11 @@ if __name__ == "__main__":
     
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "".join("{:<14}"*4) + "\n"
+
+    #print_str: tool       seed      tp/fp/fn/tn           tpr - fdr              ToolCpuTime - RVMem  Con/QuCoverage
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}"*2 + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "Cover", "CoverCpuTime", "CoverWallTime", "CoverMem", "CoverVMem"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "ConCoverage", "QuCoverage"))
         
         for key in test_tools:
             for p in job_dic[key]:
@@ -1556,6 +1594,7 @@ if __name__ == "__main__":
                 CoverageResources = [0,0,0,0]
                 try:
                     if args.repmask:
+                        progress_fp.write(print_time() + "\n")                        
                         progress_fp.write("Calling: perform_stats.py(%s, %s, None)" % (p.seq_file + ".out", p.rm_output))
                         try:
                             Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
@@ -1564,6 +1603,7 @@ if __name__ == "__main__":
                             if args.hooke_jeeves:
                                 print(Counts[1]+Counts[2])
                         except Exception as E:
+                            progress_fp.write(print_time() + "\n")
                             progress_fp.write("performance Exception: " + str(E) + "\n");
                             fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\t"]))
                             fp.write("Resources: \t" + "\t".join(p.getResources(cleanup=False)) + "\n");
@@ -1571,24 +1611,28 @@ if __name__ == "__main__":
                         
                         if p.pra_job:
                             try:
-                                matches = regex.findall(open(p.pra_job.pra_output, "r").read())
-                                if len(matches) > 0:
-                                    Coverage = matches[0]
-                                CoverageResources = list(p.pra_job.getResources(cleanup=False))
+                                consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_job.pra_output, args.exclude)
+                                #matches = regex.findall(open(p.pra_job.pra_output, "r").read())
+                                #if len(matches) > 0:
+                                #    Coverage = matches[0]
                             except Exception as E:
+                                progress_fp.write(print_time() + "\n")
                                 progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
                     else:
                         try:
-                            matches = regex.findall(open(p.pra_output, "r").read())
-                            if len(matches) > 0:
-                                Coverage = matches[0]
-                            CoverageResources = list(p.getResources(cleanup=False))
+                            consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_output, args.exclude)
+                            #matches = regex.findall(open(p.pra_output, "r").read())
+                            #if len(matches) > 0:
+                            #    Coverage = matches[0]
+                            #CoverageResources = list(p.getResources(cleanup=False))
                         except Exception as E:
+                            progress_fp.write(print_time() + "\n")
                             progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
 
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [Coverage] + list(CoverageResources))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [consensus_coverage] + [query_coverage])))
 
                 except Exception as E:
+                    progress_fp.write(print_time() + "\n")
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 
