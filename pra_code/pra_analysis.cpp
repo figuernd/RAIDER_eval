@@ -23,10 +23,10 @@ int main(int argc, char** argv) {
 
   clock_t start_time = clock();
   string blast_format = "\"6 qseqid sseqid qstart qend qlen sstart send slen\"";
-  string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + consensus_file + " -db " + database_file + " -evalue 0.001";
+  string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + consensus_file + " -db " + database_file + 
+																					" -evalue 0.001  -task blastn-short ";  // -word_size 7 -reward 4 -ungapped
   int v = system(cmd.c_str());
   clock_t blast_time = clock();
-
 
   ifstream fin(blast_file);
   ofstream fout(output_file);
