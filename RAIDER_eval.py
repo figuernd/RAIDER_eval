@@ -233,7 +233,7 @@ def parse_params(args):
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
     repscout_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
     repscout_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat length for repscout.", default = 3)
-    repscout_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 3)
+    repscout_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 0)
     #raider_argument.add_argument('--uff', '--use_first_filter', dest = "use_first_filter", action = "store_true", help = "Use the first RepScout filter", default = True)
     #raider_argument.add_argument('--usf', '--use_second_filter', dest = "use_second_filter", action = "store_true", help = "Use the second RepScout filter", default = True)
 
@@ -554,11 +554,11 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     cmd3 = "rm {elements}; rm {family}".format(elements = element_file, family = family_file ) if stats_only else ""
     
     if show_progress:
-        sys.stderr.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.write("\nLaunching raider2:\n%s\n%s\n\n" % (cmd1, cmd2))
         sys.stderr.flush()
 
     progress_fp.write(print_time() + "\n")
-    progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+    progress_fp.write("Launching raider2:\n%s\n%s\n\n" % (cmd1, cmd2))
     progress_fp.flush()
 
     batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2.batch"
@@ -1118,7 +1118,7 @@ def run_pra_analysis(tool_job, database_job):
         sys.stderr.flush()
 
     progress_fp.write(print_time() + "\n")
-    progress_fp.write("\n\npre-rm analysis:\n%s\n" % (analysis_cmd))
+    progress_fp.write("\npre-rm analysis:\n%s\n" % (analysis_cmd))
     progress_fp.flush()
 
     job_name = "pra.%d" % get_job_index("pra")
@@ -1355,7 +1355,7 @@ if __name__ == "__main__":
         progress_fp = open(args.results_dir + "/debug.txt", "w")
         progress_fp.write(print_time() + "\n")        
         progress_fp.write(" ".join(sys.argv) + "\n\n");
-        
+
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
 
@@ -1611,6 +1611,7 @@ if __name__ == "__main__":
                         
                         if p.pra_job:
                             try:
+                                progress_fp.write("parse_pra_outpt: %s %s\n" % (p.pra_job.pra_output, args.exclude))
                                 consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_job.pra_output, args.exclude)
                                 #matches = regex.findall(open(p.pra_job.pra_output, "r").read())
                                 #if len(matches) > 0:
@@ -1620,6 +1621,7 @@ if __name__ == "__main__":
                                 progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
                     else:
                         try:
+                            progress_fp.write("parse_pra_outpt: %s %s\n" % (p.pra_output, args.exclude))
                             consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_output, args.exclude)
                             #matches = regex.findall(open(p.pra_output, "r").read())
                             #if len(matches) > 0:

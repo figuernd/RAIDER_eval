@@ -6,8 +6,10 @@ r2 = re.compile("^([^\|]*)\|([^\|]*)\|(\S*)\s+(\d+)\s+(\d+)\s+(\d+(?:\.\d+)?)\s*
 def parse_pra_output(file, CLASS_Exclude = None):
     fp = open(file)
     line = fp.readline()
-    while (not r.match(line)):
+    while (line and not r.match(line)):
         line = fp.readline()
+    if not line:
+        return -1, -1, {}
 
     consensus_cover = float(r.match(line).group(1))
 
@@ -19,6 +21,7 @@ def parse_pra_output(file, CLASS_Exclude = None):
 
     CLASSES_Used = set()  # For debugging
     while (line[0] != '#'):
+        print("Line: ", line);
         rfamily, rclass, rloc, b1, b2, p = r2.match(line).group(1,2,3,4,5,6)
         if rclass not in CLASS_Exclude:
             b1 = int(b1)
