@@ -15,6 +15,12 @@ typedef unordered_map<string,interval_list> si_map;
 // Get the number of sequences in an fa file
 int fa_size(string file) {
   ifstream fin(file);
+
+  if (not fin) {
+    cerr << "pra_analysis: File not found (" << file << ")" << endl;
+    exit(0);
+  }
+
   int count = 0;
   string line;
   while (getline(fin, line))
@@ -31,13 +37,13 @@ int main(int argc, char** argv) {
   string output_file = argv[4];
   string blast_file = consensus_file.substr(0, consensus_file.rfind(".")) + ".blast.6.txt";
 
-  int n = fa_size(database_file);
-  int m = fa_size(output_file);
+  int n = fa_size(consensus_file);
+  int m = fa_size(database_file);
   
   clock_t start_time = clock();
   string blast_format = "\"6 qseqid sseqid qstart qend qlen sstart send slen\"";
   string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + consensus_file + " -db " + database_file + 
-    " -evalue 0.001  -task blastn-short --max_target_seqs " + to_string(n*m);  // -word_size 7 -reward 4 -ungapped
+    " -evalue 0.001  -task blastn-short -max_target_seqs " + to_string(n*m);  // -word_size 7 -reward 4 -ungapped
   int v = system(cmd.c_str());
   clock_t blast_time = clock();
 
