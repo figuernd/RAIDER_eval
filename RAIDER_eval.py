@@ -1,4 +1,4 @@
-import sys
+mport sys
 import subprocess
 import os
 import os.path
@@ -24,8 +24,8 @@ if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
     exit(1)
 
 
-wait_time = 100;   # Amount of time to spin before checking job progress in a wait() call.
-                   # Need to be higher on Oakley.
+wait_time = 100        # Amount of time to spin before checking job progress in a wait() call.
+                       # Need to be higher on Oakley.
     
 #################################################################
 # The following global variables are related to debugging issues.
@@ -904,7 +904,6 @@ def run_repeat_masker(p, num_processors):
     return p2
 
 
-
 def run_perform_stats(p, exclusion_file = None):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
@@ -1253,6 +1252,9 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
         if timing and not have_time_for_another_run(time_est):
             save_timed_tool_jobs(job_set, RM_jobs, PRA_jobs, blast_db)
             exit_now()
+
+        time.sleep(600)  # We have checked all the jobs; lets sleep for ten minutes before checking again.
+                         # Important for keeping time down on the head node -- required on Oakley.
     return RM_jobs, PRA_jobs
 
 
