@@ -21,7 +21,6 @@ def parse_pra_output(file, CLASS_Exclude = None):
 
     CLASSES_Used = set()  # For debugging
     while (line[0] != '#'):
-        print("Line: ", line);
         rfamily, rclass, rloc, b1, b2, p = r2.match(line).group(1,2,3,4,5,6)
         if rclass not in CLASS_Exclude:
             b1 = int(b1)

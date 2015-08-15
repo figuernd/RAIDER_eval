@@ -163,7 +163,7 @@ sortBy <- function(form,dat){
 # Removes "extra" information, as specified. If more_info is not required, removes
 # all timing and memory usage information.
 removeExcess <-function(dat, more_info){
-  drops <- c("cc")
+  drops <- c("cc", "RMWall")
   if(!more_info){
     drops2 <- c("ToolCpuTime","ToolWallTime","ToolMem","ToolVMem","RMCpuTime","RMWallTime","RMMem","RMVMem")
     drops <- c(drops, drops2)
