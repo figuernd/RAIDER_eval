@@ -1080,8 +1080,10 @@ def create_blast_db(file_list):
         batch_name = file + "blast_db.batch"
         job_name = "create_db.%d" % (i)
 
+        print("X: ", batch_name)
         o =  pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
-                                ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"])
+                           ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"])
+
         o.seq_file = seq_file
         o.rm_file = rm_file
         o.rm_seq_file = rm_seq_file
