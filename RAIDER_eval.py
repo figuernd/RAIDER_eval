@@ -1077,12 +1077,14 @@ def create_blast_db(file_list):
         progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
         progress_fp.flush()
 
-        batch_name = file + "blast_db.batch"
+        batch_name = file + ".blast_db.batch"
         job_name = "create_db.%d" % (i)
-
-        print("X: ", batch_name)
+        stdout_file = file + ".blast_db.stdout"
+        stderr_file = file + ".blast_db.stderr"
+        
         o =  pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
-                           ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"])
+                           ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"],
+                           stdout_file = stdout_file, stderr_file = stderr_file)
 
         o.seq_file = seq_file
         o.rm_file = rm_file
