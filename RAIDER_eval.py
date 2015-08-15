@@ -26,7 +26,7 @@ if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
 
 wait_time = 100        # Amount of time to spin before checking job progress in a wait() call.
                        # Need to be higher on Oakley.
-sleep_pause = 60
+sleep_pause = 6
     
 #################################################################
 # The following global variables are related to debugging issues.
@@ -1123,11 +1123,12 @@ def run_pra_analysis(tool_job, database_job):
 
     job_name = "pra.%d" % get_job_index("pra")
 
+    location = file_dir(tool_job.lib_file)
     base_name = file_base(tool_job.lib_file)[:-3] + ".pra"
-    batch_name = base_name + ".batch"
+    batch_name = location + "/" + base_name + ".batch"
     stdout_file = base_name + ".stdout"
     stderr_file = base_name + ".stderr"
-    location = file_dir(tool_job.lib_file)
+    print("XXX: ", batch_name)
     p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
