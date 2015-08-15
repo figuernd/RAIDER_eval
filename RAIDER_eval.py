@@ -1,4 +1,4 @@
-mport sys
+import sys
 import subprocess
 import os
 import os.path
@@ -26,6 +26,7 @@ if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
 
 wait_time = 100        # Amount of time to spin before checking job progress in a wait() call.
                        # Need to be higher on Oakley.
+sleep_pause = 60
     
 #################################################################
 # The following global variables are related to debugging issues.
@@ -206,7 +207,7 @@ def parse_params(args):
     
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
-    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
+    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 5)
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
@@ -1253,8 +1254,8 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
             save_timed_tool_jobs(job_set, RM_jobs, PRA_jobs, blast_db)
             exit_now()
 
-        time.sleep(600)  # We have checked all the jobs; lets sleep for ten minutes before checking again.
-                         # Important for keeping time down on the head node -- required on Oakley.
+        time.sleep(sleep_pause)  # We have checked all the jobs; lets sleep for ten minutes before checking again.
+                                 # Important for keeping time down on the head node -- required on Oakley.
     return RM_jobs, PRA_jobs
 
 
