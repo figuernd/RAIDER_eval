@@ -1,18 +1,33 @@
-#!/software/python/3.3.3/bin/python3.3
 import sys
 import subprocess
 import os
 import os.path
 import shutil
 import argparse
-from redhawk import *
 import tempfile
 import re
 import perform_stats
 import time
 import pickle
+from parse_pra_output import parse_pra_output
 from checkpoint_jobs import *
 
+try:
+    fp = open("locations.txt")
+except: 
+    sys.stderr.println("locations.txt file not present.")
+    exit(1);
+
+location = fp.readline().strip()
+if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
+    sys.stderr.println("location.txt: Bad content")
+    exit(1)
+
+
+wait_time = 100        # Amount of time to spin before checking job progress in a wait() call.
+                       # Need to be higher on Oakley.
+sleep_pause = 6
+    
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
@@ -54,6 +69,10 @@ stats_end = "END_STATS_JOBS"
 
 
 #################################################################
+def print_time():
+    return time.strftime("%x %X", time.localtime())
+                         
+
 
 #################################################################
 # These global variables have to do with executable locations.
@@ -66,7 +85,12 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'bigfoot':'./bigfoot',
                 'python':'python3.4',
                 'araider':'./araider',
-                'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
+                'raider2': './phRAIDER',
+                'rm_modules': None,
+                'RepeatMasker' : 'RepeatMasker',
+                'proc_per_node' : 1,
+                'basic_arch_type' : None,
+                'high_mem_arch' : None}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -76,7 +100,27 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'bigfoot':'./bigfoot',
                     'python':'python3.3',
                     'araider':'./araider',
-                    'raider2': './raiderv2_options'}#,'raider2_old':'./raiderv2_old','raider2_oldest':'./raiderv2_oldest'}
+                    'raider2': './phRAIDER',
+                    'rm_modules' : ['RepeatMasker', 'python-3.3.3'],
+                    'RepeatMasker' : 'RepeatMasker',
+                    'proc_per_node' : 4,
+                    'basic_arch_type' : ["n09","bigmem"],
+                    'high_mem_arch' : 'redhawk'}
+OakleyLocations = {'build_lmer_table':'./build_lmer_table',
+                   'RptScout':'./RepeatScout',
+                   'filter_stage-1':'./filter-stage-1.prl',
+                   'filter_stage-2':'./filter-stage-2.prl',
+                   'raider':'./raider',
+                   'raider_pre':'./raider_pre',
+                   'bigfoot':'./bigfoot',
+                   'python':'python',
+                   'araider':'./araider',
+                   'raider2': './phRAIDER',
+                   'rm_modules' : None,
+                   'RepeatMasker' : 'RepeatMasker',
+                   'proc_per_node' : 12,
+                   'basic_arch_type' : None,
+                   'high_mem_arch' : 'oakley'}
 Locations = None;    # This will be set to one of the above two, and references to find exectuable locations.
 
 
@@ -85,7 +129,7 @@ Locations = None;    # This will be set to one of the above two, and references 
 def sum_resources(T1, T2):
     if T1[0] == -1 or T2[0] == -1:
         return [-1]*4
-    return [T1[0] + T2[0], T1[1] + T2[1], max(T1[2], T2[2]), max(T1[3], T2[3])]
+    return [T1[0] + T2[0], T1[1] + T2[1], max(T1[2], T2[2]), max(T1[3], T2[3])] 
 
 def get_job_index(s):
     global job_index
@@ -143,6 +187,8 @@ def parse_params(args):
     parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tools on (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tools on except araider (overide all other tool arguments)', default = False)
     parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = default_time_limit)
+    parser_tools.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
+
     # Will later add: RepeatModeler, RECON, PILER (other?)
 
 
@@ -161,7 +207,7 @@ def parse_params(args):
     
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
-    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 2)
+    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 5)
     raider_argument.add_argument('-d', '--output_dir', help = "Raider output directory", default = None)
     raider_argument.add_argument('-e', '--output_ext', help = "Output Extension", default = None)
     raider_argument.add_argument('-C', '--cleanup_off', dest = "cleanup", action = "store_false", help = "Turn off file cleanup", default = True)
@@ -182,13 +228,13 @@ def parse_params(args):
     raider2_argument.add_argument('--no', '--no_overlaps', dest="overlaps", action="store_false", help="Do not require overlaps in RAIDER2", default=True)
     raider2_argument.add_argument('--tu', '--tie_up', dest="tieup", action="store_true", help="Enable alternative tie ups", default=False)
     raider2_argument.add_argument('--ps', '--prosplit', dest="prosplit", action="store_true", help="Enable proactive splitting(disabled by default).", default=False)
-    raider2_argument.add_argument("--pf", "--prevfam", dest="prevfam", action="store_true", help="Enable pointers to prev family (disabled by default).", default=False)
+    raider2_argument.add_argument("--pf", '--prevfam', dest="prevfam", action="store_true", help="Enable pointers to prev family (disabled by default).", default=False)
 
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
     repscout_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
     repscout_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat length for repscout.", default = 3)
-    repscout_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 3)
+    repscout_argument.add_argument('--rs_filters', type = int, dest = "rs_filters", help = "Specify how many RS filters to use {0,1,2}. 3 specifies to run all versions", default = 0)
     #raider_argument.add_argument('--uff', '--use_first_filter', dest = "use_first_filter", action = "store_true", help = "Use the first RepScout filter", default = True)
     #raider_argument.add_argument('--usf', '--use_second_filter', dest = "use_second_filter", action = "store_true", help = "Use the second RepScout filter", default = True)
 
@@ -216,11 +262,11 @@ def parse_params(args):
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
     debug_group.add_argument('--so', '--simulate_only', dest = 'simulate_only', action = 'store_true', help = "Quit after creating simulated file", default = False)
 
-    ### KARRO: New switches
     # ANALYSIS 
     parser_analysis = parser.add_argument_group("Analysis options")
     parser_analysis.add_argument('--PRA', '--pre_rm_analysis_off', dest = 'pra', action = 'store_false', help = 'Turn off pre-RM stats. analysis', default = True) 
     parser_analysis.add_argument('--RA', '--rm_analysis_off', dest = 'repmask', action = 'store_false', help = 'Turn off RM stats. analysis', default = True) 
+    parser_analysis.add_argument('--ce', '--class_exclude', dest = 'exclude', action = 'store', help = 'File of family classes to exclude from PRA analysis', default = 'exclude.txt')
     ### KARRO END
 
 
@@ -357,6 +403,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     if show_progress:
         sys.stderr.write("Creating simulation:\n%s\n" % (cmd))
         sys.stderr.flush()
+    ##progress_fp.write(print_time() + "\n")
     progress_fp.write("Creating simulation:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -365,11 +412,11 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = output_file + ".stdout", stderr_file = output_file + ".stderr", 
-                      output_location = data_dir, walltime = time_limit, arch_type = ["n09","bigmem"])
+                      output_location = data_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'])
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.output_file = output_file
     p.seq_file = file_base(output_file)
@@ -378,7 +425,7 @@ def simulate_chromosome(chromosome_file, rng_seed, length, neg_strand, fam_file,
     return p
 
 
-def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
+def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem, max_nodes):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -399,6 +446,8 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     if show_progress:
         sys.stderr.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    ##progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching raider:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -406,12 +455,12 @@ def run_raider(seed, seed_num, f, m, input_file, raider_dir, mem):
     job_name = "R.{input}.{seed}.{num}".format( num = get_job_index("raider") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2, job_name = job_name,
                       stdout_file = input_base + ".raider.stdout", stderr_file = input_base + ".raider.stderr",
-                      output_location = output_dir, walltime = time_limit, mem = mem, #ppn = 8 if mem else 1, 
-                      arch_type = ['n09'])
+                      output_location = output_dir, walltime = time_limit, mem = Locations['high_mem_arch'] if mem else False, ppn = Locations['proc_per_node'] if max_nodes else 1,
+                      arch_type = Locations['basic_arch_type'] if not mem else False)
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.tool_resources = [0]*4
 
@@ -438,6 +487,8 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
     if show_progress:
         sys.stderr.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    ##progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching composites finder:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -448,9 +499,9 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
                       output_location = output_dir, walltime = time_limit)
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.description = "composites.finder"
     p.elementsFile = elements_file
@@ -458,7 +509,7 @@ def run_composites_finder(elements_file, seq_file, compositesFinderDir):
 
     return p
 
-def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only):
+def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, excise, overlaps, tieup, prosplit, prevfam, age, age_only, max_nodes, mem):
     """Given raider parameters and an input file, run RAIDER and put the output into
     the directory specified in output_dir (creating a random name is none is
     specified."""
@@ -491,7 +542,7 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     else:
         opt_str += "--age " + str(age) 
 
-    cmd1 = "{raider2} --vv -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
+    cmd1 = "{raider2} -q -c {f} {version} {min_arg} {seed} {input_file} {output_dir}".format(raider2 = Locations['raider2'], f = f, version = opt_str, min_arg = min_arg, seed = seed_string, input_file = input_file, output_dir = output_dir)
 
     out_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.txt"
     lib_file = raider2_dir + "/" + input_base + ".s" + str(seed_num) + ".raider2_consensus.fa"
@@ -504,21 +555,23 @@ def run_raider2(seed, seed_num, f, m, input_file, raider2_dir, family_array, exc
     cmd3 = "rm {elements}; rm {family}".format(elements = element_file, family = family_file ) if stats_only else ""
     
     if show_progress:
-        sys.stderr.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+        sys.stderr.write("\nLaunching raider2:\n%s\n%s\n\n" % (cmd1, cmd2))
         sys.stderr.flush()
-    progress_fp.write("\nLaunching raider2:\n%s\n%s\n" % (cmd1, cmd2))
+
+    #progress_fp.write(print_time() + "\n")
+    progress_fp.write("Launching raider2:\n%s\n%s\n\n" % (cmd1, cmd2))
     progress_fp.flush()
 
     batch_name = raider2_dir + "/" + input_base + ".s" + str(seed_num) +  ".raider2.batch"
     job_name = "R2.{input}.{seed}.{num}".format( num = get_job_index("raider2") , input=re.sub("hg18.","",input_base), seed=seed_num)
     p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name,
                       stdout_file = input_base + ".raider2.stdout", stderr_file = input_base + ".raider2.stderr",
-                      output_location = output_dir, walltime= time_limit)
+                      output_location = output_dir, walltime= time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1, mem = Locations['high_mem_arch'] if mem else False)
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.tool_resources = [0]*4
 
@@ -556,6 +609,8 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
     if show_progress:
         sys.stderr.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching araider:\n%s\n%s\n" % (cmd1, cmd2))
     progress_fp.flush()
 
@@ -566,9 +621,9 @@ def run_araider(seed, seed_num, f, m, input_file, araider_dir):
                       output_location = output_dir, walltime = time_limit)
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.tool_resources = [0]*4
 
@@ -598,6 +653,8 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
     if show_progress:
         sys.stderr.write("\nLaunching bigfoot:\n%s\n" % (cmd))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching bigfoot:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -613,9 +670,9 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
 
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.description = "bigfoot"
     p.tool_resources = [0]*4
@@ -624,7 +681,7 @@ def run_bigfoot(input_file, bigfoot_dir, L, C, I, T):
 
     return p 
 
-def run_piler(input_file, piler_dir):
+def run_piler(input_file, piler_dir, max_nodes):
     """Runs Piler and returns a submitted pbs object with specific attributes used to run RepeatMasker."""
     input_base = file_base(input_file).rstrip(".fa")
     lib_file = input_base + ".lib"
@@ -637,6 +694,8 @@ def run_piler(input_file, piler_dir):
     if show_progress:
         sys.stderr.write("\nLaunching Piler:\n%s\n" % (cmd))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunching Piler:\n%s\n" % (cmd))
     progress_fp.flush()
 
@@ -646,12 +705,12 @@ def run_piler(input_file, piler_dir):
     stderr_file = input_base + ".piler.stderr";
     p = pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
-                      output_location = piler_dir, walltime = time_limit)
+                      output_location = piler_dir, walltime = time_limit, ppn = Locations['proc_per_node'] if max_nodes else 1)
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.description = "piler"
     p.tool_resources = [0]*4
@@ -661,7 +720,7 @@ def run_piler(input_file, piler_dir):
     return p
 
 
-def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_second_filter, threshold):
+def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_second_filter, threshold, max_nodes, mem):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -685,19 +744,22 @@ def run_scout(input_file, output_dir, min_freq, length, use_first_filter, use_se
     if show_progress:
         sys.stderr.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nRepeatScout:\n%s\n%s\n%s\n" % (cmd1, cmd2, cmd3))
     progress_fp.flush()
         
     batch_name = output_dir + "/" + file_base(input_file) + ".repscout1.batch"
     job_name = "rptscout.{input}.{num}".format( num = get_job_index("repscout") , input=file_base(input_file))
-    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = ["RepeatMasker", "python-3.3.3"],
+    p = pbsJobHandler(batch_file = batch_name, executable = cmd1 + "; " + cmd2 + "; " + cmd3, job_name = job_name, RHmodules = Locations['rm_modules'],
                       stdout_file = file_base(rptscout_output) + ".stdout", stderr_file = file_base(rptscout_output) + ".stderr",
-                      output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
+                      output_location = output_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'] if not mem else [], ppn = Locations['proc_per_node'] if max_nodes else 1,
+                      mem = Locations['high_mem_arch'] if mem else False)
 
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
     p.description = "rep_scout" if not use_first_filter else "rep_scout1" if not use_second_filter else "rep_scout12"
     p.tool_resources = [0,0,0,0]
 
@@ -732,6 +794,8 @@ def run_scout_second_filter(p):
         if show_progress:
             sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
             sys.stderr.flush()
+
+        #progress_fp.write(print_time() + "\n")
         progress_fp.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         progress_fp.flush()
 
@@ -742,9 +806,9 @@ def run_scout_second_filter(p):
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
         if not timing_jobs:
-            p2.submit(preserve=True)
+            p2.submit(preserve=True, delay = wait_time)
         else:
-            p2.submit_timed_job(preserve=True)
+            p2.submit_timed_job(preserve=True, delay = wait_time)
         p2.description = p.description#"rep_scout"
         p2.stage = "2"
         #print("RM resources : " + str(p.getResources(cleanup=False)))
@@ -760,7 +824,7 @@ def run_scout_second_filter(p):
 
 def scout_second_filter(p, min_freq):
     """NOT CURRENTLY WORKING!!! Does not run correctly, and does not properly adjust time"""
-    p.wait()
+    p.wait(wait_time)
 
     filter2_stage_output = p.seq_file.rstrip(".fa") + ".repscout.filtered2.fa"
     cmd = "cat {output} | perl {filter} --cat={cat} --thresh={thresh} > {final}".format(output = p.lib_file, filter = Locations['filter_stage-2'], cat = p.rm_output, thresh = min_freq, final = filter2_stage_output)
@@ -768,6 +832,8 @@ def scout_second_filter(p, min_freq):
     if show_progress:
         sys.stderr.write("\nRepeatScout Filter2:\n%s\n" % cmd)
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nRepeatScout Filter2:\n%s\n" % cmd)
     progress_fp.flush()
 
@@ -777,9 +843,9 @@ def scout_second_filter(p, min_freq):
                        stdout_file = file_base(p.seq_file) + ".repscout2.stdout", stderr_file = file_base(p.seq_file) + ".repscout2.stderr",
                        output_location = file_dir(p.seq_file), walltime = time_limit)
     if not timing_jobs:
-        p2.submit(preserve=True)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
     p2.description = "rep_scout"
     p2.time_resources = p.time_resources + p.getResources(cleanup=False)
     p2.lib_file = p.lib_file
@@ -794,7 +860,7 @@ def run_repeat_masker(p, num_processors):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait()
+    p.wait(wait_time)
     p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
@@ -803,11 +869,13 @@ def run_repeat_masker(p, num_processors):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    cmd = "RepeatMasker -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
+    cmd = "{RepeatMasker} -nolow -lib {library} -pa {pa} -dir {dir} {seq_file}".format(RepeatMasker = Locations['RepeatMasker'], library = p.lib_file, pa = num_processors, dir = output_dir, seq_file = p.seq_file)
 
     if show_progress:
         sys.stderr.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunch repeatmasker (%s):\n%s\n" % (p.description, cmd))
     progress_fp.flush()
 
@@ -821,9 +889,9 @@ def run_repeat_masker(p, num_processors):
                        job_name = job_name, stdout_file = input_base + ".repmask.stdout", stderr_file = input_base + ".repmask.stderr",
                        output_location = output_dir, walltime = rm_time_limit, always_outputs=False);
     if not timing_jobs:
-        p2.submit(preserve=True)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
 
     p2.description = "RptMasker"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
@@ -837,12 +905,11 @@ def run_repeat_masker(p, num_processors):
     return p2
 
 
-
 def run_perform_stats(p, exclusion_file = None):
     """Given the pbs object used to start a consensus sequence job as well as
     repeatmasker arguments, wait until the job is done and then call repeatmasker 
     on the output and put results in masker_dir (current dir if unspecified)"""
-    p.wait()
+    p.wait(wait_time)
     p.loadResources()
 
     input_base = file_base(p.seq_file)  # Base name of the file used for input
@@ -857,6 +924,8 @@ def run_perform_stats(p, exclusion_file = None):
     if show_progress:
         sys.stderr.write("\nLaunch perform_stats: %s\n" % (cmd))
         sys.stderr.flush()
+
+    #progress_fp.write(print_time() + "\n")
     progress_fp.write("\nLaunch perform_stats: %s\n" % (cmd))
     progress_fp.flush()
 
@@ -864,11 +933,11 @@ def run_perform_stats(p, exclusion_file = None):
     job_name = "stats.%d" % get_job_index("stats")
     p2 = pbsJobHandler(batch_file = batch_name, executable = cmd,
                        job_name = job_name, stdout_file = input_base + ".stats.stdout", stderr_file = input_base + ".stats.stderr",
-                       output_location = output_dir, walltime = time_limit, arch_type = ['n09', 'bigmem'])
+                       output_location = output_dir, walltime = time_limit, arch_type = Locations['basic_arch_type'])
     if not timing_jobs:
-        p2.submit(preserve=True)
+        p2.submit(preserve=True, delay = wait_time)
     else:
-        p2.submit_timed_job(preserve=True)
+        p2.submit_timed_job(preserve=True, delay = wait_time)
 
     p2.description = "Stats"
     p2.seed = p.seed if hasattr(p, "seed") else "NA"
@@ -1003,14 +1072,20 @@ def create_blast_db(file_list):
         if show_progress:
             sys.stderr.write("\nLaunching create_database: %s\n\n" % (cmd))
             sys.stderr.flush()
-            progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
-            progress_fp.flush()
 
-        batch_name = file + "blast_db.batch"
+        #progress_fp.write(print_time() + "\n")
+        progress_fp.write("\nLaunching create_database: %s\n\n" % (cmd))
+        progress_fp.flush()
+
+        batch_name = file + ".blast_db.batch"
         job_name = "create_db.%d" % (i)
-
+        stdout_file = file + ".blast_db.stdout"
+        stderr_file = file + ".blast_db.stderr"
+        
         o =  pbsJobHandler(batch_file = batch_name, executable = cmd, job_name = job_name,
-                                ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"])
+                           ppn = 2,   walltime = "00:20:00", RHmodules = ["blast+"],
+                           stdout_file = stdout_file, stderr_file = stderr_file)
+
         o.seq_file = seq_file
         o.rm_file = rm_file
         o.rm_seq_file = rm_seq_file
@@ -1020,9 +1095,9 @@ def create_blast_db(file_list):
     for o in BLAST_DATABASE.values():
         #o.submit_timed_job()   # KARRO: Highly unlikely this will ever exceed 20 minutes (or even 5 minutes) -- so I just took the default parameters.
         if not timing_jobs:
-            o.submit(preserve=True)
+            o.submit(preserve=True, delay = wait_time)
         else:
-            o.submit_timed_job(preserve=True)
+            o.submit_timed_job(preserve=True, delay = wait_time)
 
     return BLAST_DATABASE
 
@@ -1035,7 +1110,7 @@ def run_pra_analysis(tool_job, database_job):
     This function will wait on completion of both jobs."""
 
     cmd = "./pra_analysis {consensus_file} {rm_fa_file} {database_file} {output_file}"
-    database_job.wait()
+    database_job.wait(100)
 
 
     analysis_cmd = cmd.format(python = Locations["python"], consensus_file = tool_job.lib_file, 
@@ -1045,24 +1120,27 @@ def run_pra_analysis(tool_job, database_job):
     if show_progress:
         sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
         sys.stderr.flush()
-    progress_fp.write("pre-rm analysis:\n%s\n" % (analysis_cmd))
+
+    #progress_fp.write(print_time() + "\n")
+    progress_fp.write("\npre-rm analysis:\n%s\n" % (analysis_cmd))
     progress_fp.flush()
 
     job_name = "pra.%d" % get_job_index("pra")
 
+    location = file_dir(tool_job.lib_file)
     base_name = file_base(tool_job.lib_file)[:-3] + ".pra"
-    batch_name = base_name + ".batch"
+    batch_name = location + "/" + base_name + ".batch"
     stdout_file = base_name + ".stdout"
     stderr_file = base_name + ".stderr"
-    location = file_dir(tool_job.lib_file)
+    print("XXX: ", batch_name)
     p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = location, walltime = time_limit, RHmodules = ["blast+"]);
     #p.submit_timed_job()    # KARRO: What parameters should be used here for resubmission?
     if not timing_jobs:
-        p.submit(preserve=True)
+        p.submit(preserve=True, delay = wait_time)
     else:
-        p.submit_timed_job(preserve=True)
+        p.submit_timed_job(preserve=True, delay = wait_time)
 
     p.description = "PraAnalysis"
     p.seed = tool_job.seed if hasattr(tool_job, "seed") else "NA"
@@ -1117,9 +1195,9 @@ def run_timed_chrom_sim_jobs(jobs, flist=[]):
                 save_timed_chrom_sim_jobs(chrom_job_set, finished_jobs, flist)            
                 exit_now()
         if not timing_jobs:
-            j.wait()
+            j.wait(100)
         else:
-            j.timed_wait()
+            j.timed_wait(100)
         t2 = time.time()
         finished_jobs.add(j)
         time_est = t2 - t1
@@ -1180,6 +1258,9 @@ def run_timed_tool_jobs(jobs, run_rm, pa, run_pra, blast_db, RM_jobs=None, PRA_j
         if timing and not have_time_for_another_run(time_est):
             save_timed_tool_jobs(job_set, RM_jobs, PRA_jobs, blast_db)
             exit_now()
+
+        time.sleep(sleep_pause)  # We have checked all the jobs; lets sleep for ten minutes before checking again.
+                                 # Important for keeping time down on the head node -- required on Oakley.
     return RM_jobs, PRA_jobs
 
 
@@ -1199,6 +1280,10 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
     for tool in test_tools:
         if tool not in job_dic.keys():
             job_dic[tool] = []
+
+
+    pra_job_set = {}
+    rm_job_set = {}
     if RM_jobs or PRA_jobs:
         pra_job_set = {j for j in PRA_jobs}
         rm_job_set = {j for j in RM_jobs}
@@ -1227,7 +1312,7 @@ def run_timed_analysis_jobs(run_rm, run_pra, RM_jobs, PRA_jobs, results_dir , st
                 exit_now()
             pra_job_set = pra_job_set - finished_pra_jobs
             rm_job_set = rm_job_set-finished_rm_jobs
-    #print(str(job_dic))
+
     return job_dic, stats_jobs, pra_job_set
 
 
@@ -1246,21 +1331,30 @@ if __name__ == "__main__":
     # found, we assume we are running on the Mac.  If not, we check for in the Redhawk 
     # location, and if found assume we are running on redhawk.  Otherwise we print and 
     # error and quit.
-    if os.path.exists(MacLocations["RptScout"]):
+
+    if location.lower() == "oakley":
+        Locations = OakleyLocations;
+        assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on oakley (%d)" % (args.pa)
+    elif location.lower() == "osx":
         Locations = MacLocations
-    elif os.path.exists(RedhawkLocations['RptScout']):
+    elif location.lower() == "redhawk":
         Locations = RedhawkLocations
         assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
     else:
-        assert False, "Could not determine host."
+        sys.stderr.println("locations.txt file: bad content")
+        exit(1);
     ###
 
     
     data_dir = args.results_dir + "/" + args.data_dir    
-     
+      
     if not continue_prev:
-        if args.nuke and os.path.exists(args.results_dir):
-            subprocess.call("rm -r %s" % args.results_dir, shell = True)
+        if args.nuke:
+            if os.path.exists(args.results_dir):
+                subprocess.call("rm -r %s" % args.results_dir, shell = True)
+        else:
+            if os.path.exists(args.results_dir):
+                sys.stderr.write("%s exists; need to use --nuke option" % args.results_dir)
         if not os.path.exists(args.results_dir):
             os.makedirs(args.results_dir)
         if timing:
@@ -1271,8 +1365,9 @@ if __name__ == "__main__":
         ### Generate simulated file(s) and run to completion
         ### Set up the debugging log file (if needed)
         progress_fp = open(args.results_dir + "/debug.txt", "w")
+        #progress_fp.write(print_time() + "\n")        
         progress_fp.write(" ".join(sys.argv) + "\n\n");
-        
+
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
 
@@ -1315,7 +1410,9 @@ if __name__ == "__main__":
             logging_fp = open(log_fname, "w")
             logging_fp.write("Continuing previous run\n")
             flush_files()
+
         progress_fp = open(args.results_dir + "/debug.txt", "a")
+        #progress_fp.write(print_time() + "\n")
         progress_fp.write(" ".join(sys.argv) + "\n\n");
         
         # Get file list from old checkpoint file
@@ -1355,13 +1452,13 @@ if __name__ == "__main__":
         if args.run_raider:
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             jobs += [run_raider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem) for i,seed in enumerate(seed_list)
+                                raider_dir = args.results_dir + "/" + args.raider_dir, mem = args.mem, max_nodes = args.max_nodes) for i,seed in enumerate(seed_list)
                      for file in file_list]
 
         if args.run_araider:
             seed_list = [seed for line in open(args.seed_file) for seed in re.split("\s+", line.rstrip()) if seed] if args.seed_file else [args.seed]
             jobs += [run_araider(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
-                                araider_dir = args.results_dir + "/" + args.araider_dir) for i,seed in enumerate(seed_list)
+                                araider_dir = args.results_dir + "/" + args.araider_dir, max_nodes = args.max_nodes) for i,seed in enumerate(seed_list)
                      for file in file_list]
         
         if args.run_raider2:
@@ -1373,7 +1470,7 @@ if __name__ == "__main__":
             jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file,
                                  raider2_dir = args.results_dir + "/" + args.raider2_dir, family_array = args.family_array, excise = args.excising, 
                                  overlaps = args.overlaps, tieup = args.tieup, prosplit=args.prosplit, prevfam=args.prevfam,
-                                 age=args.age, age_only=False) for i,seed in enumerate(seed_list) for file in file_list]
+                                 age=args.age, age_only=False, max_nodes=args.max_nodes, mem=args.mem) for i,seed in enumerate(seed_list) for file in file_list]
             #if args.all_ages:
             #    if not args.multi_seed:
             #        jobs += [run_raider2(seed = convert_seed(seed), seed_num = i, f = args.f, m = args.raider_min, input_file = file, 
@@ -1395,17 +1492,17 @@ if __name__ == "__main__":
         if args.run_repscout:
             if args.rs_filters == 3:
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir, min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = False, use_second_filter = False, threshold = args.f) for file in file_list]
+                                        use_first_filter = False, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "1", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = False, threshold = args.f) for file in file_list]
+                                        use_first_filter = True, use_second_filter = False, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + "12", min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min,
-                                        use_first_filter = True, use_second_filter = True, threshold = args.f) for file in file_list]
+                                        use_first_filter = True, use_second_filter = True, threshold = args.f, max_nodes = args.max_nodes, mem=args.mem) for file in file_list]
             else:
                 use_first_filter = (args.rs_filters >= 1)
                 use_second_filter = (args.rs_filters >= 2)
                 dir_addon = ".F1F2" if use_second_filter else ".F1" if use_first_filter else ""
                 jobs += [run_scout(input_file = file, output_dir = args.results_dir + '/' + args.rptscout_dir + dir_addon, min_freq = args.rs_min_freq, length = len(args.seed) if args.seed else args.repscout_min, 
-                            use_first_filter = use_first_filter, use_second_filter = use_second_filter, threshold = args.f) for file in file_list]
+                                   use_first_filter = use_first_filter, use_second_filter = use_second_filter, threshold = args.f, max_nodes = args.max_nodes, mem = args.mem) for file in file_list]
 
         if args.run_bigfoot:
             bigfoot_dir = args.results_dir + "/" + args.bigfoot_dir    # Name of the directory all bigfoot files will go into
@@ -1417,7 +1514,7 @@ if __name__ == "__main__":
             piler_dir = args.results_dir + "/" + args.piler_dir    # Name of the directory all piler files will go into
             if not os.path.exists(piler_dir):
                 os.makedirs(piler_dir)
-            jobs +=[run_piler(input_file = file, piler_dir = piler_dir) for file in file_list]
+            jobs +=[run_piler(input_file = file, piler_dir = piler_dir, max_nodes = args.max_nodes) for file in file_list]
 
             
         ############## Third: Launch repeatmasker jobs
@@ -1494,9 +1591,11 @@ if __name__ == "__main__":
     
     ######
     # Calculate statistics (not bothering with parallelization yet)
-    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}" + "".join("{:<14}"*4) + "\n"
+
+    #print_str: tool       seed      tp/fp/fn/tn           tpr - fdr              ToolCpuTime - RVMem  Con/QuCoverage
+    print_str = "{:<12}" + "{:<5}" + "".join("{:<14}"*4) + "".join("{:<14}"*6) + "".join("{:<14}"*8) + "{:<14}"*2 + "\n"
     with open(args.results_dir + "/" + args.stats_file, "w") as fp:
-        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "Cover", "CoverCpuTime", "CoverWallTime", "CoverMem", "CoverVMem"))
+        fp.write(print_str.format("#tool", "seed", "tp", "fp", "fn", "tn", "tpr", "tnr", "ppv", "npv", "fpr", "fdr","ToolCpuTime", "ToolWallTime", "ToolMem", "ToolVMem", "RMCpuTime", "RMWallTime", "RMMem", "RMVMem", "ConCoverage", "QuCoverage"))
         
         for key in test_tools:
             for p in job_dic[key]:
@@ -1507,38 +1606,49 @@ if __name__ == "__main__":
                 CoverageResources = [0,0,0,0]
                 try:
                     if args.repmask:
-                        progress_fp.write("python perform_stats.py %s %s -\n" % (p.seq_file + ".out", p.rm_output))
+                        #progress_fp.write(print_time() + "\n")                        
+                        progress_fp.write("Calling: perform_stats.py(%s, %s, None)" % (p.seq_file + ".out", p.rm_output))
                         try:
                             Counts, Stats, Sets = perform_stats.perform_stats(p.seq_file + ".out", p.rm_output, None)
                             Stats = [round(x,5) for x in Stats]
                             RMResources = list(p.getResources(cleanup=False))
                             if args.hooke_jeeves:
                                 print(Counts[1]+Counts[2])
-                        except:
+                        except Exception as E:
+                            #progress_fp.write(print_time() + "\n")
                             progress_fp.write("performance Exception: " + str(E) + "\n");
-                            fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
+                            fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\t"]))
+                            fp.write("Resources: \t" + "\t".join(p.getResources(cleanup=False)) + "\n");
                             continue
                         
                         if p.pra_job:
                             try:
-                                matches = regex.findall(open(p.pra_job.pra_output, "r").read())
-                                if len(matches) > 0:
-                                    Coverage = matches[0]
-                                CoverageResources = list(p.pra_job.getResources(cleanup=False))
+                                progress_fp.write("parse_pra_outpt: %s %s\n" % (p.pra_job.pra_output, args.exclude))
+                                consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_job.pra_output, args.exclude)
+                                #matches = regex.findall(open(p.pra_job.pra_output, "r").read())
+                                #if len(matches) > 0:
+                                #    Coverage = matches[0]
                             except Exception as E:
+                                #progress_fp.write(print_time() + "\n")
                                 progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
+                                progress_fp.flush()
                     else:
                         try:
-                            matches = regex.findall(open(p.pra_output, "r").read())
-                            if len(matches) > 0:
-                                Coverage = matches[0]
-                            CoverageResources = list(p.getResources(cleanup=False))
+                            progress_fp.write("parse_pra_outpt: %s %s\n" % (p.pra_output, args.exclude))
+                            consensus_coverage, query_coverage, Used = parse_pra_output(p.pra_output, args.exclude)
+                            #matches = regex.findall(open(p.pra_output, "r").read())
+                            #if len(matches) > 0:
+                            #    Coverage = matches[0]
+                            #CoverageResources = list(p.getResources(cleanup=False))
                         except Exception as E:
+                            #progress_fp.write(print_time() + "\n")
                             progress_fp.write("PRA Parsing Exception: " + str(E) + "\n");
+                            progress_fp.flush()
 
-                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [Coverage] + list(CoverageResources))))
+                    fp.write(print_str.format(*([key, p.seed_num] + list(Counts) + list(Stats) + list(p.tool_resources) + list(RMResources) + [consensus_coverage] + [query_coverage])))
 
                 except Exception as E:
+                    ##progress_fp.write(print_time() + "\n")
                     progress_fp.write("performance Exception: " + str(E) + "\n");
                     fp.write("\t".join([str(key), str(p.seed_num) if hasattr(p, "seed_num") else "NA", "INCOMPLETE\n"]))
 

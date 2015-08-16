@@ -23,7 +23,6 @@ import pickle
 import tempfile
 import logging
 
-
 epilogue_str = """#!/bin/sh
 echo "Redhawk Epilogue Args:" >&2
 echo "Job ID: $1" >&2
@@ -44,17 +43,18 @@ Redhawk Epilogue Args:
 Resources Used: cput=00:00:00,mem=0kb,vmem=0kb,walltime=00:00:00
 """
 
+
 ############################################################
 # Library-global variables
-log_file = "/usr/local/torque/current/var/spool/torque/server_priv/accounting"
 uid = os.getuid()
 current_user = pwd.getpwuid(uid)[0]  # When run on redhawk with a nohup, os.getlogin() does not work
 try:
-    subprocess.check_call(["qstat"], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    subprocess.check_call(["qstat > /dev/null"], shell = True)
 except:
     pbs_present = False
 else:
     pbs_present = True
+
 
 job_list = set()    # Global list of all jobs that have been submitted and not yet identified as having quit
 
@@ -94,7 +94,7 @@ class pbsJobHandler:
            * job_name: A name for the redhawk process.  Default = the batch file name.
            * nodes: number of nodes required for the job.   Default = 1.
            * ppn: number of processors needed for the job.  Default = 1.
-           * mem: Using 128 Gb machine.  Default = False.
+           * mem: Using 128 Gb machine.  Default = False -- don't use.  Other values: 'redhawk' or 'oakley'.
            * walltime: Maximum allowed runtime for the job (hours:minutes:seconds).  Default = 40:00:00.  Max. allowed: 400:00:00.
            * mail = when to send email.  Any combination of:
              b   send mail when job begins
@@ -112,7 +112,8 @@ class pbsJobHandler:
                            possible (specifically: if qstat can be run on the machine)
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
-           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem), 
+           * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem)
+           $ oakley_bigmem: Run on the big-mem server (oakley server only)
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
@@ -164,11 +165,14 @@ class pbsJobHandler:
         
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
-        if self.mem:
+        if self.mem == 'redhawk':
             s += ":m128"
         if self.arch_type:
             s += ":" + ":".join(arch_type)
         s += "\n"
+        f.write(s)
+        if self.mem == 'oakley':
+            s="#PBS -l mem=192GB\n"
         f.write(s)
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)
@@ -762,6 +766,9 @@ def relaunch(args = sys.argv, force = False, walltime = "40:00:00", python = "py
         sys.stderr.write("STDERR: " + e)
         return True
     return False
+
+
+
         
 ############## Allow for a direct launch of a program
 if __name__ == "__main__":

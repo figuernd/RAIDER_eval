@@ -1,9 +1,18 @@
 #!/bin/bash
 
-cd ~/karro/RAIDER_eval/
-##comp=comparisons_overlap3
+# rev_sf.sh : shell script that automates the process of naming RAIDER_eval output
+#  directory, running the RAIDER_eval program, cleaning up the output directory, and
+#  creating a formatted statistics output file.
+# Arguments:
+#   $dir - base directory for output dir, to be modified
+#   $sfile OR $seed - depending on which, adjusts naming of output dir to indicate
+#   $freq
+#   $data
+#   $type (default is seq_files)
+# By Carly Schaeffer
 
 
+cd ~/karro/RAIDER_eval/ # need to change this to your RAIDER_eval directory
 
 if [ -n "$sfile" ]; then
     id=$(basename $sfile .txt)
@@ -19,12 +28,11 @@ echo $id
 basedata=${data##*/}
 fname=${dir}/F${freq}_${id}
 
-
 module load python-3.3.3
-##data=hg18.chr22.fa
 
-opts_dir_str=""
-opts=""
+if [ -z $opts ]; then
+  opts=""
+fi
 #if [ -v $PS ]; then
 #    opts="${opts} --ps"
 #    opts_dir_str=${opts_dir_str}_PROSPLIT
@@ -56,7 +64,7 @@ if [ ${type} == "chrom_sim" ]; then
         rng_str="--rng_seed ${RNG}"
     fi
     fname=${fname}_T${T}_ST${ST}_RNG${RNG}
-    
+
     if [ -z $FAM ]; then
         fam_str=""
     else
@@ -65,12 +73,12 @@ if [ ${type} == "chrom_sim" ]; then
     fi
 
 
-    ./RAIDER_eval.py --R2 -R --nuke -r $fname -f ${freq} ${seed_str} --age 1  --timing_jobs chrom_sim ${t_str} ${st_str} ${rng_str} ${fam_str} ${data} 
+    ./RAIDER_eval.py --R2 -R --nuke -r $fname -f ${freq} ${seed_str} --age 1  --timing_jobs chrom_sim ${t_str} ${st_str} ${rng_str} ${fam_str} ${data}
     mv ${fname}/SOURCE_DATA/ sim_data/SIM_T${T}_ST${ST}_RNG${RNG}_FAM${FAM}
+
 else
-    fname=${dir}/seq/F${freq}_${id}_${opts_dir_str}
-    #./RAIDER_eval.py --R2 -R --PRA --nuke -r $fname -f ${freq} ${seed_str} --age 1 --timing_jobs seq_files ${data} 
-    ./RAIDER_eval.py --R2 --RA --nuke ${opts} --no -r $fname -f ${freq} ${seed_str} --timing_jobs seq_files ${data} 
+    fname=${dir}/seq/F${freq}_${id}
+    ./RAIDER_eval.py --R2 --RA --nuke ${opts} --no -r $fname -f ${freq} ${seed_str} --timing_jobs seq_files ${data}
 fi
 
 dir=${fname} ./cleanup.sh

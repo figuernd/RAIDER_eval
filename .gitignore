@@ -50,3 +50,4 @@ sqlite3
 nohup.*
 tmp*
 temp*
+locations.txt
