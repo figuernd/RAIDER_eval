@@ -88,7 +88,7 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True, depends=None):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.
@@ -105,6 +105,7 @@ class pbsJobHandler:
            * queue: redhawk queue to run on.  Default: redhawk chooses.
            * output_location: Directory to place output files.  Default: current directory.
            * RHmodules: A list of redhawk modules to be loaded before run (e.g. ['Blast+']).  Default: none.
+           # depends: A list of job ids on which this is dependent
            * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.  By default: <batch_file>.epilogue.py"
            * suppress_pbs: If true, this will run the job with a standard popen, instead of forking it out to the pbs job manager.  (Included so we can run code
                            on other machines for testing.) Will still create all files that would have been created -- emulates redhawk execution as much as possible.
@@ -113,7 +114,7 @@ class pbsJobHandler:
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
            * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
            * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem)
-           $ oakley_bigmem: Run on the big-mem server (oakley server only)
+           * oakley_bigmem: Run on the big-mem server (oakley server only)
         """
         if epilogue_file and "/" in epilogue_file:
             raise PBSError("Bad epilogue file name: " + epilogue_file)
@@ -162,6 +163,7 @@ class pbsJobHandler:
         self.always_outputs = always_outputs
         self.is_timing = False
         self.logger.debug("Initializing new job with batch file name : " + self.batch_file_name)
+        self.depends = depends
         
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
@@ -175,6 +177,10 @@ class pbsJobHandler:
             s="#PBS -l mem=192GB\n"
         f.write(s)
         s="#PBS -l walltime="+self.walltime+"\n"
+        f.write(s)
+
+        if self.depends and len(self.depends) > 0:
+            s = "-W depend=" + ",".join([str(x) for x in self.depends])
         f.write(s)
         
         if stdout_file:
