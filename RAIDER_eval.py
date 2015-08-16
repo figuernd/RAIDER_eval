@@ -1353,7 +1353,7 @@ if __name__ == "__main__":
             if os.path.exists(args.results_dir):
                 subprocess.call("rm -r %s" % args.results_dir, shell = True)
         else:
-            if os.path.exist(args.results_dir):
+            if os.path.exists(args.results_dir):
                 sys.stderr.write("%s exists; need to use --nuke option" % args.results_dir)
         if not os.path.exists(args.results_dir):
             os.makedirs(args.results_dir)

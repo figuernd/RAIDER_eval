@@ -1,0 +1,60 @@
+#!/bin/bash
+#PBS -N approx_raider
+#PBS -m abe
+#PBS -M "schaefce@miamioh.edu"
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=${WT}
+
+cd ~/karro/RAIDER_eval/
+L=${#seed} 
+weight=$(grep -o "1" <<< "$seed" | wc -l)
+basedata=${data##*/}
+
+fname=${dir}/F${freq}_L${L}_W${weight}_S${seed}
+
+if [ -z $CP ]; then
+    $CP=false
+fi
+
+if [ ${type} == "chrom_sim" ]; then
+    ./RAIDER_eval.py -R --R2 --AR --RS --nuke -r $fname -f ${freq} -s ${seed} --pwt ${WT} --cp ${CP} --stats_only chrom_sim ${data} 
+else
+    ./RAIDER_eval.py -R --R2 --AR --RS --nuke -r $fname -f ${freq} -s ${seed} --pwt ${WT} --cp ${CP} --stats_only seq_files ${data}
+fi
+
+check_fname='reval.dat'
+RSAVE_CHECKFILE=${fname}/${check_fname}
+log_fname='reval.log'
+RSAVE_LOG=${fname}/${log_fname}
+
+echo "Output directory: ${fname}"
+echo "Data: ${basedata}"
+echo "Seed: ${seed}"
+
+
+if [ -n $RSAVE_STEP  ]; then
+    RSAVE_STEP=`expr $RSAVE_STEP + 1`
+    if [ -n "${RSAVE_CHECKFILE}" ]; then
+        if [ -f $RSAVE_CHECKFILE.old ]; then
+            mv $RSAVE_CHECKFILE.old $RSAVE_CHECKFILE.$RSAVE_STEP
+        fi
+    fi
+else
+    RSAVE_STEP=0
+fi
+# save the log of this run
+
+cp $RSAVE_LOG $RSAVE_LOG.$RSAVE_STEP
+#
+# Check if the job is finished and if it is not
+# resubmit this file
+#
+if grep CONTINUE ${RSAVE_LOG} 
+    then
+        ssh c-0-0 "cd ~/karro/RAIDER_eval/; qsub -v dir=$dir,seed=$seed,freq=$freq,type=$type,RSAVE_STEP=$RSAVE_STEP,WT=$WT,$CP=true auto_resubmit_rev.job; exit"
+elif grep FINISHED ${RSAVE_LOG}
+    then
+        dir=${fname} ./cleanup.sh
+        ./doSortedAnalysis.R -f ${fname}/stats.txt --formula=~+tpr --auto_out -v
+fi
+exit 0

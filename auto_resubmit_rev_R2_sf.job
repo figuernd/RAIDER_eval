@@ -1,0 +1,95 @@
+#!/bin/bash
+#PBS -N approx_raider
+#PBS -m abe
+#PBS -M "schaefce@miamioh.edu"
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=4:0:0
+##PBS -l qos=preemptor
+
+
+cd ~/karro/RAIDER_eval/
+
+sfile_base=aseed_files/aseeds
+sfile_orig=${sfile}
+sfile=${sfile_base}/${sfile}
+
+seed=$(head -n 1 ${sfile})
+weight=$(grep -o "1" <<< "$seed" | wc -l)
+L=${#seed} 
+basedata=${data##*/}
+id=$(basename $sfile .txt)
+
+#fname=${dir}/F${freq}_${id}
+fname=${dir}/R2_F${freq}_${id}_${V}
+
+if [ -z $V ]; then
+    age=""
+elif [ ${V} == "old" ]; then
+    age="--age 1"
+elif [ ${V} == "oldest" ]; then
+    age="--age 2"
+else
+    age=""
+fi
+
+if [ -z $CP ]; then
+    CP=false
+fi
+
+if [ $CP = false ]; then
+    CP_str=""
+else
+    CP_str="--cp"
+fi
+
+if [ ${type} == "chrom_sim" ]; then
+    ./RAIDER_eval.py --R2 --nuke -r $fname -f ${freq} --sf ${sfile} --pwt ${WT} ${CP_str} ${age} --stats_only chrom_sim ${data} 
+else
+    ./RAIDER_eval.py --R2 --nuke -r $fname -f ${freq} --sf ${sfile} --pwt ${WT} ${CP_str} ${age} --stats_only seq_files ${data} 
+fi
+
+check_fname='reval.dat'
+RSAVE_CHECKFILE=${fname}/${check_fname}
+log_fname='reval.log'
+RSAVE_LOG=${fname}/${log_fname}
+
+echo "Output directory: ${fname}"
+echo "Data: ${basedata}"
+echo "Seed: ${seed}"
+
+if [ -n "$RSAVE_STEP"  ]; then
+    RSAVE_STEP=`expr $RSAVE_STEP + 1`
+else
+    RSAVE_STEP=0
+fi
+
+echo "RSAVESTEP: ${RSAVE_STEP}"
+
+if [ -f "${RSAVE_CHECKFILE}" ]; then
+    OLD_CHECKFILE=${RSAVE_CHECKFILE}.old
+    OLD_LOG=${RSAVE_LOG}.old
+    if [ -f $OLD_CHECKFILE ]; then
+        mv $OLD_CHECKFILE $RSAVE_CHECKFILE.$RSAVE_STEP
+    fi
+    if [ -f $OLD_LOG ]; then
+        mv $OLD_LOG $RSAVE_LOG.$RSAVE_STEP
+    fi
+fi
+
+
+#
+# Check if the job is finished and if it is not
+# resubmit this file
+#
+if grep CONTINUE ${RSAVE_LOG} 
+    then
+        ssh c-0-0 "cd ~/karro/RAIDER_eval/; qsub -v dir=$dir,sfile=$sfile_orig,freq=$freq,type=$type,data=$data,RSAVE_STEP=$RSAVE_STEP,WT=$WT,CP=true auto_resubmit_rev_sf.job"
+elif grep FINISHED ${RSAVE_LOG}
+    then
+        #dir=${fname} ./cleanup.sh
+        ./doSortedAnalysis.R -f ${fname}/stats.txt --formula=~+tpr -v --auto_out
+else
+    echo "error - no continue or finished"
+fi
+
+#exit 0
