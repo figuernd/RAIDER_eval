@@ -232,7 +232,7 @@ raider_cmd = "{raider} -q -c {f} -s {seed} {input_file} {output_dir}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "{RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir {output_dir} {seq_file}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
-blast_cmd = "{blast} -out \"{output}\" -outfmt {blast_format} -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
+blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
 
 def create_raider2_pipeline(input_file, seed, f):
     ##########################
