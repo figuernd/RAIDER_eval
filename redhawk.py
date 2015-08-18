@@ -21,7 +21,7 @@ import pwd
 import datetime
 import pickle
 import tempfile
-import logging
+#import logging
 
 epilogue_str = """#!/bin/sh
 echo "Redhawk Epilogue Args:" >&2
@@ -81,7 +81,7 @@ class PBSError(Exception):
 
 ############################################################
 class pbsJobHandler:
-    logger = None
+    #logger = None
     """A pbsJobHandler corresponds to a job launched (or to be launched) on redhawk.  Once the object is created (and provided with a command-line execution command),
        the user can extract various inforamtion about the job (current status, output, etc...) and cleanup files."""
     def __init__(self, batch_file, executable, use_pid = pbs_defaults['use_pid'], job_name = pbs_defaults['job_name'], nodes = pbs_defaults['nodes'], ppn = pbs_defaults['ppn'], 
@@ -149,21 +149,21 @@ class pbsJobHandler:
         self.output_location = output_location if output_location else "."
         self.arch_type = arch_type if arch_type else []
 
-        if not pbsJobHandler.logger:
-            pbsJobHandler.logger = logging.getLogger('reval.redhawk')
-            pbsJobHandler.logger.setLevel(logging.DEBUG)
-            lfp = self.output_location + '/redhawk.log'# + self.batch_file_name
-            lfh = logging.FileHandler(lfp, mode='w')
-            lfm = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
-            lfh.setLevel(logging.DEBUG)
-            lfh.setFormatter(lfm)
-            pbsJobHandler.logger.addHandler(lfh)
-        self.logger = pbsJobHandler.logger
+        # if not pbsJobHandler.logger:
+        #     pbsJobHandler.logger = logging.getLogger('reval.redhawk')
+        #     pbsJobHandler.logger.setLevel(logging.DEBUG)
+        #     lfp = self.output_location + '/redhawk.log'# + self.batch_file_name
+        #     lfh = logging.FileHandler(lfp, mode='w')
+        #     lfm = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+        #     lfh.setLevel(logging.DEBUG)
+        #     lfh.setFormatter(lfm)
+        #     pbsJobHandler.logger.addHandler(lfh)
+        #self.logger = pbsJobHandler.logger
         self.preserve = False
         self.always_outputs = always_outputs
         self.is_timing = False
-        self.logger.debug("Initializing new job with batch file name : " + self.batch_file_name)
-        self.depends = depends
+        #self.logger.debug("Initializing new job with batch file name : " + self.batch_file_name)
+        self.depends = [p for p in depends if p] if depends else None
         
         s="#PBS -N " + self.jobname + "\n"
         s="#PBS -l nodes="+ str(self.nodes)+":ppn="+str(self.ppn)
@@ -245,9 +245,9 @@ class pbsJobHandler:
 
     def resubmit_with_more_time(self, print_qsub=False, job_limit = job_limit, delay=10, user=current_user, new_walltime=None):
         """ Resubmit job to queue with a new walltime. Since job is resubmitted, also need to delete old job from queue (as it is no longer important)"""
-        self.logger.info("Job {j}:\tResubmitting with more time - {t}".format(j=self.jobid, t=new_walltime))
+        #self.logger.info("Job {j}:\tResubmitting with more time - {t}".format(j=self.jobid, t=new_walltime))
         new_batch = self.batch_file_name + '_new'
-        self.logger.debug("New batch file name: " + new_batch)
+        #self.logger.debug("New batch file name: " + new_batch)
         with open(self.batch_file_name) as f:
             with open(new_batch, 'w') as f1:
                 for line in f:
@@ -266,7 +266,7 @@ class pbsJobHandler:
             
     def delete_job_from_queue(self, jobid):
         """ Delete job from queue by its jobid. Wait until job it deleted and associated ofile/efile are removed"""
-        self.logger.info("Deleting job with ID {j} from queue".format(j=jobid))
+        #self.logger.info("Deleting job with ID {j} from queue".format(j=jobid))
         retry=60
         always_retry=600
         sleepTimeBetweenRetry=10
@@ -352,7 +352,7 @@ class pbsJobHandler:
             t=re.split('\.',output)
             self.jobid=t[0]
             #self.logger.info("Job id: " + str(self.jobid))
-            self.logger.info("Job {j}:\t Submitted".format(j=self.jobid))
+            #self.logger.info("Job {j}:\t Submitted".format(j=self.jobid))
 
         if not self.preserve and not preserve:
             os.remove(self.batch_file_name)
@@ -381,7 +381,7 @@ class pbsJobHandler:
     def submit_timed_job(self, preserve=False, print_qsub = False, job_limit = job_limit, delay=10, user=current_user, safety_margin=None):
         """Submit timed job to redhawk. Same as submit_job, but sets the timing related data fields. Additional optional parameters:
             * safety_margin: Can have user define the amount of extra time necessary when aborting a job"""
-        self.logger.info("Submitting timed job")
+        #self.logger.info("Submitting timed job")
         #self.logger.info("Job {j}:\tChecking isJobRunning".format(j=self.jobid))
         self.start_time = time.time()
         #self.logger.debug("Start time:\t{t}".format(t = self.start_time))
@@ -397,6 +397,18 @@ class pbsJobHandler:
         """Depricated: replaced with submit()"""
         return self.submit(preserve, print_qsub, job_limit, delay, user)
 
+    def checkJobState(self):
+        """Return job state of job, or NULL if there is none"""
+
+        cmd = "qstat -f {jobID}".formt(self.jobid)
+        output,error = [x.decode() for x in subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()]
+
+        try:
+            return re.search("job_state\s+=\s+(\d+)", output).group(1)
+        except:
+            return None
+
+        
 ### isJobRunning
 ### This is primarily useful for waiting for a _submitted_ job to finish
 ###    return False if the job is done, completed for sure
@@ -406,7 +418,7 @@ class pbsJobHandler:
         """Query of the object represented by the job is still running."""
         #self.logger.info("Job {j}:\tChecking isJobRunning".format(j=self.jobid))
         if self.status == "finished":
-            self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
+            #self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
             return False
 
         if self.suppress_pbs:
@@ -421,17 +433,17 @@ class pbsJobHandler:
         while True:
             if self.is_timing and self.running_out_of_time():
                 # if running out of time, resubmit job with new walltime = prev_walltime*increase_amount
-                self.logger.debug("Job {j}:\tRunning out of time. Resubmit.".format(j=self.jobid))
+                #self.logger.debug("Job {j}:\tRunning out of time. Resubmit.".format(j=self.jobid))
                 new_wt = self.make_redhawk_time(self.parse_redhawk_time()*increase_amount)
                 self.resubmit_with_more_time(new_walltime=new_wt)     
                 #return True#return False
             
             if self.ofile_exists() or self.efile_exists():  #output.find(magicString) >=0 or redhawkStatsRe.search(output):
-                self.logger.debug("Job {j}:\tOfile exists?\t{exo}.\tEfile exists?\t{exe}.".format(j=self.jobid, exo=self.ofile_exists(), exe=self.efile_exists()))
+                #self.logger.debug("Job {j}:\tOfile exists?\t{exo}.\tEfile exists?\t{exe}.".format(j=self.jobid, exo=self.ofile_exists(), exe=self.efile_exists()))
                 while not(self.efile_exists() and self.ofile_exists()):
                     pass
                 self.status = "finished"
-                self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
+                #self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
                 job_list.remove(self)
                 return False
 
@@ -467,7 +479,7 @@ class pbsJobHandler:
 
     def timed_wait(self, delay=10, increase_amount=1.5):
         """CS: Spin until job completes OR is running out of time and should resubmit."""
-        self.logger.info("Job {j}:\tPerforming timed weight".format(j=self.jobid))
+        #self.logger.info("Job {j}:\tPerforming timed weight".format(j=self.jobid))
         if self.suppress_pbs: #CS: not sure what this is for, leaving it in because seems harmless
             self.p.wait()
             self.status = "finished"
@@ -521,7 +533,7 @@ class pbsJobHandler:
         return os.path.isfile(self.ofile)
 
     def efile_exists(self):
-        """Does the file contiining the job stderr output exist?"""
+        """Does the file containing the job stderr output exist?"""
         return os.path.isfile(self.efile)
 
     def ofile_handle(self):

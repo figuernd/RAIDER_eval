@@ -119,6 +119,13 @@ def parse_params():
     repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)    
     repeatmasker_arguments.add_argument('--rwt', '--rm_walltime', dest = "rm_walltime", help = "Wall time limit for repeat masker", default = "10:00:00")
 
+    # BLAST ARGUMENTS
+    blast_arguments = parser.add_argument_group("BLAST parameters")
+    blast_arguments.add_argument('--BL', '--suppress_blast', dest = 'run_blast', action = "store_false", help = "suppress BLAST run", default = True)
+    blast_arguments.add_argument('--evalue', dest = 'evalue', help = "BLASE evalue", default = "0.000001");
+    blast_arguments.add_argument('--short', dest = 'short', action = 'store_false', help = "Turn off blast-short on blast run", default = True)
+    blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '9999999999') # HACK!!!  Need to fix this
+
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
@@ -131,12 +138,12 @@ def parse_params():
     args = parser.parse_args(args)
 
 
-def print_progress(s):
+def print_progress(L):
     """Print s to progress_fp.  Also print it to stdout if args.sp is true."""
-    progress_fp.write(s + "\n");
+    progress_fp.write("\n".join(L) + "\n\n");
     progress_fp.flush()
     if args.show_progress:
-        sys.stdout.write(s + "\n")
+        sys.stdout.write("\n".join(L) + "\n\n")
         sys.stdout.flush()
 
 def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigmem = False, depend = None, modules = None):
@@ -148,14 +155,28 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     * ppn: Number of processors requested
     * bigmem: If true, run only on a large-memory node
     * depend: A list of job objects which must terminate before first
+    Returns:
+    * The unpickled pbs object if they job had already been launched and is still showing up in qstat.
+    * None if the job had finished and is no longer showing up in qstat
+    * A newly created pbs object otherswise.  (Job had never been launched, or crashed in the middle.)
+    PROBLEM: will still screw up if the job launched, failed, and created a (bogus) ofile.
     """
-    print_progress(cmd + "\n");
-    
+    log_file = job_log_dir + "/" + title
+    if os.path.exists(log_file):
+        with open(log_file) as fp:
+            p = loadPBS(fp)
+        if p.checkJobState():
+            return p
+        if p.ofile_exists():
+            return None
+
+
     batch_file = base_dir + "/" + title + ".job"
     job_name = title;
     stdout_file = base_dir + "/" + title + ".stdout"
     stderr_file = base_dir + "/" + title + ".stderr"
 
+    print_progress([batch_file, stdout_file, stderr_file, cmd]);
     p = pbsJobHandler(batch_file = batch_file, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       walltime = walltime, depends = depend,
@@ -163,10 +184,9 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
                       RHmodules = modules)
 
     if (not args.dry_run):
-        p.submit(preserve = True, delay = default_delay)
+        p.submit(preserve = True, delay = delay_default)
 
-    with open(job_log_dir + "/" + title, "w") as fp:
-        print("\n".join([str(x) + "\t" + str(getattr(p,x)) + "\t" + str(type(getattr(p,x))) for x in dir(p)]))
+    with open(log_file, "w") as fp:
         pickle.dump([p], fp)
         fp.flush()
 
@@ -211,6 +231,8 @@ def setup():
 raider_cmd = "{raider} -q -c {f} -s {seed} {input_file} {output_dir}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "{RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir {output_dir} {seq_file}"
+blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
+blast_cmd = "{blast} -out \"{output}\" -outfmt {blast_format} -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
 
 def create_raider2_pipeline(input_file, seed, f):
     ##########################
@@ -225,14 +247,17 @@ def create_raider2_pipeline(input_file, seed, f):
     seed_index = seed_map[seed][0];                     
     consensus_name = input_base + ".s" + str(seed_index) + ".f" + str(f)
 
-    elements_dir = raider2_dir + "/" + consensus_name.upper() + ".RM"
+    elements_dir = raider2_dir + "/" + consensus_name.upper() 
     if not os.path.exists(elements_dir):
         os.makedirs(elements_dir)
 
     consensus_txt = raider2_dir + "/" + consensus_name + ".consensus.txt"
     consensus_fa = raider2_dir + "/" + consensus_name + ".consensus.fa"
 
-    rm_dir = raider2_dir + "/" + consensus_name
+    database_file = input_file.rstrip(".fa") + ".rptseq.fa"
+    blast_output = raider2_dir + "/" + consensus_name + ".blast.6.txt"
+
+    rm_dir = (raider2_dir + "/" + consensus_name + '.rm').upper()
     if not os.path.exists(rm_dir):
         os.makedirs(rm_dir)
 
@@ -252,7 +277,7 @@ def create_raider2_pipeline(input_file, seed, f):
                                 consensus_txt=consensus_txt,
                                 consensus_fa=consensus_fa)
     title2 = "con." + title
-    p2 = launch_job(cmd=cmd2, title=title2, base_dir=raider2_dir, depends = [p1])
+    p2 = launch_job(cmd=cmd2, title=title2, base_dir=raider2_dir, depend=[p1])
 
     # Step 3: Apply repeat masker consensus output
     if (args.run_rm):
@@ -260,9 +285,15 @@ def create_raider2_pipeline(input_file, seed, f):
                                         library_file = consensus_fa, pa = args.pa,
                                         output_dir = rm_dir,
                                         seq_file = input_file)
-        title3 = "phRA-RM" + title
-        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bibmem = False, modules = Locations['rm_modules'])
-    
+        title3 = "phRA-RM." + title
+        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p2])
+
+    # Step 4: Apply blast to consensus sequences:
+    if args.run_blast:
+        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+        title4 = "blast." + title
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rm_dir, modules=Locations['blast'], depend=[p2])
 
 
 
@@ -270,5 +301,4 @@ def create_raider2_pipeline(input_file, seed, f):
 if __name__ == "__main__":
     parse_params()
     setup()
-    A, B = create_raider2_pipeline(args.data_files[0], args.seed, args.f)
-    print("\n".join(A))
+    create_raider2_pipeline(args.data_files[0], args.seed, args.f)

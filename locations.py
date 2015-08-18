@@ -14,7 +14,9 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'RepeatMasker' : 'RepeatMasker',
                 'proc_per_node' : 1,
                 'basic_arch_type' : None,
-                'high_mem_arch' : None}
+                'high_mem_arch' : None, 
+                'blast' : 'blastn',
+                'blast_modules' : []}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -27,9 +29,11 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'raider2': './phRAIDER',
                     'rm_modules' : ['RepeatMasker', 'python-3.3.3'],
                     'RepeatMasker' : 'RepeatMasker',
-                    'proc_per_node' : 4,
+                    'proc_per_node' : 8,
                     'basic_arch_type' : ["n09","bigmem"],
-                    'high_mem_arch' : 'redhawk'}
+                    'high_mem_arch' : 'redhawk',
+                    'blast' : 'blastn',
+                    'blast_modules' : ['blast+']}
 OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RptScout':'./RepeatScout',
                    'filter_stage-1':'./filter-stage-1.prl',
@@ -44,7 +48,9 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RepeatMasker' : 'RepeatMasker',
                    'proc_per_node' : 12,
                    'basic_arch_type' : None,
-                   'high_mem_arch' : 'oakley'}
+                   'high_mem_arch' : 'oakley',
+                   'blast' : 'blastn',
+                   'blast_modules' : ['???']}
 
 
 try:
@@ -61,12 +67,10 @@ if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
 Locations = None
 if location.lower() == "oakley":
     Locations = OakleyLocations;
-    assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on oakley (%d)" % (args.pa)
 elif location.lower() == "osx":
     Locations = MacLocations
 elif location.lower() == "redhawk":
     Locations = RedhawkLocations
-    assert 1 <= args.pa <= 2, "Make sure you set the --pa parameter to a value between 1 and 4 on redhawk (%d)" % (args.pa)
 else:
     sys.stderr.println("locations.txt file: bad content")
     exit(1);
