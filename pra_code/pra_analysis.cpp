@@ -12,6 +12,8 @@ using namespace std;
 
 typedef unordered_map<string,interval_list> si_map;
 
+bool debug;
+
 // Get the number of sequences in an fa file
 int fa_size(string file) {
   ifstream fin(file);
@@ -30,11 +32,19 @@ int fa_size(string file) {
 }
 
 int main(int argc, char** argv) {
-  assert(argc == 5);
-  string consensus_file = argv[1];
-  string rm_fa_file = argv[2];
-  string database_file = argv[3];
-  string output_file = argv[4];
+  int marker = 0;
+  if ((string)argv[1] == (string)"-d") {
+    debug = true;
+    marker++;
+  }
+  else {
+    debug = false;
+  }
+
+  string consensus_file = argv[marker+1];
+  string rm_fa_file = argv[marker+2];
+  string database_file = argv[marker+3];
+  string output_file = argv[marker+44];
   string blast_file = consensus_file.substr(0, consensus_file.rfind(".")) + ".blast.6.txt";
 
   int n = fa_size(consensus_file);
@@ -44,8 +54,13 @@ int main(int argc, char** argv) {
   string blast_format = "\"6 qseqid sseqid qstart qend qlen sstart send slen\"";
   string cmd = (string)"blastn -out " + blast_file + " -outfmt " + blast_format + " -query " + consensus_file + " -db " + database_file + 
     " -evalue 0.001  -task blastn-short -max_target_seqs " + to_string(n*m);  // -word_size 7 -reward 4 -ungapped
+  if (debug) 
+    cout << "CMD: " << cmd << endl;
   int v = system(cmd.c_str());
   clock_t blast_time = clock();
+  if (debug) {
+    cout << "Time: " << blast_time - start_time << endl;
+  }
 
   ifstream fin(blast_file);
   ofstream fout(output_file);

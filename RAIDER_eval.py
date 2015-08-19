@@ -26,17 +26,17 @@ if not (location.lower() in {'redhawk', 'oakley', 'osx'}):
 
 wait_time = 100        # Amount of time to spin before checking job progress in a wait() call.
                        # Need to be higher on Oakley.
-sleep_pause = 6
+sleep_pause = 60
     
 #################################################################
 # The following global variables are related to debugging issues.
 show_progress = False
 stats_only = False
 job_index = {}
-default_time_limit = "2:00:00"
+default_time_limit = "4:00:00"
 #default_time_limit = "00:20:00"
-#rm_time_limit = "25:00:00"
-rm_time_limit = "2:00:00"
+rm_time_limit = "25:00:00"
+#rm_time_limit = "2:00:00"
 
 time_limit = default_time_limit
 
@@ -1115,7 +1115,7 @@ def run_pra_analysis(tool_job, database_job):
 
     analysis_cmd = cmd.format(python = Locations["python"], consensus_file = tool_job.lib_file, 
                               rm_fa_file = database_job.rm_seq_file, database_file = database_job.rm_seq_file, 
-                              output_file = tool_job.lib_file.rstrip(".fa") + ".pra.txt")
+                              output_file = tool_job.lib_file.rstrip(".fa") + ".pra.txt", walltime = time_limit)
         
     if show_progress:
         sys.stderr.write("\nLaunching pre-rm analysis:\n%s\n" % (analysis_cmd))
@@ -1132,7 +1132,6 @@ def run_pra_analysis(tool_job, database_job):
     batch_name = location + "/" + base_name + ".batch"
     stdout_file = base_name + ".stdout"
     stderr_file = base_name + ".stderr"
-    print("XXX: ", batch_name)
     p = pbsJobHandler(batch_file = batch_name, executable = analysis_cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       output_location = location, walltime = time_limit, RHmodules = ["blast+"]);

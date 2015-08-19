@@ -25,7 +25,7 @@ def parse_params(args):
     parser.add_argument('--rn', '--retain_n', dest = "retain_n", action = 'store_true', help = "If used, will use the whole chromosome.  Otherwise, cuts of Ns at either end.", default = False)
     parser.add_argument('--nr', '--num_repeats', dest = 'num_repeats', type = int, help = "Specify the number of repeats.  Simulation will terminate either 1000 bases or max interval bases past the nth instance of a repeat (excluding any other repeats in that range).", default = None)
     parser.add_argument('-l', '--max_length', dest = 'max_length', type = int, help = "Maximum allowed length of simulated sequence.", default = None)
-    parser.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_false', help = "Toss low complexity and simple repeats (tossed by default)", default = True)
+    parser.add_argument('--lc', '--low_complexity', dest = 'low_complexity', action = 'store_true', help = "Keep low complexity and simple repeats (kept by default)", default = False)
     #parser.add_argument('-o', '--output', help = "Output file (Default: replace chomosome file \".fa\" with \".sim.fa\")")
     parser.add_argument("seq_file", help = "Sequence file (must be .fa)")
     parser.add_argument("repeat_file", help = "RepeatMasker file (.fa.out)")
@@ -44,7 +44,13 @@ def nextRepeat(rpt_file, use_negative = True, S = {}, E = {}):
         if line.rstrip():
             A = re.split("\s+", line.strip())
             chr, start, finish, strand, family, rpt_class, rpt_id = A[4], int(A[5])-1, int(A[6]), A[8], A[9], A[10], A[14]
-            if (strand == '+' or use_negative) and (family in S or not S) and not (rpt_class in E):
+            if strand == '-' and not use_negative:
+                continue
+            if S and any([s in family for s in S]):
+                continue
+            if E and any([e in rpt_class for e in E]):
+                continue
+            if (strand == '+' or use_negative) and ((family in S) or not S) and not (rpt_class in E):
                 yield chr, start, finish, strand, family, rpt_class, int(rpt_id)
 
 # fa_out_header: The fixed header lines for the .fa.out file
@@ -146,7 +152,7 @@ def loadSeqAndChain(seq_file, k, suppress_save = False, mc_file = None, retain_n
                         
 
     
-
+low_complexity = {'Low_complexity', 'Simple', 'Satellite'}
 def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime = True, filter_file = "rpt_list.txt", mask = False, seed = None, suppress = False, max_interval = -1, retain_n = False, num_repeats = None, max_length = None, toss_low = False):
     """
     Create a simualted chrosome with real repeat sequences from a chromsoe file.
@@ -164,7 +170,7 @@ def create_chromosome_file(seq_file, repeat_file, output_file, k = 5, use_3prime
     template_seq, markov_list, coord_adjust  = loadSeqAndChain(args.seq_file, args.k, suppress, args.mc_file, args.retain_n)
 
     filter_set = {y.strip() for line in open(filter_file) for y in re.split("\s+", line.rstrip())} if filter_file else {}
-    rpt_gen = nextRepeat(repeat_file, use_3prime, filter_set, E = {'Low_complexity', 'Simple_repeat'} if toss_low else {})
+    rpt_gen = nextRepeat(repeat_file, use_3prime, filter_set, E = low_complexity if toss_low else {})
 
     simulated_sequence, fa_out = generate_chromosome(seq = template_seq, markov_list = markov_list, coord_adjust = coord_adjust, rpt_gen = rpt_gen, mask = mask, max_interval = max_interval, num_repeats = num_repeats, max_length = max_length)
             

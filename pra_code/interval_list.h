@@ -11,6 +11,7 @@ class interval_list {
   void add(int s, int f) {add(std::make_pair(s,f));}
   int num_covered();
   void print(std::ostream& out);
+  int size() {return ilist.size();}
 
  private:
   std::list<interval> ilist;
