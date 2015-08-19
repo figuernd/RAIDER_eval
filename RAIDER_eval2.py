@@ -110,8 +110,10 @@ def parse_params():
     # REPSCOUT ARGUMENTS
     repscout_argument = parser.add_argument_group("REPSCOUT parameters")
     repscout_argument.add_argument('--repscout_min', type = int, help = "Minimum repeat length for repscout.", default = 10)
-    repscout_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat length for repscout.", default = 3)
-
+    repscout_argument.add_argument('--rs_min_freq', type = int, help = "Minimum repeat frequency for repscout.", default = 3)
+    repscout_argument.add_argument('--rs_walltime', type = int, help = "RepeatScout walltime.", default = walltime_default)
+    repscout_argument.add_argument('--rs_filters', type = int, help = "0: no filters, 1: 1 filter, 2: both filters.", default = 0)
+    
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
     repeatmasker_arguments.add_argument('--RM', '--suppress_rm', dest = 'run_rm', action="store_false", help = "suppress RepeatMasker run", default = True)
@@ -297,6 +299,62 @@ def create_raider2_pipeline(input_file, seed, f):
 
 
 
+build_lrm_cmd = "{build_lmer_table_exe} -min {min} -l {l} -sequence {seq_file} -freq {lmer_output}"
+rptscout_cmd = "{RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output {output}"
+filter1_cmd = "{filter} {input} > {filter_output}"
+filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
+
+def create_repscout_pipeline(input_file, l, f):
+    rptscout_dir = args.results_dir + "/RPT_SCT"
+    if not os.path.exists(rptscout_dir):
+        os.makedirs(rptscout_dir)
+        
+    input_base = file_base(input_file)
+    lmer_output = rptscout_dir + "/" + input_base + ".freq.fa"
+    output = repscout_dir + "/" + input_base + ".repscout.fa"
+    filter1_output = rptscout_dir + "/" input_base + ".repsct.filtered.fa"
+
+    title = "rptsct.l" + str(l) + ".f" + str(f)
+    
+    # Step 1: Run build_lmer_table
+    cmd1 = build_lrm_cmd.format(build_lmer_table_exe=Locations['build_lmer_table'], min=str(min), seq_file=input_file, lmer_output=lmer_output, format=str(l))
+    title1 = "lmer." + title
+    p1 = launch_job(cmd=cmd1, title=title1, base_dir=rptscout_dir)
+
+    # Step 2: Run repeat scout
+    cmd2 = rptscout_cmd.format(RptScout_exe=Locations['RptScout'], seq_file=input_file, lmer_output=lmer_output, output=output)
+    title2 = title
+    p2 = launch_job(cmd=cmd2, title=title2, base_dir=rptscout_dir, walltime = args.ars_walltime, depend=[p1])
+        
+    # Step 3: Filter 1
+    if args.rs_filters >= 1:
+        cmd3 = filter1_cmd.format(filter=Locations['filter_stage-1'], input=output, filter_output = filter1_output)
+        title3 = "f1." + title
+        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rptscout_dir, depend=[p2])
+    else:
+        p3 = None
+
+    # Step 4: Filter 2
+    if args.rs_filter >= 2:
+        # First: RepeatMasker
+        cmd4 = repeat_masker_cmd.format(RepeatMasker = Location['RepeatMasker'], lib=filter1_output, output_dir=rptscout_dir, seq=input_file)
+        title4 = "f2.rm" + title
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p3])
+
+        # Now: Run second filter
+        cmd5 = filter2_cmd.format(filtered=filter1_output, filter = Locations['filter_stage-2'], rm_output=repscout_dir + "/" + input_file + ".out", thresh="5",
+                                  filter_output=repscout_dir + "/" + input_base + ".filtered2.fa")
+        title5 = "f2" + title
+        p5 = launch_job(cmd=cmd5, total=title4, depend=[p4])
+        output = repscout_dir + "/" + input_base + ".filtered2.fa"
+    else:
+        p5 = None
+
+    cmd6 = repeat_masker_cmd.format(RepeatMasker=Location['RepeatMasker'], lib=output, output_dir=rptscout_dir, seq=input_file)
+    title6 = "rm." + title
+    p6 = launch_job(cmd=cmd6, title=title6, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Location['rm_mudules'], depend=[p2,p3,p5])
+    
+        
 
 if __name__ == "__main__":
     parse_params()
