@@ -313,7 +313,8 @@ def create_repscout_pipeline(input_file, l, f):
     lmer_output = rptscout_dir + "/" + input_base + ".freq.fa"
     output = repscout_dir + "/" + input_base + ".repscout.fa"
     filter1_output = rptscout_dir + "/" input_base + ".repsct.filtered.fa"
-
+    database_file = input_file(".fa") + ".rptseq.fa"
+    
     title = "rptsct.l" + str(l) + ".f" + str(f)
     
     # Step 1: Run build_lmer_table
@@ -337,23 +338,31 @@ def create_repscout_pipeline(input_file, l, f):
     # Step 4: Filter 2
     if args.rs_filter >= 2:
         # First: RepeatMasker
-        cmd4 = repeat_masker_cmd.format(RepeatMasker = Location['RepeatMasker'], lib=filter1_output, output_dir=rptscout_dir, seq=input_file)
-        title4 = "f2.rm" + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p3])
+        cmd4a = repeat_masker_cmd.format(RepeatMasker = Location['RepeatMasker'], lib=filter1_output, output_dir=rptscout_dir, seq=input_file)
+        title4a = "f2.rm" + title
+        p4a = launch_job(cmd=cmd4a, title=title4a, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p3])
 
         # Now: Run second filter
-        cmd5 = filter2_cmd.format(filtered=filter1_output, filter = Locations['filter_stage-2'], rm_output=repscout_dir + "/" + input_file + ".out", thresh="5",
+        cmd4b = filter2_cmd.format(filtered=filter1_output, filter = Locations['filter_stage-2'], rm_output=repscout_dir + "/" + input_file + ".out", thresh="5",
                                   filter_output=repscout_dir + "/" + input_base + ".filtered2.fa")
-        title5 = "f2" + title
-        p5 = launch_job(cmd=cmd5, total=title4, depend=[p4])
+        title4b = "f2" + title
+        p4b = launch_job(cmd=cmd4b, total=title4b, depend=[p4a])
         output = repscout_dir + "/" + input_base + ".filtered2.fa"
     else:
-        p5 = None
+        p4b = None
 
-    cmd6 = repeat_masker_cmd.format(RepeatMasker=Location['RepeatMasker'], lib=output, output_dir=rptscout_dir, seq=input_file)
-    title6 = "rm." + title
-    p6 = launch_job(cmd=cmd6, title=title6, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Location['rm_mudules'], depend=[p2,p3,p5])
-    
+    # Step 5: Run reepat masket
+    if (args.run_rm):
+        cmd5 = repeat_masker_cmd.format(RepeatMasker=Location['RepeatMasker'], lib=output, output_dir=rptscout_dir, seq=input_file)
+        title5 = "rm." + title
+        p5 = launch_job(cmd=cmd6, title=title6, base_dir=rptscout_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Location['rm_mudules'], depend=[p2,p3,p4b])
+
+    # Step 6: Apply blast
+    if args.run_blast:
+        cmd6 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = ???, consensys_fule = output, db_file = database_file,
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+    title6 = "blast" + title
+    p6 = lauch_jobs(cmd=cmd6, title=title5, base_dir=rptscout_dir, modules=Location['blast'], depend=[p2,p3,p4b])
         
 
 if __name__ == "__main__":
