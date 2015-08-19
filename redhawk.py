@@ -400,7 +400,7 @@ class pbsJobHandler:
     def checkJobState(self):
         """Return job state of job, or NULL if there is none"""
 
-        cmd = "qstat -f {jobID}".formt(self.jobid)
+        cmd = "qstat -f {jobID}".format(jobID=self.jobid)
         output,error = [x.decode() for x in subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()]
 
         try:
