@@ -1,3 +1,4 @@
+#!/software/python/3.3.3/bin/python3.3
 import sys
 import os
 import argparse
@@ -23,7 +24,7 @@ seed_list = None      # Sorted list of seeds
 #######################
 # Defaults 
 walltime_default = "4:00:00"
-delay_default = 120           # Number of seconds to sleep when cycling on a redhawk wait
+delay_default = 300           # Number of seconds to sleep when cycling on a redhawk wait
 
 #######################
 # Useful utilitiy functions
@@ -71,7 +72,7 @@ def parse_params():
     # TOOL SELECTION
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
-    parser_tools.add_argument('--R2', '--raider2_on', dest = 'run_raider2', action = 'store_true', help = 'Turn RAIDERV2 on', default = False)
+    parser_tools.add_argument('--R2', '--phR', '--phraider_on', dest = 'run_phraider', action = 'store_true', help = 'Turn phRAIDER on', default = False)
     parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
     parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
@@ -87,7 +88,7 @@ def parse_params():
 
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
-    raider_argument.add_argument('-f', type = int, help = "E.R. occurrence threshold", default = 5)
+    raider_argument.add_argument('-f', nargs = "+", type = int, help = "E.R. occurrence threshold", default = [2])
     raider_argument.add_argument('--pre', '--pre_scan', action = 'store_true', help = "Use pre-scan version of raider", default = False)
     raider_argument.add_argument('--mem', action = 'store_true', help = "Use large memory-nodes", default = False);
     raider_argument.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
@@ -148,7 +149,7 @@ def print_progress(L):
         sys.stdout.write("\n".join(L) + "\n\n")
         sys.stdout.flush()
 
-def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigmem = False, depend = None, modules = None):
+def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigmem = False, depend = None, modules = None, attrs = None):
     """Launch a redhawk jobs.
     * cmd: Command to be launched
     * title: Used as the bases for creating a job name and redhawk-related files
@@ -157,6 +158,7 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     * ppn: Number of processors requested
     * bigmem: If true, run only on a large-memory node
     * depend: A list of job objects which must terminate before first
+    * attrs: A map of new attribute/value pairs to add to the PBS object after creation (before pickling)
     Returns:
     * The unpickled pbs object if they job had already been launched and is still showing up in qstat.
     * None if the job had finished and is no longer showing up in qstat
@@ -165,7 +167,7 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     """
     log_file = job_log_dir + "/" + title
     if os.path.exists(log_file):
-        with open(log_file) as fp:
+        with open(log_file, "br") as fp:
             p = loadPBS(fp)[0]
         if p.checkJobState():
             return p
@@ -178,19 +180,23 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     stdout_file = base_dir + "/" + title + ".stdout"
     stderr_file = base_dir + "/" + title + ".stderr"
 
-    print_progress([batch_file, stdout_file, stderr_file, cmd]);
+    print_progress(["# " + batch_file, "# " + stdout_file, "# " + stderr_file, cmd]);
     p = pbsJobHandler(batch_file = batch_file, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file,
                       walltime = walltime, depends = depend,
                       mem = Locations['high_mem_arch'] if args.mem else False,
                       RHmodules = modules)
 
+
+    if attrs:
+        for key,value in attrs.items():
+            setattr(p, key, value)
+
     if (not args.dry_run):
         p.submit(preserve = True, delay = delay_default)
 
-    with open(log_file, "w") as fp:
-        pickle.dump([p], fp)
-        fp.flush()
+    with open(log_file, "bw") as fp:
+        storePBS([p], fp)
 
     return p
 
@@ -224,7 +230,7 @@ def setup():
         seed_map = {convert_seed(args.seed):(0,args.seed)}
 
     global seed_list
-    seed_list = sorted(seed_map.values(), key = lambda(x): x[0])
+    seed_list = sorted(seed_map.values(), key = lambda x: x[0])
     with open(args.results_dir + "/seed_file.txt", "w") as fp:
         fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in seed_list]))
 
@@ -236,11 +242,11 @@ repeat_masker_cmd = "{RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir {ou
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
 blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
 
-def create_raider2_pipeline(input_file, seed, f):
+def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
     # SETUP
     input_base = file_base(input_file).strip(".fa")
-    raider2_dir = args.results_dir + "/RAIDERV2";    # Directory of RAIDER results
+    raider2_dir = args.results_dir + "/" + raider_exe.upper();    # Directory of RAIDER results
     if not os.path.exists(raider2_dir):
         os.makedirs(raider2_dir)
 
@@ -266,10 +272,10 @@ def create_raider2_pipeline(input_file, seed, f):
 
     ##########################
     # Step 1: Run phRAIDER
-    cmd1 = raider_cmd.format(raider=Locations['raider2'], f=f, seed=seed,
+    cmd1 = raider_cmd.format(raider=Locations[raider_exe], f=f, seed=seed,
                              input_file=input_file, output_dir=elements_dir)
     title1 = "phRA." + title;
-    p1 = launch_job(cmd=cmd1, title=title1, base_dir=elements_dir, ppn = Locations['high_mem_arch'] if args.max_nodes else 1, bigmem = args.mem)
+    p1 = launch_job(cmd=cmd1, title=title1, base_dir=elements_dir, ppn = Locations['high_mem_arch'] if args.max_nodes else 1, bigmem = args.mem, attrs = {'elements':'elements_dir/elements'})
 
     
 
@@ -279,7 +285,7 @@ def create_raider2_pipeline(input_file, seed, f):
                                 consensus_txt=consensus_txt,
                                 consensus_fa=consensus_fa)
     title2 = "con." + title
-    p2 = launch_job(cmd=cmd2, title=title2, base_dir=raider2_dir, depend=[p1])
+    p2 = launch_job(cmd=cmd2, title=title2, base_dir=raider2_dir, depend=[p1], attrs = {'consensus':consensus_fa})
 
     # Step 3: Apply repeat masker consensus output
     if (args.run_rm):
@@ -288,14 +294,15 @@ def create_raider2_pipeline(input_file, seed, f):
                                         output_dir = rm_dir,
                                         seq_file = input_file)
         title3 = "phRA-RM." + title
-        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p2])
+        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
+                        modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
 
     # Step 4: Apply blast to consensus sequences:
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
                                 evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
         title4 = "blast." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rm_dir, modules=Locations['blast'], depend=[p2])
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rm_dir, modules=Locations['blast'], depend=[p2], attrs={'blast_output':blast_output})
 
 
 
@@ -304,7 +311,7 @@ rptscout_cmd = "{RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output 
 filter1_cmd = "{filter} {input} > {filter_output}"
 filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
 
-def create_rptscout_pipeline(input_file, f):
+def rptscout_pipeline(input_file, f):
     rptscout_dir = args.results_dir + "/RPT_SCT"
     if not os.path.exists(rptscout_dir):
         os.makedirs(rptscout_dir)
@@ -313,11 +320,15 @@ def create_rptscout_pipeline(input_file, f):
         rptscout_dir1 = args.results_dir + "/RPT_SCT1"
         if not os.path.exists(rptscout_dir1):
             os.makedirs(rptscout_dir1)
+    else:
+        rptscout_dir1 = ""
 
     if args.rs_filters > 1:
         rptscout_dir2 = args.results_dir + "/RPT_SCT2"
         if not os.path.exists(rptscout_dir2):
             os.makedirs(rptscout_dir2)
+    else:
+        rptscout_dir2 = ""
     
         
     input_base = file_base(input_file).rstrip(".fa")
@@ -335,7 +346,7 @@ def create_rptscout_pipeline(input_file, f):
     filter1_output = rptscout_dir1 + "/" + input_base + ".rptsct.filtered1.fa"
     filter2_output = rptscout_dir2 + "/" + input_base + ".rptsct.filtered2.fa"
     
-    title = "rptsct.f" + str(f)
+    title = input_base + ".rptsct.f" + str(f)
     
     # Step 1: Run build_lmer_table
     cmd1 = build_lrm_cmd.format(build_lmer_table_exe=Locations['build_lmer_table'], min=f, seq_file=input_file, lmer_output=lmer_output)
@@ -413,7 +424,19 @@ def create_rptscout_pipeline(input_file, f):
             p10 = None
         
 
+####################################################
 if __name__ == "__main__":
     parse_params()
     setup()
-    create_rptscout_pipeline(args.data_files[0], args.rs_min_freq)
+    
+    for file in args.data_files:
+        for f in args.f:
+            if args.run_repscout:
+                rptscout_pipeline(file, f)
+            if args.run_raider:
+                for seed in seed_map:
+                    raider_pipeline('raider', file, seed, f)
+            if args.run_phraider:
+                for seed in seed_map:
+                    raider_pipeline('phraider', file, seed, f)
+            
