@@ -235,6 +235,13 @@ def setup():
         fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in seed_list]))
 
 
+    # Create data_files.txt
+    with open(args.results_dir + "/data_files.txt") as fp:
+        for file in args.data_files:
+            fp.write(file_base(file).rstrip(".fp") + "\t" + file + "\n")
+        
+
+
         
 raider_cmd = "{raider} -q -c {f} -s {seed} {input_file} {output_dir}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
