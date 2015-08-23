@@ -64,7 +64,8 @@ def load_map(DIR):
 
 def load_f_list(DIR):
     global f_list
-    f_list = [f for line in open("DIR + /f.txt") for f in re.split("\s+", line.strip())]
+    f_list = [f for line in open(DIR + "/f.txt") for f in re.split("\s+", line.strip())]
+
 
         
 regex = re.compile("S(\d+)\.F(\d+)\.RM\/(.*).fa.out$")
@@ -74,12 +75,11 @@ def collectRaider(DIR, tool):
         for seed_num in seed_map.keys():
             for f in f_list:
                 RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.{seed_num}.{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
-                RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.{seed_num}.{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
-                RM_dir = ("{org}.s{seed}.f{f}.rm".format(org=org, seed=seed_num, f=f)).upper
-                RM_file = RM_dir + "/" + "{org}.{seed}.{f}.fa.out".format(org=org, seed=seed, f=f)
-                blast_file = "{org}.s{seed}.f{f}.blast.6.txt".format(org=org, seed=seed, f=f)
+                RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.{seed_num}.{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
+                RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}.rm".format(org=org, seed=seed_num, f=f)).upper()
+                RM_file = RM_dir + "/" + "{org}.fa.out".format(org=org, seed=seed_num, f=f)
+                blast_file = DIR + "/" + "{org}.s{seed}.f{f}.blast.6.txt".format(org=org, seed=seed_num, f=f)
                 pra_output = "{DIR}/{org}.s{seed}.f{f}.pra.txt".format(DIR=DIR, org=org, seed=seed_num, f=f)
-
 
                 tool_output = RM_file
                 real_repeats = data_map[org] + ".out"
@@ -95,9 +95,6 @@ def collectRaider(DIR, tool):
                 H['l'] = seed_len
                 H['w'] = seed_weight
                 H['w/l'] = seed_ratio
-
-
-
 
 
                 # Get stats from RM run
@@ -131,20 +128,20 @@ def collectRaider(DIR, tool):
                     redhawk.storePBS([p], open(RM_job_file, "wb"))
 
                 if os.path.exists(blast_file):
-                    output = 
                     cmd = "./pra_analysis2 {blast_output} {output}".format(blast_output=blast_file, output=pra_output)
+                    subprocess.call(cmd)
                     query_cover, target_cover, Used = parse_pra_output.parse_pra_output(pra_output, "exclude.txt")
                     H['ConCoverage'], H['QuCoverage'] = query_cover, target_cover
 
 
                 stats_map[(tool,org,seed_num,f)] = H
+                return None
         return None
 
 regex2 = re.compile("\./(.*).fa.out$")
 def collectRptScout(DIR, tool):
     # FIRST: Get any applicable RM output stats
     for file in glob.glob(DIR + "/*.fa.out"):
-        print("HERE: ", file)
         r = regex2.search(file)
         assert(r)
         seed_num, f, org = r.group(1,2,3)
