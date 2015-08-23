@@ -86,7 +86,7 @@ def parse_params():
     # I/O ARGUMENTs
     parser_io = parser.add_argument_group("i/o arguments")
     parser_io.add_argument('-r', '--results_dir', dest = "results_dir", help = "Directory containing all results", default = "EVAL")
-    parser_io.add_argument('--nuke', dest ='nuke', action = "store_true", help = "Nuke the results directory", default = False)
+    #parser_io.add_argument('--nuke', dest ='nuke', action = "store_true", help = "Nuke the results directory", default = False)
 
     # RAIDER ARGUMENTS
     raider_argument = parser.add_argument_group("RAIDER parameters")
@@ -216,8 +216,8 @@ def setup():
     global debug_file
     debug_file = args.results_dir + "/debug.txt"
 
-    if args.nuke and os.path.exists(args.results_dir):
-        subprocess.call("rm -r %s" % args.results_dir, shell = True)
+    #if args.nuke and os.path.exists(args.results_dir):
+    #    subprocess.call("rm -r %s" % args.results_dir, shell = True)
  
     if not os.path.exists(args.results_dir):
         os.makedirs(args.results_dir)
