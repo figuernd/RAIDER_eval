@@ -88,7 +88,7 @@ class pbsJobHandler:
                  mem = pbs_defaults['mem'], walltime = pbs_defaults['walltime'], address = pbs_defaults['address'], join = pbs_defaults['join'], env = pbs_defaults['env'], 
                  queue = pbs_defaults['queue'], mail = pbs_defaults['mail'], output_location = pbs_defaults['output_location'], chdir = pbs_defaults['chdir'], 
                  RHmodules = pbs_defaults['RHmodules'], file_limit = pbs_defaults['file_limit'], file_delay = pbs_defaults['file_delay'], epilogue_file = pbs_defaults['epilogue_file'],
-                 suppress_pbs = None, stdout_file = None, stderr_file = None, arch_type = None, always_outputs=True, depends=None):
+                 suppress_pbs = None, stdout_file = None, stderr_file = None, res_file = None, arch_type = None, always_outputs=True, depends=None):
         """Constructor.  Requires a file name for the batch file, and the execution command.  Optional parmeters include:
            * use_pid: will embded a process id into the batch file name if true.  Default = true.
            * job_name: A name for the redhawk process.  Default = the batch file name.
@@ -112,7 +112,8 @@ class pbsJobHandler:
                            Not yes set up to extract resource usage.  If false, will force an attempt to use the pbs job manager.  By default: it will use pbs if
                            possible (specifically: if qstat can be run on the machine)
            * stdout_file: File to receive stdout content.  (Default: <job_name>.o<id>, in output_location directory if specified.)
-           * stdin_file: File to receive stderr content. (Default: <job_name.e<id>, in output_location directory if sepcified..)
+           * stdin_file: File to receive stderr content. (Default: <job_name>.e<id>, in output_location directory if specified.)
+           * res_file: File to hold resources.  (Default: <job_name>.r<id>, in output_location directory if specified.)
            * arch_type: Array if specific redhawk architecture to be used (n09, n11, bigmem)
            * oakley_bigmem: Run on the big-mem server (oakley server only)
         """
@@ -196,6 +197,9 @@ class pbsJobHandler:
         else:
             self.efile = None
             f.write("#PBS -e %s\n" % self.output_location)
+
+        if res_file:
+            self.rfile = res_file
 
         if join:
             f.write("#PBS -j oe\n")
@@ -322,6 +326,10 @@ class pbsJobHandler:
             if not self.efile:
                 self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
 
+            if not self.rfile:
+                self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
+
+
             if not re.search("[^2]\>", self.cmd):
                 self.cmd += " > {ofile}".format(ofile = self.ofile)
             if not re.search("2\>", self.cmd):
@@ -365,7 +373,6 @@ class pbsJobHandler:
         if not self.efile:
             self.efile = self.output_location + "/" + self.jobname + ".e" + str(self.jobid)
 
-        self.rfile = self.output_location + "/" + self.jobname + ".r" + str(self.jobid)
 
         if print_qsub:
             if self.suppress_pbs:
@@ -444,7 +451,8 @@ class pbsJobHandler:
                     pass
                 self.status = "finished"
                 #self.logger.debug("Job {j}:\tFinished. No longer running.".format(j=self.jobid))
-                job_list.remove(self)
+                if self in job_list:
+                    job_list.remove(self)
                 return False
 
             cmd = "qstat " + str(self.jobid)
@@ -681,7 +689,6 @@ class pbsJobHandler:
                 
 
 
-
     def getResources(self, cleanup=True):
         """Return cpu_time, wall_time, memory, and virtual memory used"""
         self.loadResources()
@@ -722,7 +729,7 @@ class pbsJobHandler:
             count = 0
             r = None
             while r is None:
-                r = re.search("(.*)Redhawk Epilogue Args:\s*(.+)", line, re.DOTALL)
+                r = re.search("^(.*)Redhawk Epilogue Args:\s*(.+)$", line, re.DOTALL)
                 if not r:
                     count += 1
                     if count == 1:
