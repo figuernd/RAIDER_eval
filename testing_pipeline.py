@@ -38,6 +38,10 @@ def file_dir(file):
     """Extract the directory a file is contained in"""
     return file.rstrip(file_base(file)).rstrip("/")
 
+def make_dir(DIR):
+    if not os.path.exists(DIR):
+        os.makedirs(DIR)
+
 def convert_seed(seed):
     """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011" """
     i = 0
@@ -321,15 +325,15 @@ def raider_pipeline(raider_exe, input_file, seed, f):
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
                                 evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
         title4 = "bl." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rm_dir, modules=Locations['blast'], depend=[p2], attrs={'blast_output':blast_output})
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rm_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output})
 
 
 
+#################################
 build_lrm_cmd = "{build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
 rptscout_cmd = "{RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output {output}"
 filter1_cmd = "{filter} {input} > {filter_output}"
 filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
-
 def rptscout_pipeline(input_file, f):
     rptscout_dir = args.results_dir + "/RPT_SCT"
     if not os.path.exists(rptscout_dir):
@@ -357,7 +361,11 @@ def rptscout_pipeline(input_file, f):
     output2 = rptscout_dir2 + "/" + input_base + ".f" + str(f) + ".repscout.fa" if rptscout_dir2 else ""
     database_file = input_file.rstrip(".fa") + ".rptseq.fa"
 
-    blast_output  = output  + ".f" + str(f) + ".blast.6.txt"
+    blast_output  = rptscout_dir  + "/" + input_base  + ".f" + str(f) + ".RS.blast.6.txt"
+    blast_output1 = rptscout_dir1 + "/" + input_base  + ".f" + str(f) + ".RS.blast.6.txt"
+    blast_output2 = rptscout_dir2 + "/" + input_base  + ".f" + str(f) + ".RS.blast.6.txt"
+
+
     blast_output1 = output1 + ".f" + str(f) + ".blast.6.txt"
     blast_output2 = output2 + ".f" + str(f) + ".blast.6.txt"
 
@@ -366,7 +374,14 @@ def rptscout_pipeline(input_file, f):
     filter2_output = rptscout_dir2 + "/" + input_base + ".f" + str(f) + ".rptsct.filtered2.fa"
 
     rm_dir = (rptscout_dir + "/" + input_base + '.f' + str(f) + '.rm').upper()
+    make_dir(rm_dir)
+    
     rm_dir1 = (rptscout_dir1 + "/" + input_base + '.f' + str(f) + '.rm').upper()
+    if args.rs_filters > 0:
+        make_dir(rm_dir)
+
+    if args.rs_filters > 1:
+        make_dir(rm_dir)
     rm_dir2 = (rptscout_dir1 + "/" + input_base + '.f' + str(f) + '.rm').upper()
     
     title = "{prefix}.{file}.f{f}".format(prefix = tool_prefix['RepeatScout'], file=input_base, f=f)
@@ -394,7 +409,7 @@ def rptscout_pipeline(input_file, f):
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = output, db_file = database_file,
                                 evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
         title4 =  "bl." + title 
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rptscout_dir, modules=Locations['blast'], depend=[p2])
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=rptscout_dir, modules=Locations['blast_modules'], depend=[p2])
     else:
         p4 = None
 
@@ -416,7 +431,7 @@ def rptscout_pipeline(input_file, f):
             cmd7 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output1, consensus_file = filter1_output, db_file = database_file,
                                     evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
             title7 = "l1." + title 
-            p7 = launch_job(cmd=cmd7, title=title7, base_dir=rptscout_dir, modules=Locations['blast'], depend=[p6])
+            p7 = launch_job(cmd=cmd7, title=title7, base_dir=rptscout_dir, modules=Locations['blast_modules'], depend=[p6])
         else:
             p7 = None
 
@@ -442,7 +457,7 @@ def rptscout_pipeline(input_file, f):
             cmd10 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = filter2_output, db_file = database_file,
                                      evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
             title10 = "bl2." + title 
-            p10 = launch_job(cmd=cmd10, title=title10, base_dir=rptscout_dir, modules=Locations['blast'], depend=[p8])
+            p10 = launch_job(cmd=cmd10, title=title10, base_dir=rptscout_dir, modules=Locations['blast_modules'], depend=[p8])
         else:
             p10 = None
         
