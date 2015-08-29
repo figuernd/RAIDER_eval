@@ -78,12 +78,12 @@ def collectRaider(DIR, tool):
     for org in data_map.keys():
         for seed_num in seed_map.keys():
             for f in f_list:
-                RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.{seed_num}.{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
-                RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.{seed_num}.{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
-                RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}.rm".format(org=org, seed=seed_num, f=f)).upper()
+                RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
+                RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
+                RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}".format(org=org, seed=seed_num, f=f)).upper()
                 RM_file = RM_dir + "/" + "{org}.fa.out".format(org=org, seed=seed_num, f=f)
-                blast_file = DIR + "/" + "{org}.s{seed}.f{f}.blast.6.txt".format(org=org, seed=seed_num, f=f)
-                pra_output = "{DIR}/{org}.s{seed}.f{f}.pra.txt".format(DIR=DIR, org=org, seed=seed_num, f=f)
+                blast_file = RM_dir + "/" + "{org}.s{seed}.f{f}.blast.6.txt".format(org=org, seed=seed_num, f=f)
+                pra_output = RM_dir + "/" + "{org}.s{seed}.f{f}.pra.txt".format(org=org, seed=seed_num, f=f)
 
                 tool_output = RM_file
                 real_repeats = data_map[org] + ".out"
@@ -145,12 +145,12 @@ def collectRptScout(DIR, tool):
     # FIRST: Get any applicable RM output stats
     for org in data_map.keys():
         for f in f_list:
-            RS_job_file = DIR + "/../job_log/{prefix}.{org}.f{f}".format(prefix = tool_prefix[tool], org=org, f=f)        
-            RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.f{f}".format(prefix = tool_prefix[tool], org=org, f=f)
-            RM_dir = DIR + "/" + ("{org}.f{f}.rm".format(org=org, f=f)).upper()
-            RM_file = RM_dir + "/" + "{org}.fa.out".format(org=org, f=f)
-            blast_file = DIR + "/" + "{org}.f{f}.RS.blast.6.txt".format(org=org, f=f)
-            pra_output = "{DIR}/{org}.f{f}.pra.txt".format(DIR=DIR, org=org, f=f)
+            RS_job_file = DIR + "/../job_log/{prefix}.{org}.s0.f{f}".format(prefix = tool_prefix[tool], org=org, f=f)        
+            RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s0.f{f}".format(prefix = tool_prefix[tool], org=org, f=f)
+            RS_dir = DIR + "/" + ("{org}.s0.f{f}".format(org=org, f=f)).upper()
+            RM_file = RS_dir + "/" + "{org}.fa.out".format(org=org, f=f)
+            blast_file = RS_dir + "/" + "{org}.s0.f{f}.RS.blast.6.txt".format(org=org, f=f)
+            pra_output = "{DIR}/{org}.s0.f{f}.pra.txt".format(DIR=RS_dir, org=org, f=f)
 
             tool_output = RM_file
             real_repeats = data_map[org] + ".out"

@@ -106,7 +106,7 @@ class pbsJobHandler:
            * output_location: Directory to place output files.  Default: current directory.
            * RHmodules: A list of redhawk modules to be loaded before run (e.g. ['Blast+']).  Default: none.
            * depends: A list of pbs job objects on which this is dependent
-           * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.  By default: <batch_file>.epilogue.py"
+           * epilogue file: Script needed to track memory usage.  Will overwrite any file of the same name.  By default: <batch_file>.epilogue.sh"
            * suppress_pbs: If true, this will run the job with a standard popen, instead of forking it out to the pbs job manager.  (Included so we can run code
                            on other machines for testing.) Will still create all files that would have been created -- emulates redhawk execution as much as possible.
                            Not yes set up to extract resource usage.  If false, will force an attempt to use the pbs job manager.  By default: it will use pbs if
@@ -132,7 +132,7 @@ class pbsJobHandler:
         self.resources = None
         self.status = "unstarted"
         self.suppress_pbs = not pbs_present if suppress_pbs is None else suppress_pbs 
-        self.epilogue = os.getcwd() + "/" + "redhawk_epilogue.py"
+        self.epilogue = os.getcwd() + "/" + "redhawk_epilogue.sh"
         f = open(self.batch_file_name, 'w')
 
         f.write("#!/bin/bash -l\n")
