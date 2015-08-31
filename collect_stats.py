@@ -241,4 +241,5 @@ if __name__ == "__main__":
                 elif type(v) == float:
                     v = round(v,3)
                 line += "{:<15}\t".format(str(v))
+            line += "\t" + seed_map[x['seed_num']]
             fp.write(line.rstrip() + "\n");
