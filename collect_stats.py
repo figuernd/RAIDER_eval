@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
 
     with open(DIR + "/" + args.output, "w") if args.output != '-' else sys.stdout as fp:
-        fp.write("\t".join(["{:<15}".format(x) for x in print_stats]) + "\n")
+        fp.write("\t".join(["{:<15}".format(x) for x in print_stats]) + "\t{:<40}".format("seed") + "\n")
         for H in sorted(stats_map.values(), key = lambda x: (x["org"], x['f'], x["tool"], x["l"], x["w/l"])):
             line = "";
             for col in print_stats:
@@ -241,4 +241,5 @@ if __name__ == "__main__":
                 elif type(v) == float:
                     v = round(v,3)
                 line += "{:<15}\t".format(str(v))
+            line += "\t{:<40}".format(seed_map[H['seed_num']] if H['seed_num'] in seed_map else 'NA')
             fp.write(line.rstrip() + "\n");
