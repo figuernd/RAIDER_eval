@@ -289,7 +289,9 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, AppOptions optio
   
 }
 
+int debug = 0;
 Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOptions options) {
+  cout << "HERE" << endl;
   if(options.verbosity > 2) prettyPrintMethodState(1, "Split Repeats by Lmer", v, fam, false, false);
   
   assert(fam == v->getFamily());
@@ -298,10 +300,17 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOp
   
   uint oldLength = lmers->size();
   uint offset = oldLength;
+
+  if (debug >= 108199) {
+    cout << "oldLength: " << oldLength << endl;
+    cout << "offset: " << offset << endl;
+  }
   
   // Go through the lmers of the family until find v.
   // Move all lmers following v (and v if keepV is false) into a new family
   for (uint i = 0; i < oldLength; i++) {
+    cout << debug << " " << i << " " << lmers <<  " " << lmers->size() << endl;
+    debug++;
     LmerVector *u = lmers->at(i);
     
     if (u == v) {
