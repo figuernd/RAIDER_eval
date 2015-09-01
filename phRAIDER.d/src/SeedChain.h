@@ -289,9 +289,7 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, AppOptions optio
   
 }
 
-int debug = 0;
 Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOptions options) {
-  cout << "HERE" << endl;
   if(options.verbosity > 2) prettyPrintMethodState(1, "Split Repeats by Lmer", v, fam, false, false);
   
   assert(fam == v->getFamily());
@@ -301,16 +299,10 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOp
   uint oldLength = lmers->size();
   uint offset = oldLength;
 
-  if (debug >= 108199) {
-    cout << "oldLength: " << oldLength << endl;
-    cout << "offset: " << offset << endl;
-  }
   
   // Go through the lmers of the family until find v.
   // Move all lmers following v (and v if keepV is false) into a new family
   for (uint i = 0; i < oldLength; i++) {
-    cout << debug << " " << i << " " << lmers <<  " " << lmers->size() << endl;
-    debug++;
     LmerVector *u = lmers->at(i);
     
     if (u == v) {
@@ -441,8 +433,9 @@ Family* mergeIntoFamily(Family* fam, uint L, uint verbosity){
   return newFam;
 }
 
-
+int debug = 0;
 void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
+  cout << "DEBUG: " << ++debug << endl;
   if (options.verbosity > 2) cout << "--- Tying Loose Ends ---" << endl;
   for (auto fam : families) {
     
@@ -459,6 +452,11 @@ void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
         newFam = mergeIntoFamily(fam, L, options.verbosity);
       }
       else{
+	cout << "L: " << L << endl;
+	cout << fam->last_index << endl;
+	cout << fam->expected_end << endl;
+	if (debug >= 108200)
+	  exit(1);
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
       }
       families.push_back(newFam);
