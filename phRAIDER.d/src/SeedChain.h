@@ -433,32 +433,30 @@ Family* mergeIntoFamily(Family* fam, uint L, uint verbosity){
   return newFam;
 }
 
-int debug = 0;
 void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
+  vector<Family*> new_families;
   if (options.verbosity > 2) cout << "--- Tying Loose Ends ---" << endl;
-  cout << "S: " << families.size() << endl;
   for (auto fam : families) {
     if (options.tieup){
       if (!canMergeSkipped(fam, L, options.overlaps)){
          
-        families.push_back(mergeIntoFamily(fam, L, options.verbosity));
+        new_families.push_back(mergeIntoFamily(fam, L, options.verbosity));
       }
     }
     if (!fam->lastRepeatComplete()) {
-      int y = 0;
       Family* newFam;
       if (options.tieup){
         fam->setRemainingSkipped();
         newFam = mergeIntoFamily(fam, L, options.verbosity);
       }
       else{
-	int x = 0;
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
       }
-      families.push_back(newFam);
+      new_families.push_back(newFam);
     }
-    debug++;
   }
+  for (auto f : new_families)
+    families.push_back(f);
 }
 
 
