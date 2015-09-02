@@ -434,22 +434,10 @@ Family* mergeIntoFamily(Family* fam, uint L, uint verbosity){
 }
 
 int debug = 0;
-int debug2 = 0;
 void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
-  cout << families [7964]->last_index<< endl;
-  cout << families[7964]->expected_end<< endl;
   if (options.verbosity > 2) cout << "--- Tying Loose Ends ---" << endl;
   cout << "S: " << families.size() << endl;
-  for (vector<Family*>::iterator it=families.begin(); it!=families.end(); it++) {
-    Family* fam = *it;
-    cout << debug2++ << " " << families[7964]->expected_end << " " << families[7965]->expected_end << endl;
-    ++debug;
-    if (debug >= 7965) {
-      cout << "DEBUG: " << debug << endl;
-      cout << fam->last_index << endl;
-      cout << fam->expected_end << endl;
-    }
-
+  for (auto fam : families) {
     if (options.tieup){
       if (!canMergeSkipped(fam, L, options.overlaps)){
          
@@ -457,16 +445,19 @@ void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
       }
     }
     if (!fam->lastRepeatComplete()) {
+      int y = 0;
       Family* newFam;
       if (options.tieup){
         fam->setRemainingSkipped();
         newFam = mergeIntoFamily(fam, L, options.verbosity);
       }
       else{
+	int x = 0;
         newFam = splitRepeatsByLmer(fam, fam->getLast(), true, L, options);
       }
       families.push_back(newFam);
     }
+    debug++;
   }
 }
 
