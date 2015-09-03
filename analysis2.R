@@ -19,6 +19,7 @@ plot.sen.by.len <- function(org, T) {
 
   plot(c(), c(), xlim = range(T$l, na.rm=TRUE), ylim = range(c(T$tpr,T$QuCoverage)),
        xlab = "Seed length", ylab = "sensitivity", main = org)
+  legend("bottomleft", c("RptScout (RM)", "RptScout (PRA)", "RAIDER (RM)", "RAIDER (PRM)"), col = c('red', 'red', 'blue', 'green'), lty = c('solid', 'dash', 'solid', 'solid'))
   abline(h=T[T$tool == "RepeatScout","tpr"], col = 'red')
   abline(h=T[T$tool == "RepeatScout","QuCoverage"], col = 'red', lty = 'dashed')
   
