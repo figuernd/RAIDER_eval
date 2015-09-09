@@ -110,6 +110,7 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   addOption(parser, seqan::ArgParseOption("ps", "prosplit", "Enable proactive splitting(disabled by default)."));
   addOption(parser, seqan::ArgParseOption("pf", "prevfam", "Enable pointers to prev family (disabled by default)."));
   addOption(parser, seqan::ArgParseOption("sbl", "skipbacklist", "Enable skip back list (disabled by default)."));
+  addOption(parser, seqan::ArgParseOption("p", "prescan", "Enable prescan."));
   
   // Add Examples Section.
   addTextSection(parser, "Examples");
@@ -196,6 +197,10 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
 
   if (isSet(parser, "sbl")){
     options.sbl = true;
+  }
+
+  if (isSet(parser, "prescan")){
+    options.prescan = true;
   }
 
   

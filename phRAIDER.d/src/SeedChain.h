@@ -57,6 +57,8 @@ struct AppOptions {
   bool prev_fam;
   // Do we use a skip-back list?
   bool sbl;
+  // Do we do a pre-scan for memory reduction?
+  bool prescan;
   // File name for masked file (if specified)
   seqan::CharString mask_file;
   // File name for filter_file (if specified)
@@ -67,7 +69,7 @@ struct AppOptions {
   seqan::CharString output_directory;
   
   AppOptions() :
-  age(1), verbosity(1), family_array(true), excising(false), overlaps(false), tieup(false), proactive_split(false), prev_fam(false), sbl(false), mask_file(""), filter_file("") {}
+  age(1), verbosity(1), family_array(true), excising(false), overlaps(false), tieup(false), proactive_split(false), prev_fam(false), sbl(false), prescan(false), mask_file(""), filter_file("") {}
 };
 
 typedef unordered_map<size_t, LmerVector*> LmerMap;
@@ -459,6 +461,28 @@ void tieLooseEnds(vector<Family*> &families, uint L, AppOptions options) {
     families.push_back(f);
 }
 
+// Create a memory-filter: a set of all seeded lmers that occur f or more times
+unordered_set<size_t>* createFilter(seqan::Dna5String &sequence, vector<seqan::CharString> &masks) {
+  const uint seqLength = seqan::length(sequence);
+  const seqan::CharString mask = masks.front();
+  const uint L = seqan::length(mask);
+  
+  uint index = -1;
+  char unmasked[L];
+  
+  unordered_set<size_t> single_occurence;
+  unordered_set<size_t>* multi_occurence = new unordered_set<size_t>;
+  while (getNextSeed(sequence, ++index, seqLength, L, unmasked)) {
+    size_t seed = seedToInt(unmasked, mask);
+    if (single_occurence.find(seed) == single_occurence.end())
+      single_occurence.insert(seed);
+    else 
+      multi_occurence->insert(seed);
+  }
+
+  return multi_occurence;
+}
+
 
 void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString> &masks, vector<Family*> &families, AppOptions options) {
   
@@ -480,8 +504,14 @@ void getElementaryFamilies(seqan::Dna5String &sequence, vector<seqan::CharString
   int curr_fam = 0;
   int signed_L = seqan::length(mask);
   
+
+  unordered_set<size_t>* filter_set = options.prescan ? createFilter(sequence, masks) : NULL;
+
   while (getNextSeed(sequence, ++index, seqLength, MAX_L, unmasked)) {
     size_t seed = seedToInt(unmasked, mask);
+    if (filter_set && filter_set->find(seed) == filter_set->end())
+      continue;
+
     LmerVector* v = getAndInsert(lmers, seed, index);
     
     // If lmer has exactly 2 occurrences, it is a potential elementary repeat.
