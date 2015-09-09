@@ -84,7 +84,8 @@ def generate_list(w, p_lower, p_upper, p_step, n):
     print(debug)
     return sorted(M.keys(), key=len)
         
-fp = open("seeds11.txt", "w")
-L = generate_list(40, 0.80, 0.801, 0.025, 500)
-fp.write("\n".join([compact_seed(s) for s in L]))
-fp.close()
+def main():
+    fp = open("seeds11.txt", "w")
+    L = generate_list(40, 0.80, 0.801, 0.025, 500)
+    fp.write("\n".join([compact_seed(s) for s in L]))
+    fp.close()
