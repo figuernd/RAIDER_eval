@@ -7,7 +7,7 @@ import parse_pra_output
 import os
 import subprocess
 import argparse
-tool_prefix = {'phRAIDER':"phRA", "RepeatScout":"RS"}
+tool_prefix = {'phRAIDER':"phRA", "RepeatScout":"RS", 'pre-phRAIDER' : 'prephRA'}
 
 args = None
 seed_map = None
@@ -17,7 +17,7 @@ stats_map = {}
 
 
 def convert_seed(seed):
-    """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011" """
+    """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011") """
     i = 0
     while (i < len(seed)-1):
         if seed[i+1] == '^':
@@ -74,10 +74,12 @@ def load_f_list(DIR):
 
         
 def collectRaider(DIR, tool):
+    print("HERE: " + DIR + " " + tool)
     # FIRST: Get any applicable RM output stats
     for org in data_map.keys():
         for seed_num in seed_map.keys():
             for f in f_list:
+                print(" ".join([org, str(seed_num), str(f)]))
                 RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
                 RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
                 RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}".format(org=org, seed=seed_num, f=f)).upper()
@@ -225,9 +227,18 @@ if __name__ == "__main__":
 
 
     if not args.tools or 'phRAIDER' in args.tools:
-        collectRaider(DIR + "/" + "PHRAIDER", 'phRAIDER')
+        D = DIR + "/" + 'PHRAIDER'
+        if os.path.exists(D):
+            collectRaider(D, 'phRAIDER')
+    if not args.tools or 'PRE-PHRAIDER' in args.tools:
+        D = DIR + "/" + "PRE-PHRAIDER"
+        if os.path.exists(D):
+            collectRaider(D, "pre-phRAIDER")
     if not args.tools or 'RepeatScout' in args.tools:
-        collectRptScout(DIR + "/" + "RPT_SCT", "RepeatScout")
+        D = DIR + "/" + "RPT_SCT"
+        if os.path.exists(D):
+            D = DIR + "/" + "RPT_SCT"
+            collectRptScout(DIR + "/" + "RPT_SCT", "RepeatScout")
 
 
     with open(DIR + "/" + args.output, "w") if args.output != '-' else sys.stdout as fp:

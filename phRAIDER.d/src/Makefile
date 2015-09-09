@@ -26,7 +26,7 @@ CPPINCL+=-I../seqan/extras/include
 ###########################################################
 # RAIDER
 ###########################################################
-all: ../../phRAIDER
+all: ../../phRAIDER ../../pre-phRAIDER
 
 ../../phRAIDER: phRAIDER
 	cp phRAIDER ../../
@@ -34,6 +34,15 @@ all: ../../phRAIDER
 phRAIDER: Family.h LmerVector.h SeedChain.h main.cpp
 	@echo compiling phRAIDER
 	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o phRAIDER
+
+
+../../pre-phRAIDER: pre-phRAIDER
+	cp pre-phRAIDER ../../
+
+pre-phRAIDER: Family.h LmerVector.h SeedChain.h main.cpp
+	@echo compiling pre-phRAIDER
+	$(CC) $(CPPINCL) $(CXXFLAGS) main.cpp -o pre-phRAIDER -DPRE
+
 
 
 ############################################################
