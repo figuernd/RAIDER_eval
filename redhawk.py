@@ -544,6 +544,10 @@ class pbsJobHandler:
         """Does the file containing the job stderr output exist?"""
         return os.path.isfile(self.efile)
 
+    def rfile_exists(self):
+        """Does the file containing the job stderr output exist?"""
+        return os.path.isfile(self.rfile)
+
     def ofile_handle(self):
         """Return a handle to the file containing the job stdout output."""
         if not self.status == "finished":

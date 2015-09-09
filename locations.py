@@ -50,7 +50,7 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'basic_arch_type' : None,
                    'high_mem_arch' : 'oakley',
                    'blast' : 'blastn',
-                   'blast_modules' : ['???']}
+                   'blast_modules' : None}
 
 
 try:

@@ -134,7 +134,7 @@ def parse_params():
     blast_arguments.add_argument('--BL', '--suppress_blast', dest = 'run_blast', action = "store_false", help = "suppress BLAST run", default = True)
     blast_arguments.add_argument('--evalue', dest = 'evalue', help = "BLASE evalue", default = "0.000001");
     blast_arguments.add_argument('--short', dest = 'short', action = 'store_false', help = "Turn off blast-short on blast run", default = True)
-    blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '9999999999') # HACK!!!  Need to fix this
+    blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '999999999') # HACK!!!  Need to fix this
 
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
@@ -177,10 +177,10 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
         with open(log_file, "br") as fp:
             p = loadPBS(fp)[0]
         if p.checkJobState():
-            print("HERE1: " + log_file)
             return p
-        if p.efile_exists():
-            print("HERE2: " + log_file)
+        if p.rfile_exists():
+            return None
+        if p.efile_exists() and os.stat(p.efile_name()).st_size > 0:
             return None
 
     batch_file = base_dir + "/" + title + ".job"
