@@ -202,7 +202,9 @@ seqan::ArgumentParser::ParseResult parseCommandLine(AppOptions & options, int ar
   if (isSet(parser, "prescan")){
     options.prescan = true;
   }
-
+#ifdef PRE    // Used for the pre-phRAIDER version.
+  options.prescan = true;
+#endif
   
   // Ensure a trailing /
   if (options.output_directory[seqan::length(options.output_directory) - 1] != '/') {

@@ -26,7 +26,7 @@ seed_list = None      # Sorted list of seeds
 walltime_default = "4:00:00"
 delay_default = 300           # Number of seconds to sleep when cycling on a redhawk wait
 
-tool_prefix = {'phRAIDER' : 'phRA', 'RepeatScout' : 'RS', 'RAIDER': 'RA'}
+tool_prefix = {'phRAIDER' : 'phRA', 'RepeatScout' : 'RS', 'RAIDER': 'RA', 'pre-phRAIDER' : 'prephRA'}
 
 #######################
 # Useful utilitiy functions
@@ -80,13 +80,15 @@ def parse_params():
     parser_tools = parser.add_argument_group("tool selection (all on by default)")
     parser_tools.add_argument('-R', '--raider_on', dest = 'run_raider', action = 'store_true', help = 'Turn RAIDER on', default = False)
     parser_tools.add_argument('--R2', '--phR', '--phraider_on', dest = 'run_phraider', action = 'store_true', help = 'Turn phRAIDER on', default = False)
-    parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
-    parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RAIDER on', default = False)
-    parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
-    parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
-    parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tools on (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tools on except araider (overide all other tool arguments)', default = False)
-    parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = walltime_default)
+    parser_tools.add_argument('--RS', '--repscout_on', dest = 'run_repscout', action = 'store_true', help = 'Turn RepScout on', default = False)
+    parser_tools.add_argument('--PR', '--preradier_on"', dest = 'run_prephraider', action = 'store_true', help = 'Turn preRAIDER on', default = False)
+
+    #parser_tools.add_argument('--AR', '--araider_on', dest = 'run_araider', action = 'store_true', help = 'Turn ARAIDER on', default = False)
+    #parser_tools.add_argument('-B', '--bigfoot_on', dest = 'run_bigfoot', action = 'store_true', help = 'Turn BIGFOOT on', default = False)
+    #parser_tools.add_argument('-P', '--piler_on', dest = 'run_piler', action = 'store_true', help = 'Turn PILER on', default = False)
+    #parser_tools.add_argument('-A', '--all_tools', dest = 'all_tools', action = 'store_true', help = 'Turn all tools on (overide all other tool arguments)', default = False)
+    #parser_tools.add_argument('--A2', '--all_tools2', dest = 'all_tools2', action = 'store_true', help = 'Turn all tools on except araider (overide all other tool arguments)', default = False)
+    #parser_tools.add_argument('--tl', '--time_limit', dest = 'time_limit', help = 'Redhawk time limit (max: 400:00:00 default: 4:00:00)', default = walltime_default)
 
     # I/O ARGUMENTs
     parser_io = parser.add_argument_group("i/o arguments")
@@ -469,4 +471,7 @@ if __name__ == "__main__":
             if args.run_phraider:
                 for seed in seed_map:
                     raider_pipeline('phRAIDER', file, seed, f)
+            if args.run_prephraider:
+                for seed in seed_map:
+                    raider_pipeline('pre-phRAIDER', file, seed, f)
             
