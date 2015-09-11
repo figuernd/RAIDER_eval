@@ -19,12 +19,27 @@ def compact_seed(s):
             break
     return s
 
+def expand_seed(seed):
+    """Convert an abriviated seed to a full seed (e.g. "1{2}0{3}1{2}" => "1100011" """
+    i = 0
+    while (i < len(seed)-1):
+        if seed[i+1] == '^':
+            j = i+2
+            assert seed[j] == "{"
+            k = j+1
+            while seed[k] != '}':
+                k += 1
+            n = int(seed[j+1:k])
+            seed = seed[:i] + seed[i]*n + seed[k+1:]
+        i += 1
+    return seed
+
 def weight(key):
     return sum([1 for s in key if s == "1"])
 
 def check_weights(file):
     for line in open(file):
-        seed = line.rstrip()
+        seed = expand_seed(line.rstrip())
         w = weight(seed)
         print(len(seed), w, float(w)/len(seed))
 
@@ -69,6 +84,7 @@ def generate_list(w, p_lower, p_upper, p_step, n):
 
     p = p_lower
     while p < p_upper:
+        print(p)
         l = int(round(float(w)/p))
         for k in range(n):
             num_tries = 0
@@ -78,14 +94,15 @@ def generate_list(w, p_lower, p_upper, p_step, n):
                     M[s] = True
                     break
                 num_tries += 1
-                assert(num_tries < 20)
+                if (num_tries >= 100):
+                    break
             debug += 1
         p += p_step
     print(debug)
     return sorted(M.keys(), key=len)
         
 def main():
-    fp = open("seeds11.txt", "w")
-    L = generate_list(40, 0.80, 0.801, 0.025, 500)
+    fp = open("seeds14.txt", "w")
+    L = generate_list(40, 0.80, 0.99, 0.02, 5)
     fp.write("\n".join([compact_seed(s) for s in L]))
     fp.close()
