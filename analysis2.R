@@ -17,7 +17,11 @@ read.stats <- function() {
   stats9 <<- read.file("seeds9.stats.txt", TRUE,  9)
   stats10 <<- read.file("seeds10.stats.txt", FALSE, 10)
   stats11 <<- read.file("seeds11.stats.txt", TRUE,  11)  
-  stats.all <<-rbind(stats1, stats2, stats3, stats4, stats5, stats6, stats7, stats8, stats9, stats10, stats11)
+  stats12 <<- read.file("seeds12.stats.txt", FALSE, 12)
+  stats13 <<- read.file("seeds12.stats.txt", FALSE, 13)
+  stats.all <<-rbind(stats1, stats2, stats3, stats4, stats5, 
+                     stats6, stats7, stats8, stats9, stats10, 
+                     stats11, stats12, stats13)
 }
 
 add.legend <- function(position) {
