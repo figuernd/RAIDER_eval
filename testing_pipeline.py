@@ -238,20 +238,20 @@ def setup():
 
     global seed_map
     if os.path.exists(args.results_dir + "/seed_file.txt"):
-        seed_map = {convert_seed(seed):i for line in open(args.results_dir + "/seed_file.txt") for i,seed in [re.split("\t+", l.strip())]}
+        seed_map = {convert_seed(seed):(int(i),seed) for line in open(args.results_dir + "/seed_file.txt") for i,seed in [re.split("\t+", line.strip())]}
     else:
         seed_map = {}
 
     offset = len(seed_map)    
     if args.seed_file:
         for line in open(args.seed_file):
-            seed = line.rstrip()
+            seed = convert_seed(line.rstrip())
             if seed not in seed_map:
-                seed_map[seed] = offset
-            offset += 1
+                seed_map[seed] = (offset,line.rstrip())
+                offset += 1
     else:
         if args.seed not in seed_map:
-            seed_map[args.seed] = offset
+            seed_map[convert_seed(args.seed)] = (offset,args.seed)
 
     global seed_list
     seed_list = sorted(seed_map.values(), key = lambda x: x[0])
