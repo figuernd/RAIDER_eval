@@ -174,9 +174,11 @@ class pbsJobHandler:
             s += ":" + ":".join(arch_type)
         s += "\n"
         f.write(s)
+        
         if self.mem == 'oakley':
             s="#PBS -l mem=192GB\n"
-        f.write(s)
+            f.write(s)
+
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)
 
