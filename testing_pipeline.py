@@ -196,7 +196,7 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
                       stdout_file = stdout_file, stderr_file = stderr_file, res_file = res_file,
                       walltime = walltime, depends = depend,
                       mem = Locations['high_mem_arch'] if bigmem else False,
-                      RHmodules = modules)
+                      RHmodules = modules, ppn = ppn)
 
 
     if attrs:
@@ -305,8 +305,8 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     cmd1 = raider_cmd.format(raider=Locations[raider_exe], f=f, seed=seed,
                              input_file=input_file, output_dir=elements_dir)
 
-    if raider_exe == "RAIDER":  # Hack -- I should modify the raider to code
-        raider_exe = re.sub("-s ", " ", raider_exe)
+    if raider_exe == "RAIDER":  # Hack -- I should modify the raider code
+        cmd1 = re.sub("-s", " ", cmd1)
     title1 = title;
     p1 = launch_job(cmd=cmd1, title=title1, base_dir=elements_dir, ppn = Locations['proc_per_node'] if args.max_nodes else 1, bigmem = args.mem, attrs = {'elements':'elements_dir/elements'})
 
@@ -479,7 +479,7 @@ if __name__ == "__main__":
         for f in args.f:
             if args.run_repscout:
                 rptscout_pipeline(file, f)
-            if args.run<_raider:
+            if args.run_raider:
                 for seed in seed_map:
                     raider_pipeline('RAIDER', file, seed, f)
             if args.run_phraider:

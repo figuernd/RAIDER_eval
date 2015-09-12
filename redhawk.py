@@ -184,7 +184,7 @@ class pbsJobHandler:
 
         if self.depends and len(self.depends) > 0:
             s = "#PBS -W depend=" + ",".join(["afterok:" + str(x.jobid) for x in self.depends]) + "\n"
-        f.write(s)
+            f.write(s)
         
         if stdout_file:
             self.ofile = self.output_location + "/" + stdout_file
