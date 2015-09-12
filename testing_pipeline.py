@@ -195,7 +195,7 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     p = pbsJobHandler(batch_file = batch_file, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file, res_file = res_file,
                       walltime = walltime, depends = depend,
-                      mem = Locations['high_mem_arch'] if args.mem else False,
+                      mem = Locations['high_mem_arch'] if bigmem else False,
                       RHmodules = modules)
 
 
@@ -237,10 +237,21 @@ def setup():
     progress_fp = open(debug_file, "w")
 
     global seed_map
-    if args.seed_file:
-        seed_map = {convert_seed(seed):(i,seed) for i,line in enumerate(open(args.seed_file)) for seed in [line.strip()]}
+    if os.path.exists(args.results_dir + "/seed_file.txt"):
+        seed_map = {convert_seed(seed):i for line in open(args.results_dir + "/seed_file.txt") for i,seed in [re.split("\t+", l.strip())]}
     else:
-        seed_map = {convert_seed(args.seed):(0,args.seed)}
+        seed_map = {}
+
+    offset = len(seed_map)    
+    if args.seed_file:
+        for line in open(args.seed_file):
+            seed = line.rstrip()
+            if seed not in seed_map:
+                seed_map[seed] = offset
+            offset += 1
+    else:
+        if args.seed not in seed_map:
+            seed_map[args.seed] = offset
 
     global seed_list
     seed_list = sorted(seed_map.values(), key = lambda x: x[0])
