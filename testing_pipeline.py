@@ -266,8 +266,6 @@ def setup():
             
     global seed_list
     seed_list = sorted(seed_map2.keys(), key = lambda v: seed_map2[v][0])
-    print(seed_map2)
-    print(seed_list)
 
     # Create data_files.txt
     data_files = args.results_dir + "/data_files.txt"
@@ -345,7 +343,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
                                 evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
         title4 = "bl." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output}, ppn = args.num_thrreads)
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output}, ppn = args.num_threads)
 
 
 
