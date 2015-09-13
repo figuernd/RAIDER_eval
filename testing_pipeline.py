@@ -238,23 +238,30 @@ def setup():
 
     global seed_map
     if os.path.exists(args.results_dir + "/seed_file.txt"):
-        seed_map = {convert_seed(seed):(int(i),seed) for line in open(args.results_dir + "/seed_file.txt") for i,seed in [re.split("\t+", line.strip())]}
+        with open(args.results_dir + "/seed_file.txt") as fp:
+            seed_map = {convert_seed(seed):(int(i),seed) for line in fp for i,seed in [re.split("\t+", line.strip())]}
     else:
         seed_map = {}
 
+    seed_map2 = {}
+        
     offset = len(seed_map)    
     if args.seed_file:
         for line in open(args.seed_file):
             seed = convert_seed(line.rstrip())
             if seed not in seed_map:
                 seed_map[seed] = (offset,line.rstrip())
+                seed_map2[seed] = (offset,line.rstrip())
                 offset += 1
+            else:
+                seed_map2[seed] = (offset,line.rstrip())
     else:
         if args.seed not in seed_map:
             seed_map[convert_seed(args.seed)] = (offset,args.seed)
+            seed_map2[convert_seed2(args.seed)] = (offset,args.seed)
 
     global seed_list
-    seed_list = sorted(seed_map.values(), key = lambda x: x[0])
+    seed_list = sorted(seed_map2.values(), key = lambda x: x[0])
     with open(args.results_dir + "/seed_file.txt", "w") as fp:
         fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in seed_list]))
 
@@ -480,12 +487,12 @@ if __name__ == "__main__":
             if args.run_repscout:
                 rptscout_pipeline(file, f)
             if args.run_raider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('RAIDER', file, seed, f)
             if args.run_phraider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('phRAIDER', file, seed, f)
             if args.run_prephraider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('pre-phRAIDER', file, seed, f)
             
