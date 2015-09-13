@@ -260,10 +260,12 @@ def setup():
             seed_map[convert_seed(args.seed)] = (offset,args.seed)
             seed_map2[convert_seed2(args.seed)] = (offset,args.seed)
 
+    with open(args.results_dir + "/seed_file.txt", "w") as fp:
+        fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in sorted(seed_map.values(), key = lambda x: x[0]])))
+            
     global seed_list
     seed_list = sorted(seed_map2.values(), key = lambda x: x[0])
-    with open(args.results_dir + "/seed_file.txt", "w") as fp:
-        fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in seed_list]))
+
 
 
     # Create data_files.txt
