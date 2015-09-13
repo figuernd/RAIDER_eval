@@ -137,7 +137,8 @@ def parse_params():
     blast_arguments.add_argument('--evalue', dest = 'evalue', help = "BLASE evalue", default = "0.000001");
     blast_arguments.add_argument('--short', dest = 'short', action = 'store_false', help = "Turn off blast-short on blast run", default = True)
     blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '999999999') # HACK!!!  Need to fix this
-
+    blast_arguments.add_argument('--nt', '--num_threads', dest = 'num_threads', action = 'store', type = int, help = "BLAST --num_threads argument", default = 1)
+    
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
@@ -286,7 +287,7 @@ raider_cmd = "/usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {output_di
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "{RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir {output_dir} {seq_file}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
-blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
+blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}"
 
 def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
@@ -342,9 +343,9 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     # Step 4: Apply blast to consensus sequences:
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
-                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
         title4 = "bl." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output})
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output}, ppn = args.num_thrreads)
 
 
 
@@ -424,9 +425,9 @@ def rptscout_pipeline(input_file, f):
     # Step 4: Apply blast
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = output, db_file = database_file,
-                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
         title4 =  "bl." + title 
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=output_dir, modules=Locations['blast_modules'], depend=[p2])
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=output_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads)
     else:
         p4 = None
 
@@ -446,9 +447,9 @@ def rptscout_pipeline(input_file, f):
 
         if args.run_blast:
             cmd7 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output1, consensus_file = filter1_output, db_file = database_file,
-                                    evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                    evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
             title7 = "l1." + title 
-            p7 = launch_job(cmd=cmd7, title=title7, base_dir=output_dir1, modules=Locations['blast_modules'], depend=[p6])
+            p7 = launch_job(cmd=cmd7, title=title7, base_dir=output_dir1, modules=Locations['blast_modules'], depend=[p6], ppn = args.num_threads)
         else:
             p7 = None
 
@@ -472,9 +473,9 @@ def rptscout_pipeline(input_file, f):
 
         if args.run_blast:
             cmd10 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = filter2_output, db_file = database_file,
-                                     evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                     evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
             title10 = "bl2." + title 
-            p10 = launch_job(cmd=cmd10, title=title10, base_dir=output2__dir, modules=Locations['blast_modules'], depend=[p8])
+            p10 = launch_job(cmd=cmd10, title=title10, base_dir=output2__dir, modules=Locations['blast_modules'], depend=[p8], ppn = args.num_threads)
         else:
             p10 = None
         
