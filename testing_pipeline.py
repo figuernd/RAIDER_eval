@@ -137,7 +137,8 @@ def parse_params():
     blast_arguments.add_argument('--evalue', dest = 'evalue', help = "BLASE evalue", default = "0.000001");
     blast_arguments.add_argument('--short', dest = 'short', action = 'store_false', help = "Turn off blast-short on blast run", default = True)
     blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '999999999') # HACK!!!  Need to fix this
-
+    blast_arguments.add_argument('--nt', '--num_threads', dest = 'num_threads', action = 'store', type = int, help = "BLAST --num_threads argument", default = 1)
+    
     # DEBUGGING ARGUMENTS
     debug_group = parser.add_argument_group(title = "debugging")
     debug_group.add_argument('--sp', '--show_progress', dest = 'show_progress', action = 'store_true', help = "Print reports on program progress to stderr", default = False)
@@ -195,8 +196,8 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
     p = pbsJobHandler(batch_file = batch_file, executable = cmd, job_name = job_name,
                       stdout_file = stdout_file, stderr_file = stderr_file, res_file = res_file,
                       walltime = walltime, depends = depend,
-                      mem = Locations['high_mem_arch'] if args.mem else False,
-                      RHmodules = modules)
+                      mem = Locations['high_mem_arch'] if bigmem else False,
+                      RHmodules = modules, ppn = ppn)
 
 
     if attrs:
@@ -237,16 +238,34 @@ def setup():
     progress_fp = open(debug_file, "w")
 
     global seed_map
-    if args.seed_file:
-        seed_map = {convert_seed(seed):(i,seed) for i,line in enumerate(open(args.seed_file)) for seed in [line.strip()]}
+    if os.path.exists(args.results_dir + "/seed_file.txt"):
+        with open(args.results_dir + "/seed_file.txt") as fp:
+            seed_map = {convert_seed(seed):(int(i),seed) for line in fp for i,seed in [re.split("\t+", line.strip())]}
     else:
-        seed_map = {convert_seed(args.seed):(0,args.seed)}
+        seed_map = {}
 
-    global seed_list
-    seed_list = sorted(seed_map.values(), key = lambda x: x[0])
+    seed_map2 = {}
+        
+    offset = len(seed_map)    
+    if args.seed_file:
+        for line in open(args.seed_file):
+            seed = convert_seed(line.rstrip())
+            if seed not in seed_map:
+                seed_map[seed] = (offset,line.rstrip())
+                seed_map2[seed] = (offset,line.rstrip())
+                offset += 1
+            else:
+                seed_map2[seed] = (seed_map[seed][0],line.rstrip())
+    else:
+        if args.seed not in seed_map:
+            seed_map[convert_seed(args.seed)] = (offset,args.seed)
+            seed_map2[convert_seed2(args.seed)] = (offset,args.seed)
+
     with open(args.results_dir + "/seed_file.txt", "w") as fp:
-        fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in seed_list]))
-
+        fp.write("\n".join([str(x[0]) + "\t" + x[1] for x in sorted(seed_map.values(), key = lambda x: x[0])]))
+            
+    global seed_list
+    seed_list = sorted(seed_map2.keys(), key = lambda v: seed_map2[v][0])
 
     # Create data_files.txt
     data_files = args.results_dir + "/data_files.txt"
@@ -262,11 +281,11 @@ def setup():
 
 
         
-raider_cmd = "{raider} -q -c {f} -s {seed} {input_file} {output_dir}"
+raider_cmd = "/usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {output_dir}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "{RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir {output_dir} {seq_file}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
-blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target}"
+blast_cmd = "{blast} -out {output} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}"
 
 def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
@@ -293,6 +312,9 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     # Step 1: Run phRAIDER
     cmd1 = raider_cmd.format(raider=Locations[raider_exe], f=f, seed=seed,
                              input_file=input_file, output_dir=elements_dir)
+
+    if raider_exe == "RAIDER":  # Hack -- I should modify the raider code
+        cmd1 = re.sub("-s", " ", cmd1)
     title1 = title;
     p1 = launch_job(cmd=cmd1, title=title1, base_dir=elements_dir, ppn = Locations['proc_per_node'] if args.max_nodes else 1, bigmem = args.mem, attrs = {'elements':'elements_dir/elements'})
 
@@ -319,15 +341,15 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     # Step 4: Apply blast to consensus sequences:
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = consensus_fa, db_file = database_file, 
-                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
         title4 = "bl." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output})
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], attrs={'blast_output':blast_output}, ppn = args.num_threads)
 
 
 
 #################################
-build_lrm_cmd = "{build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
-rptscout_cmd = "{RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output {output}"
+build_lrm_cmd = "/usr/bin/time {build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
+rptscout_cmd = "/usr/bin/time {RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output {output}"
 filter1_cmd = "{filter} {input} > {filter_output}"
 filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
 def rptscout_pipeline(input_file, f):
@@ -401,9 +423,9 @@ def rptscout_pipeline(input_file, f):
     # Step 4: Apply blast
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = output, db_file = database_file,
-                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
         title4 =  "bl." + title 
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=output_dir, modules=Locations['blast_modules'], depend=[p2])
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=output_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads)
     else:
         p4 = None
 
@@ -423,9 +445,9 @@ def rptscout_pipeline(input_file, f):
 
         if args.run_blast:
             cmd7 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output1, consensus_file = filter1_output, db_file = database_file,
-                                    evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                    evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
             title7 = "l1." + title 
-            p7 = launch_job(cmd=cmd7, title=title7, base_dir=output_dir1, modules=Locations['blast_modules'], depend=[p6])
+            p7 = launch_job(cmd=cmd7, title=title7, base_dir=output_dir1, modules=Locations['blast_modules'], depend=[p6], ppn = args.num_threads)
         else:
             p7 = None
 
@@ -449,9 +471,9 @@ def rptscout_pipeline(input_file, f):
 
         if args.run_blast:
             cmd10 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, output = blast_output, consensus_file = filter2_output, db_file = database_file,
-                                     evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target)
+                                     evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
             title10 = "bl2." + title 
-            p10 = launch_job(cmd=cmd10, title=title10, base_dir=output2__dir, modules=Locations['blast_modules'], depend=[p8])
+            p10 = launch_job(cmd=cmd10, title=title10, base_dir=output2__dir, modules=Locations['blast_modules'], depend=[p8], ppn = args.num_threads)
         else:
             p10 = None
         
@@ -466,12 +488,12 @@ if __name__ == "__main__":
             if args.run_repscout:
                 rptscout_pipeline(file, f)
             if args.run_raider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('RAIDER', file, seed, f)
             if args.run_phraider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('phRAIDER', file, seed, f)
             if args.run_prephraider:
-                for seed in seed_map:
+                for seed in seed_list:
                     raider_pipeline('pre-phRAIDER', file, seed, f)
             

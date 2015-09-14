@@ -174,15 +174,17 @@ class pbsJobHandler:
             s += ":" + ":".join(arch_type)
         s += "\n"
         f.write(s)
+        
         if self.mem == 'oakley':
             s="#PBS -l mem=192GB\n"
-        f.write(s)
+            f.write(s)
+
         s="#PBS -l walltime="+self.walltime+"\n"
         f.write(s)
 
         if self.depends and len(self.depends) > 0:
             s = "#PBS -W depend=" + ",".join(["afterok:" + str(x.jobid) for x in self.depends]) + "\n"
-        f.write(s)
+            f.write(s)
         
         if stdout_file:
             self.ofile = self.output_location + "/" + stdout_file

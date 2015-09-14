@@ -7,7 +7,7 @@ import parse_pra_output
 import os
 import subprocess
 import argparse
-tool_prefix = {'phRAIDER':"phRA", "RepeatScout":"RS", 'pre-phRAIDER' : 'prephRA'}
+tool_prefix = {'phRAIDER':'phRA', 'RepeatScout':'RS', 'pre-phRAIDER' : 'prephRA', 'RAIDER':'RA'}
 
 args = None
 seed_map = None
@@ -230,6 +230,10 @@ if __name__ == "__main__":
         D = DIR + "/" + 'PHRAIDER'
         if os.path.exists(D):
             collectRaider(D, 'phRAIDER')
+    if not args.tools or 'RAIDER' in args.tools:
+        D = DIR + "/" + 'RAIDER'
+        if os.path.exists(D):
+            collectRaider(D, 'RAIDER')
     if not args.tools or 'PRE-PHRAIDER' in args.tools:
         D = DIR + "/" + "PRE-PHRAIDER"
         if os.path.exists(D):
