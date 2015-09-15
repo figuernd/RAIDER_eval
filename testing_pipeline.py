@@ -28,8 +28,16 @@ delay_default = 300           # Number of seconds to sleep when cycling on a red
 
 tool_prefix = {'phRAIDER' : 'phRA', 'RepeatScout' : 'RS', 'RAIDER': 'RA', 'pre-phRAIDER' : 'prephRA'}
 
+num_jobs = 0;
+
 #######################
 # Useful utilitiy functions
+def tmp_dir():
+    global num_jobs
+    name = "$TMPDIR/karro." + str(num_jobs)
+    num_jobs += 1
+    return name;
+
 def file_base(file):
     """Extract the name of a file froma directory"""
     return os.path.basename(file)
@@ -283,10 +291,10 @@ def setup():
         
 raider_cmd = "/usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {output_dir}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
-repeat_masker_cmd = "cd $TMPDIR; {RepeatMasker} -nolow -lib {library_file} -pa {pa} -dir $TMPDIR {seq_file}; mv $TMPDIR/{seq_file_base}.out {output_dir}/"
+repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PBS_O_WORKDIR/{library_file} -pa {pa} -dir {TMPDIR} $PBS_O_WORKDIR/{seq_file}; mv {TMPDIR}/{seq_file_base}.out $PBS_O_WORKDIR/{output_dir}/; rm -r -f {TMPDIR}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
-blast_cmd = "{blast} -out $TMPDSK/{blast_file} -outfmt \"{blast_format}\" -query {consensus_file} -db {db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}; " + \
-            "bzip2 $TMPDSK/{blast_file}; " + "cp $TMPDSK/{blast_file}.bz2 {blast_dir}/"
+blast_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {blast} -out {TMPDIR}/{blast_file} -outfmt \"{blast_format}\" -query $PBS_O_WORKDIR/{consensus_file} -db $PBS_O_WORKDIR/{db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}; " + \
+            "bzip2 {TMPDIR}/{blast_file}; " + "cp {TMPDIR}/{blast_file}.bz2 $PBS_O_WORKDIR/{blast_dir}/; rm -r -f {TMPDIR}"
 
 def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
@@ -334,7 +342,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
         cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
                                         library_file = consensus_fa, pa = args.pa,
                                         output_dir = rm_dir,
-                                        seq_file = input_file, seq_file_base = file_base(input_file))
+                                        seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
         title3 = "rm." + title
         p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
                         modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
@@ -343,7 +351,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
                                 db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
-                                num_threads = args.num_threads)
+                                num_threads = args.num_threads, TMPDIR = tmp_dir())
         title4 = "bl." + title
         p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads)
 
@@ -351,7 +359,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
 
 #################################
 build_lrm_cmd = "/usr/bin/time {build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
-rptscout_cmd = "/usr/bin/time {RptScout_exe} -sequence {seq_file} -freq {lmer_output} -output {output}"
+rptscout_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; /usr/bin/time $PBS_O_WORKDIR/{RptScout_exe} -sequence $PBS_O_WORKDIR/{seq_file} -freq $PBS_O_WORKDIR/{lmer_output} -output {TMPDIR}/{REPOUT}; cp {TMPDIR}/{REPOUT} $PBS_O_WORKDIR/{OUTDIR}/; rm -r -f {TMPDIR}"
 filter1_cmd = "{filter} {input} > {filter_output}"
 filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
 def rptscout_pipeline(input_file, f):
@@ -382,10 +390,10 @@ def rptscout_pipeline(input_file, f):
     #output_dir1 = (output_dir1 + "/" + input_base + ".s0.f" + str(f)).upper()
     #output_dir2 = (output_dir2 + "/" + input_base + ".s0.f" + str(f)).upper()
     
-
-    output  = output_dir  + "/" + input_base + ".s0.f" + str(f) + ".repscout.fa"
-    output1 = output_dir1 + "/" + input_base + ".s0.f" + str(f) + ".repscout.fa" if output_dir1 else ""
-    output2 = output_dir2 + "/" + input_base + ".s0.f" + str(f) + ".repscout.fa" if output_dir2 else ""
+    rpt_sct_out =  input_base + ".s0.f" + str(f) + ".repscout.fa"
+    output  = output_dir
+    output1 = output_dir1 if output_dir1 else ""
+    output2 = output_dir2 if output_dir2 else  ""
     database_file = input_file.rstrip(".fa") + ".rptseq.fa"
 
     blast_dir = output_dir
@@ -413,14 +421,14 @@ def rptscout_pipeline(input_file, f):
     title1 = "lmer." + title 
     p1 = launch_job(cmd=cmd1, title=title1, base_dir=output_dir)
 
-    # Step 2: Run repeat scout
-    cmd2 = rptscout_cmd.format(RptScout_exe=Locations['RptScout'], seq_file=input_file, lmer_output=lmer_output, output=output)
+    # Step 2: Run RepeatScout
+    cmd2 = rptscout_cmd.format(RptScout_exe=Locations['RptScout'], seq_file=input_file, lmer_output=lmer_output, TMPDIR = tmp_dir(), REPOUT = rpt_sct_out, OUTDIR = output)
     title2 = title
     p2 = launch_job(cmd=cmd2, title=title2, base_dir=output_dir, walltime = args.rs_walltime, depend=[p1], ppn = Locations['proc_per_node'] if args.max_nodes else 1)
         
     # Step 3: Run repeatmasker
     if (args.run_rm):
-        cmd3 = repeat_masker_cmd.format(RepeatMasker=Locations['RepeatMasker'], library_file=output, output_dir=rm_dir, seq_file=input_file, seq_file_base = file_base(input_file), pa = args.pa)
+        cmd3 = repeat_masker_cmd.format(RepeatMasker=Locations['RepeatMasker'], library_file=output, output_dir=rm_dir, seq_file=input_file, seq_file_base = file_base(input_file), pa = args.pa, TMPDIR = tmp_dir())
         title3 = "rm." + title 
         p3 = launch_job(cmd=cmd3, title=title3, base_dir=output_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p2])
     else:
@@ -430,7 +438,7 @@ def rptscout_pipeline(input_file, f):
     if args.run_blast:
         cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = output,
                                 db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
-                                num_threads = args.num_threads)
+                                num_threads = args.num_threads, TMPDIR = tmp_dir())
         title4 =  "bl." + title 
         p4 = launch_job(cmd=cmd4, title=title4, base_dir=output_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads)
     else:
@@ -453,7 +461,8 @@ def rptscout_pipeline(input_file, f):
         if args.run_blast:
             cmd7 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir1, blast_file = blast_file,
                                     consensus_file = filter1_output, db_file = database_file, evalue = args.evalue,
-                                    short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
+                                    short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads,
+                                    TMPDIR = tmp_dir())
             title7 = "l1." + title 
             p7 = launch_job(cmd=cmd7, title=title7, base_dir=output_dir1, modules=Locations['blast_modules'], depend=[p6], ppn = args.num_threads)
         else:
@@ -480,7 +489,8 @@ def rptscout_pipeline(input_file, f):
         if args.run_blast:
             cmd10 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir2, blast_file=blast_file,
                                      consensus_file = filter2_output, db_file = database_file, evalue = args.evalue,
-                                     short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads)
+                                     short = "-task blastn-short" if args.short else "", max_target = args.max_target, num_threads = args.num_threads,
+                                     TMPDIR = tmp_dir())
             title10 = "bl2." + title 
             p10 = launch_job(cmd=cmd10, title=title10, base_dir=output_dir2, modules=Locations['blast_modules'], depend=[p8], ppn = args.num_threads)
         else:
