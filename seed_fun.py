@@ -38,10 +38,13 @@ def weight(key):
     return sum([1 for s in key if s == "1"])
 
 def check_weights(file):
+    i = 0
     for line in open(file):
         seed = expand_seed(line.rstrip())
         w = weight(seed)
         print(len(seed), w, float(w)/len(seed))
+        i += 1
+    return i
 
 def gen_seed(L):
     s = ""
@@ -102,7 +105,7 @@ def generate_list(w, p_lower, p_upper, p_step, n):
     return sorted(M.keys(), key=len)
         
 def main():
-    fp = open("seeds14.txt", "w")
-    L = generate_list(40, 0.80, 0.99, 0.02, 5)
+    fp = open("seeds15.txt", "w")
+    L = generate_list(40, 0.70, 0.91, 0.02, 20)
     fp.write("\n".join([compact_seed(s) for s in L]))
     fp.close()
