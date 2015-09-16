@@ -74,12 +74,10 @@ def load_f_list(DIR):
 
         
 def collectRaider(DIR, tool):
-    print("HERE: " + DIR + " " + tool)
     # FIRST: Get any applicable RM output stats
     for org in data_map.keys():
         for seed_num in seed_map.keys():
             for f in f_list:
-                print(" ".join([org, str(seed_num), str(f)]))
                 RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
                 RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
                 RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}".format(org=org, seed=seed_num, f=f)).upper()
@@ -134,7 +132,7 @@ def collectRaider(DIR, tool):
                     redhawk.storePBS([p], open(RM_job_file, "wb"))
 
                 if os.path.exists(blast_file):
-                    cmd = "./pra_analysis2 {blast_output} {output}".format(blast_output=blast_file, output=pra_output)
+                    cmd = "bzcat {blast_output}.tgz | ./pra_analysis2 {blast_output} {output}".format(blast_output=blast_file, output=pra_output)
                     subprocess.call(re.split("\s+", cmd))
                     query_cover, target_cover, Used = parse_pra_output.parse_pra_output(pra_output, "exclude.txt")
                     H['ConCoverage'], H['QuCoverage'] = query_cover, target_cover
