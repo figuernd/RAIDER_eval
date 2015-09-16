@@ -41,10 +41,9 @@ int main(int argc, char** argv) {
     debug = false;
   }
 
-  string blast_file = argv[1];
-  string output_file = argv[2];
+  string output_file = argv[1];
 
-  ifstream fin(blast_file);
+ 
   ofstream fout(output_file);
 
   string qid;
@@ -60,7 +59,7 @@ int main(int argc, char** argv) {
   si_map tmap;
   unordered_map<string,int> lenmap;
   
-  while (fin >> qid >> sid >> qstart >> qend >> qlen >> sstart >> send >> slen) {
+  while (cin >> qid >> sid >> qstart >> qend >> qlen >> sstart >> send >> slen) {
     if (qend < qstart)
       std::swap(qstart, qend);
     if (send < sstart)
