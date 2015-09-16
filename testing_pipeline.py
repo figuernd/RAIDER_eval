@@ -293,7 +293,7 @@ def setup():
 
 
         
-raider_cmd = "/usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
+raider_cmd = "mkdir {TMPDIR}; /usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PBS_O_WORKDIR/{library_file} -pa {pa} -dir {TMPDIR} $PBS_O_WORKDIR/{seq_file}; mv {TMPDIR}/{seq_file_base}.out $PBS_O_WORKDIR/{output_dir}/; rm -r -f {TMPDIR}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
