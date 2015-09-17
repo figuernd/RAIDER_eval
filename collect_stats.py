@@ -82,7 +82,7 @@ def collectRaider(DIR, tool):
                 RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
                 RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}".format(org=org, seed=seed_num, f=f)).upper()
                 RM_file = RM_dir + "/" + "{org}.fa.out".format(org=org, seed=seed_num, f=f)
-                blast_file = RM_dir + "/" + "{org}.s{seed}.f{f}.blast.6.txt".format(org=org, seed=seed_num, f=f)
+                blast_file = RM_dir + "/" + "{org}.s{seed}.f{f}.blast.6.txt.bz2".format(org=org, seed=seed_num, f=f)
                 pra_output = RM_dir + "/" + "{org}.s{seed}.f{f}.pra.txt".format(org=org, seed=seed_num, f=f)
 
                 tool_output = RM_file
@@ -131,9 +131,10 @@ def collectRaider(DIR, tool):
                         pass
                     redhawk.storePBS([p], open(RM_job_file, "wb"))
 
+                
                 if os.path.exists(blast_file):
-                    cmd = "bzcat {blast_output}.tgz | ./pra_analysis2 {blast_output} {output}".format(blast_output=blast_file, output=pra_output)
-                    subprocess.call(re.split("\s+", cmd))
+                    cmd = "bzcat {blast_output} | ./pra_analysis2 {output}".format(blast_output=blast_file, output=pra_output)
+                    subprocess.call(cmd, shell=True)
                     query_cover, target_cover, Used = parse_pra_output.parse_pra_output(pra_output, "exclude.txt")
                     H['ConCoverage'], H['QuCoverage'] = query_cover, target_cover
 
@@ -149,7 +150,7 @@ def collectRptScout(DIR, tool):
             RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s0.f{f}".format(prefix = tool_prefix[tool], org=org, f=f)
             RS_dir = DIR + "/" + ("{org}.s0.f{f}".format(org=org, f=f)).upper()
             RM_file = RS_dir + "/" + "{org}.fa.out".format(org=org, f=f)
-            blast_file = RS_dir + "/" + "{org}.s0.f{f}.RS.blast.6.txt".format(org=org, f=f)
+            blast_file = RS_dir + "/" + "{org}.s0.f{f}.RS.blast.6.txt.bz2".format(org=org, f=f)
             pra_output = "{DIR}/{org}.s0.f{f}.pra.txt".format(DIR=RS_dir, org=org, f=f)
 
             tool_output = RM_file
@@ -189,8 +190,8 @@ def collectRptScout(DIR, tool):
                 redhawk.storePBS([p], open(RM_job_file, "wb"))
 
             if os.path.exists(blast_file):
-                cmd = "./pra_analysis2 {blast_output} {output}".format(blast_output=blast_file, output=pra_output)
-                subprocess.call(re.split("\s+", cmd))
+                cmd = "bzcat {blast_output} | ./pra_analysis2 {output}".format(blast_output=blast_file, output=pra_output)
+                subprocess.call(cmd, shell=True)
                 query_cover, target_cover, Used = parse_pra_output.parse_pra_output(pra_output, "exclude.txt")
                 H['ConCoverage'], H['QuCoverage'] = query_cover, target_cover
 
