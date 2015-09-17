@@ -293,7 +293,7 @@ def setup():
 
 
         
-raider_cmd = "mkdir {TMPDIR}; /usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
+raider_cmd = "mkdir {TMPDIR}; /usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; ls {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PBS_O_WORKDIR/{library_file} -pa {pa} -dir {TMPDIR} $PBS_O_WORKDIR/{seq_file}; mv {TMPDIR}/{seq_file_base}.out $PBS_O_WORKDIR/{output_dir}/; rm -r -f {TMPDIR}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
@@ -431,7 +431,7 @@ def rptscout_pipeline(input_file, f):
         
     # Step 3: Run repeatmasker
     if (args.run_rm):
-        cmd3 = repeat_masker_cmd.format(RepeatMasker=Locations['RepeatMasker'], library_file=output, output_dir=rm_dir, seq_file=input_file, seq_file_base = file_base(input_file), pa = args.pa, TMPDIR = tmp_dir())
+        cmd3 = repeat_masker_cmd.format(RepeatMasker=Locations['RepeatMasker'], library_file=output +"/" + rpt_sct_out, output_dir=rm_dir, seq_file=input_file, seq_file_base = file_base(input_file), pa = args.pa, TMPDIR = tmp_dir())
         title3 = "rm." + title 
         p3 = launch_job(cmd=cmd3, title=title3, base_dir=output_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, modules = Locations['rm_modules'], depend=[p2])
     else:
@@ -439,7 +439,7 @@ def rptscout_pipeline(input_file, f):
 
     # Step 4: Apply blast
     if args.run_blast:
-        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = output,
+        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = output + "/" + rpt_sct_out,
                                 db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
                                 num_threads = args.num_threads, TMPDIR = tmp_dir())
         title4 =  "bl." + title 
@@ -450,6 +450,8 @@ def rptscout_pipeline(input_file, f):
 
     # Filter 1
     if args.rs_filters >= 1:
+        sys.stderr("Filter 1 not working")
+        exit(1)
         cmd5 = filter1_cmd.format(filter=Locations['filter_stage-1'], input=output, filter_output = filter1_output)
         title5 = "f1." + title 
         p5 = launch_job(cmd=cmd5, title=title5, base_dir=output_dir1, depend=[p2])
