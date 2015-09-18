@@ -242,7 +242,7 @@ string in the decompositio.  (Hence the previous $s$ does not cover $AAA*CC$, as
 the first base in not in any of the strings of the decomposition.)
 
 
-We can now modif the previous definition of elementary repeats as
+We can now modify the previous definition of elementary repeats as
 follows:
 \begin{definition} Given a genomic sequence $G$, an integer $f$, and a
   spaced seed $s$, a sequence descriptor $r$ describes an elementary
@@ -267,8 +267,17 @@ follows:
 
 \subsection*{phRAIDER Algorithm}
 
+We see in the attached table the pseudocode for the phRAIDER
+algorithm, used to find a sequence descriptor for each set of
+sequences that comprise an elementary repeat family with respoect to
+some fixed seed $s$ and minimum frequency threshold $f$.  We see see
+the core components of this algorithm as:
+\begin{itemize}
+\item 
+
 \begin{algorithm}
-\caption{This is the algorthm caption.}
+\renewcommand\thealgorithm{}
+\caption{phRAIDER}
 \begin{algorithmic}
   \Function{sameOffset}{$l$-mer $v_1$, $l$-mer $v_2$}
     \comment{Is the distance between the first two occurences of $v$ equal to the}
@@ -330,6 +339,7 @@ follows:
        \State tieLooseEnds()
   \EndFunction
 \end{algorithmic}
+\addtocounter{algorithm}{-1}
 \end{algorithm}
 
 
