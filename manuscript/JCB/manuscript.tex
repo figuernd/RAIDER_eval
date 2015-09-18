@@ -2,10 +2,18 @@
 \usepackage{longtable}
 \usepackage{ulem}
 \usepackage{authblk}
-\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{color}
 \def\includegraphic{}
 \def\includegraphics{}
 \pagestyle{myheadings}
+
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\cyan}[1]{{\color{cyan}#1}}
+\newcommand{\magenta}[1]{{\color{magenta}#1}}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
@@ -22,6 +30,9 @@
 \affil[3]{Department of Microbiology}
 \affil[4]{Department of Statisticcs, Miami University, Oxford, Ohio (USA)}
 \renewcommand\Affilfont{\itshape\small}
+
+\newcommand{\comment}[1]{\State \red{\# #1}}
+
 
 \date{}
 
@@ -56,15 +67,62 @@ these libraries are compiled.  Library-based tools
 are useless for the discovery of new families, and this are
 challanging to use on newly sequenced genomes.
 
+\begin{algorithm}
 \begin{algorithmic}
-\If {$i\geq maxval$}
-    \State $i\gets 0$
-\Else
-    \If {$i+k\leq maxval$}
-        \State $i\gets i+k$
-    \EndIf
-\EndIf
+  \Function{phRAIDER}{Genome $G$, Seed $s$, MinFrequence $f$}
+    \State Queue$<$Family$>$ $Q$;
+
+    \State \Comment{Iterate over all $l$-mer positions in $G$}
+    \For {$i \leftarrow 1 \to |G|-|s|$}
+
+       \comment{Remove and families whose last $l$-mer did not occur in the last $i$}
+       \comment{bases (hence must be closd out).}
+       \While{$i - $location($Q$, finish, last, end)$ > |s|$}
+         \State $Q.$dequeue()
+       \EndWhile
+       \State
+       \comment{Get the $l$-mer occuring at $G_i$ and remove letters corresponding to $0$s in $s4$.}
+       \State $v \leftarrow \mbox{seeded}(G[i],x)$ 
+       \State
+       \comment{Add to list of $v$'s positions.}
+       \State $H[v].push(i)$
+       \State
+       \If {$|H|(v)| == 2$}
+          \comment{$v$ either is the beginning of a family, or should be combined}
+          \comment{with a previous $l$-mer to form a family.}
+          \State $F = \mbox{arg\_find}_{F \in Q}\{$loc($v$, start, first) - loc($f$, start, first, begin) $==i - $loc($f$, start last end)$\}$
+          \If {$F$}
+             $Q.$requeue($F$)
+          \EndIf
+          \State last($Q$).addLmer($v$)   
+       \ElsIf {$|H[v]| > 2$}
+          \comment{Is $v$ the proper continuation of a family, or does it}
+          \comment{need to be split off?}
+          \State $F \leftarrow v.$family()
+          \If {$f \not\in Q$}
+              \comment{$v$ belongs to a family whose last instance is too far away.}
+              \If {$v \neq F.first()$}
+                  \comment{$v$ is not the first $l$-mer of its family
+                  $F' \leftarrow F.$split($F.$v$)
+              \Else
+                  $F' \leftarrow F.$split($F.$lastSeen())
+              \EndIf
+              \State $Q.$enqueue($F'$)
+          \Else
+              \If {$v == F.$first()}
+                 \comment{$v$ is the first $l$-mer of $F$, so $F$ is moved to the back of $Q$}
+                 $Q$.requeue($F$)
+              \ElsIf {$F.$lastSeen()$.$next$==v$}
+                 ???
+                 $F.$setLastSeen($v$)
+              \EndIf
+           \EndIf                             
+       \EndIf
+       \EndFor
+       \State tieLooseEnds()
+  \EndFunction
 \end{algorithmic}
+\end{algorithm}
 
 
 \bibliographystyle{bmc-mathphys} % Style BST file (bmc-mathphys, vancouver, spbasic).
