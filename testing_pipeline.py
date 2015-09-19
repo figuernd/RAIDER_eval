@@ -113,6 +113,7 @@ def parse_params():
     raider_argument.add_argument('--pre', '--pre_scan', action = 'store_true', help = "Use pre-scan version of raider", default = False)
     raider_argument.add_argument('--mem', action = 'store_true', help = "Use large memory-nodes", default = False);
     raider_argument.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
+    raider_argument.add_argument("--SC", "--suppress_consensus", dest = "suppress_consensus", action="store_true", help="Suppress consensus generation", default = False)
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
@@ -293,7 +294,7 @@ def setup():
 
 
         
-raider_cmd = "mkdir {TMPDIR}; /usr/bin/time {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; ls {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
+raider_cmd = "mkdir {TMPDIR}; {time} {raider} -q -c {f} -s {seed} {input_file} {TMPDIR}; ls {TMPDIR}; cp {TMPDIR}/elements {output_dir}/; rm -r -f {TMPDIR}"
 consensus_cmd = "{python} consensus_seq.py -s {data_file} -e {elements_file} {consensus_txt} {consensus_fa}"
 repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PBS_O_WORKDIR/{library_file} -pa {pa} -dir {TMPDIR} $PBS_O_WORKDIR/{seq_file}; mv {TMPDIR}/{seq_file_base}.out $PBS_O_WORKDIR/{output_dir}/; rm -r -f {TMPDIR}"
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
@@ -325,7 +326,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
 
     ##########################
     # Step 1: Run phRAIDER
-    cmd1 = raider_cmd.format(raider=Locations[raider_exe], f=f, seed=seed,
+    cmd1 = raider_cmd.format(raider=Locations[raider_exe], time=Locations['time_cmd'], f=f, seed=seed,
                              input_file=input_file, output_dir=elements_dir, TMPDIR = tmp_dir())
 
     if raider_exe == "RAIDER":  # Hack -- I should modify the raider code
@@ -336,36 +337,37 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     
 
     # Step 2: Generate consensus sequence
-    cmd2 = consensus_cmd.format(python=Locations['python'], data_file=input_file,
-                                elements_file=elements_dir + "/elements",
-                                consensus_txt=consensus_txt,
-                                consensus_fa=consensus_fa)
-    title2 = "con." + title
-    p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
+    if not args.suppress_consensus:
+        cmd2 = consensus_cmd.format(python=Locations['python'], data_file=input_file,
+                                    elements_file=elements_dir + "/elements",
+                                    consensus_txt=consensus_txt,
+                                    consensus_fa=consensus_fa)
+        title2 = "con." + title
+        p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
 
-    # Step 3: Apply repeat masker consensus output
-    if (args.run_rm):
-        cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
-                                        library_file = consensus_fa, pa = args.pa,
-                                        output_dir = rm_dir,
-                                        seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
-        title3 = "rm." + title
-        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
-                        modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
+        # Step 3: Apply repeat masker consensus output
+        if args.run_rm:
+            cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
+                                            library_file = consensus_fa, pa = args.pa,
+                                            output_dir = rm_dir,
+                                            seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
+            title3 = "rm." + title
+            p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
+                            modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
 
-    # Step 4: Apply blast to consensus sequences:
-    if args.run_blast:
-        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
-                                db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
-                                num_threads = args.num_threads, TMPDIR = tmp_dir())
-        title4 = "bl." + title
-        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads, walltime = blast_walltime_default)
+        # Step 4: Apply blast to consensus sequences:
+        if args.run_blast:
+            cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
+                                    db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
+                                    num_threads = args.num_threads, TMPDIR = tmp_dir())
+            title4 = "bl." + title
+            p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads, walltime = blast_walltime_default)
 
 
 
 #################################
-build_lrm_cmd = "/usr/bin/time {build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
-rptscout_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; /usr/bin/time $PBS_O_WORKDIR/{RptScout_exe} -sequence $PBS_O_WORKDIR/{seq_file} -freq $PBS_O_WORKDIR/{lmer_output} -output {TMPDIR}/{REPOUT}; cp {TMPDIR}/{REPOUT} $PBS_O_WORKDIR/{OUTDIR}/; rm -r -f {TMPDIR}"
+build_lrm_cmd = "{time} {build_lmer_table_exe} -min {min} -sequence {seq_file} -freq {lmer_output}"
+rptscout_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {time} $PBS_O_WORKDIR/{RptScout_exe} -sequence $PBS_O_WORKDIR/{seq_file} -freq $PBS_O_WORKDIR/{lmer_output} -output {TMPDIR}/{REPOUT}; cp {TMPDIR}/{REPOUT} $PBS_O_WORKDIR/{OUTDIR}/; rm -r -f {TMPDIR}"
 filter1_cmd = "{filter} {input} > {filter_output}"
 filter2_cmd = "cat {filtered} | {filter} --cat={rm_output} --thresh={thresh} > {filter_output}"
 def rptscout_pipeline(input_file, f):
@@ -420,14 +422,14 @@ def rptscout_pipeline(input_file, f):
     rm_dir2 = output_dir2
     
     # Step 1: Run build_lmer_table
-    cmd1 = build_lrm_cmd.format(build_lmer_table_exe=Locations['build_lmer_table'], min=f, seq_file=input_file, lmer_output=lmer_output)
+    cmd1 = build_lrm_cmd.format(time=Locations['time_cmd'], build_lmer_table_exe=Locations['build_lmer_table'], min=f, seq_file=input_file, lmer_output=lmer_output)
     title1 = "lmer." + title 
     p1 = launch_job(cmd=cmd1, title=title1, base_dir=output_dir)
 
     # Step 2: Run RepeatScout
-    cmd2 = rptscout_cmd.format(RptScout_exe=Locations['RptScout'], seq_file=input_file, lmer_output=lmer_output, TMPDIR = tmp_dir(), REPOUT = rpt_sct_out, OUTDIR = output)
+    cmd2 = rptscout_cmd.format(time=Locations['time_cmd'], RptScout_exe=Locations['RptScout'], seq_file=input_file, lmer_output=lmer_output, TMPDIR = tmp_dir(), REPOUT = rpt_sct_out, OUTDIR = output)
     title2 = title
-    p2 = launch_job(cmd=cmd2, title=title2, base_dir=output_dir, walltime = args.rs_walltime, depend=[p1], ppn = Locations['proc_per_node'] if args.max_nodes else 1)
+    p2 = launch_job(cmd=cmd2, title=title2, base_dir=output_dir, walltime = args.rs_walltime, bigmem = args.mem, depend=[p1], ppn = Locations['proc_per_node'] if args.max_nodes else 1)
         
     # Step 3: Run repeatmasker
     if (args.run_rm):

@@ -1,0 +1,49 @@
+location(family, start/finish, first/last, begin/end): Return the start/finish coordinate location of the first/last  instance of the beginning/ending l-mer of the family. 
+-- Recorded in family object.  O(1) time.
+
+location(lmer, start/finish, first/last): Return the start/finish coordinate of the first/last instance of the l-mer.
+-- Recorded in lmer object.  Stored in hash table H -- effectivally O(1) time.
+
+phRAIDER(Sequence G, seed s, int f):
+   List FamQueue
+
+   for i <- to |G| - |s|:            # Right-scan of genome looking at every length |s| Lmer
+      while i - location(front(FamQueue), finish, last, end) > |s|:
+         dequeue(FamQueue)           # If family at front of queue is too far away to add to it, close and ditch it
+
+      v <- seeded(G[i,i+|s|], s)     # Get the |s|-mer starting at coordinate i and remove bases corresponding to zeros
+      H[v].push(i)                   # Add i to the list of positions where v has occurred
+
+      if |H[v]| == 2:                # Second time we have seen v -- must be part of a family
+         f = argfind_f{ f in FamQueue : location(v, start, first) - location(f, start, first, begin) == 
+                                        i - location(f, start, last, end) }
+	 if f:
+	    reEqueue(FamQueue, f)
+	 else:
+	    enqueue(FamQueue, newFamily(v)))
+
+         addLmer(last(Enqueue), v)   # Add v to last l-mer seen
+ 
+      if |H[v]| > 2:
+         fam <- getFamily(v)     # v has happened > 3 times, so must be the member of a family.
+
+	 if f not in FamQueue:   # v is not associated with recently-viewed family
+	    v != first(fam):     # We are not extending f, but v is not the first element
+	       newFam <- splitFam(v)
+	    else
+	       newFam -> splitFam(lastSeen(f))
+	    enqueue(FamQueue, newFam)
+	 else:
+	    if v == first(fam):  # v is the first l-mer in the family
+               updateFamily(v)
+
+	    if lastSeen(fam)->next == v:
+	       updateLastSeen(v)
+
+  tieLooseEnd()   # Split up families as necesary; elimintate familes with < f occura
+	    
+
+
+
+
+     

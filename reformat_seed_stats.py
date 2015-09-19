@@ -18,12 +18,12 @@ def main(set, print_header = False):
         A = {H[i]:v for i,v in enumerate(re.split("\s+", line.rstrip()))}
         if A['seed'] != 'NA':
             A['seed'] = seed_fun.compact_seed(A['seed'])
-        A['ToolMem'] = str( int(A['ToolMem'])/1000000.0 ) 
-        A['ToolVMem'] = str( int(A['ToolVMem'])/1000000.0 ) 
+        A['ToolMem'] = 'NA' if A['ToolMem'] == 'NA' else str( int(A['ToolMem'])/1000000.0 ) 
+        A['ToolVMem'] = 'NA' if A['ToolVMem'] == 'NA' else str( int(A['ToolVMem'])/1000000.0 ) 
         wp.write("{:<15}".format(set) + "\t" + "\t".join("{:<15}".format(A[h]) for h in H) + "\n")
         if A['tool'] == 'phRAIDER':
             wp2.write("{:<15}".format(set) + "\t" + "\t".join("{:<15}".format(A[h]) for h in H) + "\n")
 
 wp2 = open("all.stats2.txt", "w")
-for i in range(1,12):
+for i in range(12,14):
     main(i, i==1)

@@ -1,287 +1,52 @@
-%% BioMed_Central_Tex_Template_v1.06
-%%                                      %
-%  bmc_article.tex            ver: 1.06 %
-%                                       %
-
-%%IMPORTANT: do not delete the first line of this template
-%%It must be present to enable the BMC Submission system to
-%%recognise this template!!
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                     %%
-%%  LaTeX template for BioMed Central  %%
-%%     journal article submissions     %%
-%%                                     %%
-%%          <8 June 2012>              %%
-%%                                     %%
-%%                                     %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                                                 %%
-%% For instructions on how to fill out this Tex template           %%
-%% document please refer to Readme.html and the instructions for   %%
-%% authors page on the biomed central website                      %%
-%% http://www.biomedcentral.com/info/authors/                      %%
-%%                                                                 %%
-%% Please do not use \input{...} to include other tex files.       %%
-%% Submit your LaTeX manuscript as one .tex document.              %%
-%%                                                                 %%
-%% All additional figures and files should be attached             %%
-%% separately and not embedded in the \TeX\ document itself.       %%
-%%                                                                 %%
-%% BioMed Central currently use the MikTex distribution of         %%
-%% TeX for Windows) of TeX and LaTeX.  This is available from      %%
-%% http://www.miktex.org                                           %%
-%%                                                                 %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%% additional documentclass options:
-%  [doublespacing]
-%  [linenumbers]   - put the line numbers on margins
-
-%%% loading packages, author definitions
-
-%\documentclass[twocolumn]{bmcart}% uncomment this for twocolumn layout and comment line below
-\documentclass{bmcart}
-
-%%% Load packages
-%\usepackage{amsthm,amsmath}
-%\RequirePackage{natbib}
-%\RequirePackage[authoryear]{natbib}% uncomment this for author-year bibliography
-%\RequirePackage{hyperref}
-\usepackage[utf8]{inputenc} %unicode support
-%\usepackage[applemac]{inputenc} %applemac support if unicode package fails
-%\usepackage[latin1]{inputenc} %UNIX support if unicode package fails
-
-% Added by karro for commenting -- should be removed before submission.
+\documentclass[11pt]{article}
+\usepackage{longtable}
+\usepackage{ulem}
+\usepackage{authblk}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx}
 \usepackage{color}
+\def\includegraphic{}
+\def\includegraphics{}
+\pagestyle{myheadings}
+
 \newcommand{\red}[1]{{\color{red}#1}}
 \newcommand{\blue}[1]{{\color{blue}#1}}
 \newcommand{\cyan}[1]{{\color{cyan}#1}}
 \newcommand{\magenta}[1]{{\color{magenta}#1}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                             %%
-%%  If you wish to display your graphics for   %%
-%%  your own use using includegraphic or       %%
-%%  includegraphics, then comment out the      %%
-%%  following two lines of code.               %%
-%%  NB: These line *must* be included when     %%
-%%  submitting to BMC.                         %%
-%%  All figure files must be submitted as      %%
-%%  separate graphics through the BMC          %%
-%%  submission process, not included in the    %%
-%%  submitted article.                         %%
-%%                                             %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
 
+\usepackage[paper=letterpaper,margin=1in]{geometry}
 
-\def\includegraphic{}
-\def\includegraphics{}
+\title{phRAIDER: Pattern-Hunter based Rapid Ad Initio \\ Identification of Elemenrary Repeats}
+\author[1]{Carly E. Schaeffer}
+\author[1]{Nathniel D. Figueroa}
+\author[2]{Xiaolin Liu}
+\author[1,2,3,4]{\\John E. Karro\thanks{Corresponding Author}}
+\affil[1]{Department of Computer Science and Software Engineering}
+\affil[2]{Cell, Molecular, and Structural Bology}
+\affil[3]{Department of Microbiology}
+\affil[4]{Department of Statisticcs, Miami University, Oxford, Ohio (USA)}
+\renewcommand\Affilfont{\itshape\small}
 
-
-
-%%% Put your definitions there:
-\startlocaldefs
-\endlocaldefs
-
-
-%%% Begin ...
-\begin{document}
-
-%%% Start of article front matter
-\begin{frontmatter}
-
-\begin{fmbox}
-\dochead{Research}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% Enter the title of your article here     %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\title{Fast de novo transposable element annotation}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% Enter the authors here                   %%
-%%                                          %%
-%% Specify information, if available,       %%
-%% in the form:                             %%
-%%   <key>={<id1>,<id2>}                    %%
-%%   <key>=                                 %%
-%% Comment or delete the keys which are     %%
-%% not used. Repeat \author command as much %%
-%% as required.                             %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\author[
-   addressref={aff1},
-   noteref={n1},
-   email={schaefce@miamiOH.edu}
-]{\inits{SE}\fnm{Carly E} \snm{Schaeffer}}
-\author[
-   addressref={aff1},                   % id's of addresses, e.g. {aff1,aff2}
-   noteref={n1},                        % id's of article notes, if any
-   email={figuernd@miamiOH.edu}   % email address
-]{\inits{ND}\fnm{Nathaniel D} \snm{Figueroa}}
-\author[
-   addressref={aff1,aff2},
-   email={liux17@miamiOH.edu}
-]{\inits{X}\fnm{Xiaolin} \snm{Liu}}
-\author[
-  addressref={aff1,aff2,aff3,aff4},
-  corref={aff1},
-  noteref={n2},
-  email={karroje@miamiOH.edu}
-]{\inits{JE}\fnm{John E} \snm{Karro}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% Enter the authors' addresses here        %%
-%%                                          %%
-%% Repeat \address commands as much as      %%
-%% required.                                %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\address[id=aff1]{%                           % unique id
-  \orgname{Department of Computer Science and Software Engineering}, % university, etc
-  %\street{Miami University},                     %
-  %\postcode{}                                % post or zip code
-  %\city{Oxford},                              % city
-  %\cny{USA}                                    % country
-}
-\address[id=aff2]{%                           % unique id
-  \orgname{Center for  Molecular and Structural Biology},
-  %\street{Miami University},                     %
-  %\postcode{}                                % post or zip code
-  %\city{Oxford},                              % city
-  %\cny{USA}                                    % country
-}
-\address[id=aff3]{%                           % unique id
-  \orgname{Department of Statistics}, % university, etc
-  %\street{Miami University},                     %
-  %\postcode{}                                % post or zip code
-  %\city{Oxford},                              % city
-  %\cny{USA}                                    % country
-}
-\address[id=aff4]{%                           % unique id
-  \orgname{Department of Microbiology}, % university, etc
-  \street{Miami University},                     %
-  %\postcode{}                                % post or zip code
-  \city{Oxford},                              % city
-  \cny{USA}                                    % country
-}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% Enter short notes here                   %%
-%%                                          %%
-%% Short notes will be after addresses      %%
-%% on first page.                           %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{artnotes}
-%\note{Sample of title note}     % note to the article
-  \note[id=n1]{Equal contributor} % note, connected to author
-  \note[id=n2]{Corresponding Author}
-\end{artnotes}
-
-\end{fmbox}% comment this for two column layout
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% The Abstract begins here                 %%
-%%                                          %%
-%% Please refer to the Instructions for     %%
-%% authors on http://www.biomedcentral.com  %%
-%% and include the section headings         %%
-%% accordingly for your article type.       %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{abstractbox}
-
-\begin{abstract} % abstract
-\parttitle{Background} The problem of {\it de novo} identification of
-transposable elements (the discovery and annotation of transposable
-elements without the use of a pre-complied profile) has been addressed
-by a number of tools -- all of which are either based on
-computationally complex algorithms that cannot scale to whole-genome
-use, or whose sensitivity suffers significantly from the presence of
-sequence variation.  Here we present phRAIDER (Pattern Hunter based
-Rapid Ab Initio Detection of Elementary Repeats), a tool that can
-quickly identify and mask tranposable elements in a a newly sequenced
-genome and is robust to the sequence variation present in real data.
-
-\parttitle{Results} \red{To be written later.}
-
-\parttitle{Conclusions} \red{To be written later.}
-
-\end{abstract}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% The keywords begin here                  %%
-%%                                          %%
-%% Put each keyword in separate \kwd{}.     %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{keyword}
-\kwd{transposable elements}
-\kwd{elementary repeats}
-\kwd{pattern hunter}
-\kwd{genomic masking}
-\end{keyword}
-
-% MSC classifications codes, if any
-%\begin{keyword}[class=AMS]
-%\kwd[Primary ]{}
-%\kwd{}
-%\kwd[; secondary ]{}
-%\end{keyword}
-
-\end{abstractbox}
-%
-%\end{fmbox}% uncomment this for twcolumn layout
-
-\end{frontmatter}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% The Main Body begins here                %%
-%%                                          %%
-%% Please refer to the instructions for     %%
-%% authors on:                              %%
-%% http://www.biomedcentral.com/info/authors%%
-%% and include the section headings         %%
-%% accordingly for your article type.       %%
-%%                                          %%
-%% See the Results and Discussion section   %%
-%% for details on how to create sub-sections%%
-%%                                          %%
-%% use \cite{...} to cite references        %%
-%%  \cite{koon} and                         %%
-%%  \cite{oreg,khar,zvai,xjon,schn,pond}    %%
-%%  \nocite{smith,marg,hunn,advi,koha,mouse}%%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\comment}[1]{\State \red{\# #1}}
 
 \newtheorem{definition}{Definition}
 \newtheorem{observation}{Observation}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-%%%%%%%%%%%%%%%%%%%%%%%%% start of article main body
-\section*{Background}
+
+\date{}
+
+\begin{document}
+\maketitle
+\abstract{This is the abstract.}
+
+\section*{Introduction}
+
 Transposable Elements (TEs) are genomic sequences thathad the capacity
 to insert copies of themselves into other genomic locations, resulting
 in homologous families of sequences spread across the genome.  Present
@@ -306,8 +71,6 @@ the snow plow driver gets to work \cite{Pratchett:uw}, we must ask how
 these libraries are compiled.  Library-based tools
 are useless for the discovery of new families, and this are
 challanging to use on newly sequenced genomes.
-
-
 
 Within mammalian species we can largely rely on homology relationships
 to port libraries across species.  This does not hold
@@ -479,7 +242,7 @@ string in the decompositio.  (Hence the previous $s$ does not cover $AAA*CC$, as
 the first base in not in any of the strings of the decomposition.)
 
 
-We can now modif the previous definition of elementary repeats as
+We can now modify the previous definition of elementary repeats as
 follows:
 \begin{definition} Given a genomic sequence $G$, an integer $f$, and a
   spaced seed $s$, a sequence descriptor $r$ describes an elementary
@@ -504,272 +267,85 @@ follows:
 
 \subsection*{phRAIDER Algorithm}
 
-\red{
-TO DO: Give a pseudocode description of the algoirthm and some minimal
-discussion.
-}
-
-\subsection*{Analysis}
-
-\red{
-TO DO: Describe pra analysis and quality metrics.
-}
-
-
-\section*{Results}
-
-\red{
-Points to be made:
-\begin{enumerate}
-\item Show: RAIDER2 has better quality masking results then RS.
-\item Show: RAIDER2 is better than RAIDER.
-\item Show: Seeds matter.
-\item Show: Runtime / memory usage
-\end{enumerate}
-
-
-Possible tables / plots:
+We see in the attached table the pseudocode for the phRAIDER
+algorithm, used to find a sequence descriptor for each set of
+sequences that comprise an elementary repeat family with respoect to
+some fixed seed $s$ and minimum frequency threshold $f$.  We see see
+the core components of this algorithm as:
 \begin{itemize}
-\item Table showing results on different chromosomes (pra, runtime, memory).
-\item Plot of runtime against genome size (simulated data to control size)?
-\item Plot of memory usage (simlated data to control size)?
-\item We might want to compare the ability to detect transposable
-  elements againsts other types of repeats.  (Should be easy to do
-  using simulator.)
-\end{itemize}
-}
+\item 
 
-\section*{Conclusions}
+\begin{algorithm}
+\renewcommand\thealgorithm{}
+\caption{phRAIDER}
+\begin{algorithmic}
+  \Function{sameOffset}{$l$-mer $v_1$, $l$-mer $v_2$}
+    \comment{Is the distance between the first two occurences of $v$ equal to the}
+    \comment{the distance betwen the most recent two occurences?}
+    \State \Return $H[v_2][0] - H[v_1][0]  == H[v_2][-1] - H[v_1][-1]$
+  \EndFunction
+  \State
+  \Function{phRAIDER}{Genome $G$, Seed $s$, MinFrequence $f$}
+    \comment{We are going to maintain a $Q$ of up to $|s|$ families, representing the families}
+    \comment{of the last $|L|$ $l$-mers seen, sorted by the position of those last $l$-mers.}
+    \State Queue$<$Family$>$ $Q$;
+    \State
+    \comment{Iterate over all $l$-mer positions in $G$}
+    \For {$i \leftarrow 1 \to |G|-|s|$}
 
-\red {
-Hopefully will beconcluding that RAIDER is a better tool than
-RepeatScout.  Posible discussion of tool features.
-}
-
-\section*{Appendix}
-In order to allow the use of a spaced seed strategy, we will need to
-define a new model of elementary repeats that will accommodate it.  In
-the following we will first outline our theoretical framework
-(described in detail in the Supplementary Materials), and then review
-the phRAIDER algorithm.
-
-\subsection*{Seeded Elementary Repeats}
-In order to present our new model of elementary repeats, we first need
-to define a few terms:
-\begin{enumerate}
-  \item A spaced seed is a binary string that starts and ends with 1
-    symbols (as defined in Li {\it et al.} \cite{Li:2004wl}).
-  \item A {\it sequence descriptor} is a DNA string that allows *
-    symbols (indicating that a position where base content does not
-    matter).  A string matches a sequence descriptor of equal length if
-    it has the same base in all non-* positions.
-  \item We say the frequency of $r$ in a genomic sequence $G$ (denoted
-    $\nu_G(r)$) is the number of subsequences in $G$ that match $r$.
-  \item A spaced seed $s$ {\it hits} a substring of sequence
-    descriptor $r$ if that substring is the same length of $s$ and,
-    when aligned, every $*$ in the substring matches a 0 in the
-    string.  (Example: if $s=11011$ and $r=AAA*TTTTT$, then $s$
-    hits both $AA*CC$ and $TTTTT$, but not $A*TTT$.)
-  \item The {\it decomposition} of $r$ (with respect to seed $s$) is
-    the set of all substrings of $r$ that are hit by $s$.  For the
-    {\it generalized decomposition}, we take each member of the
-    decomposition and replace by $*$ any base that aligned to a 0 in
-    the seed.  (Example: if $s=11011$ and $r=AAATTT$, then $AAATT$ is
-    in the decomposition, so $AA*TT$ is in the generalized
-    decomposition.)
-  \item We say a string $s$ {\it covers} a sequence descriptor $r$ if
-  every base in $r$ is contained within at least one substring from
-  the decomposition of $r$.
-\end{enumerate}
-
-
-\begin{definition}
-  \label{REDDef}
-  Given a fixed genomic sequence $G$, a integer $f$, and spaced seed $s$, a sequence
-  descriptor $r$ is a {\it repeat element descriptor} if:
-  \begin{enumerate}
-  \item $s$ covers $r$.  (Minimum length requirement.)
-  \item $\nu_G(r) \geq f$.  (Frequency requirement.)
-  \item For every string $w$ in the generalized decomposition of $r$
-    (w.r.t. $s$), $\nu_G(w) = \nu_G(r)$.  (Minimality requirement.)
-  \item There is no sequence descriptor $r'$ such that (1) $r$ is
-    a substring of $r'$, (2) $\nu_G(r') = \nu_G(r)$, and (3) $r'$
-    satisfies conditions 1-3.  (Maximality requirement.)
-  \end{enumerate}
-\end{definition}
-
-We will refer to the set of sequences in the genome that match the
-repeat family descriptor to be the repeat element family of the
-descriptor.
-
-\begin{theorem}
-Definition~\ref{REDDef} is equivalent to the Z\&L
-definition of elementary repeats when $s$ contains no 0 symbols.
-\end{theorem}
-In the Supplementary materials we prove our definition equivalent to
-the Figueroa definition (Definition 5 from the thesis) -- which is
-proved to be equivalent to the Z\&L definition in that work \cite{Figueroa:2014uk}.
-
-It is instructive to look at a specific example.  Consider the toy
-seed $11011$, let $f=2$, and assume the genome contains a unique
-instance of $g_1 = AAAAA{\mathbf C}TTTTT$ and a unique instance of
-$g_2 = AAAAA{\mathbf G}TTTTT$.  Consider the sequence descriptor $r_1
-= AAAAA*TTTTT$.  A simple inspection shows us that conditions (1)-(3)
-of Definition~\ref{REDDef} hold, so if we assume the surrounding
-sequence is such that (4) holds as well, this is an elementary repeat
-descriptor for this family of sequences.  (Note $AA*AA*TT*TT$ also qualifies -- the
-elementary repeat descriptor is not necessarily unique.)  But if we add a second
-instance of $g_3 = AAAAAGTTTTT$, something happens that was not
-possible in the unseeded version.  While $r_1$ continues to meet the definition, the $g_2/g_3$
-subsequence $AAAAGTTTT$ also induces an elementary repeat family
-$r_2 = AAAA*TTTT$. (Note that we cannot extend this by, for example,
-one base to the left, as the $AAAAA$ substring would cause a violation
-of condition (3)).  So $r_2$ matches strings in $G$ that are
-substrings of those that $r_1$ matches -- a condition not possible
-with the seedless elementary repeats.  This also then violates one of
-our core observation on which RAIDER is broken: we now have an $l$-mer
-($AAAA*$) that belongs to multiple descriptors.
-
-A second complicating factor is that our repeat element descriptor is
-not a sequence of consecutive $l$-mers. In the seedless version, an
-elementary repeat of length $n$ can be viewed as a sequence of $n-l+1$
-$l$-mers, each overlapping the last by exactly $l-1$ bases. In this
-definition we use members of the generalize decomposition, and find
-they are not necessarily offset by just one base: given the $g_1$ and
-$g_2$ example above, we see that the $r_1 = AAAAA*TTTTT$ descriptor is
-composed of $AA*AA$, $AA*TT$, and $TT*TT$ -- each offset from the last
-by 3.  As RAIDER assumed that it need a look-back of only one, this
-too breaks the algorithm.
-
-  
-    
+       \comment{Remove any families whose last $l$-mer did not occur in the last $i$ bases.}
+       \While{$i - $location($Q$, finish, last, end)$ > |s|$}
+         \State $Q.$dequeue()
+       \EndWhile
+       \State
+       \comment{Get the $l$-mer occuring at $G_i$ and remove letters corresponding to $0$s in $s$.}
+       \State $v \leftarrow \mbox{seeded}(G[i],x)$ 
+       \State
+       \comment{Add to list of $v$'s positions.}
+       \State $H[v].push(i)$
+       \State
+       \If {$|H|(v)| == 2$}
+          \comment{$v$ either is the beginning of a family, or should be combined with a}
+          \comment{previous $l$-mer to form a family.}
+          \State $F = \mbox{arg\_find}_{F \in Q}\{\mbox{sameOffset}(F.\mbox{start}(), v)\}$
+          \If {$F$}
+             \State $Q.$requeue($F$)
+          \EndIf
+          \State last($Q$).addLmer($v$)   
+       \ElsIf {$|H[v]| > 2$}
+          \comment{Is $v$ the proper continuation of a family, or does it need to be split off?}
+          \State $F \leftarrow v.$family()
+          \If {$H[F.\mbox{lastSeen}(i)][-1] < H[Q.\mbox{front}().\mbox{lastSeen}()]$}
+              \comment{$v$ belongs to a family whose last instance is too far back.}
+              \If {$v \neq F.$first$()$}
+                  \comment{$v$ is not the first $l$-mer of its family}
+                  \State $F' \leftarrow F.$split($F.v$)
+              \Else
+                  \State $F' \leftarrow F.$split($F.$lastSeen())
+              \EndIf
+              \State $Q.$enqueue($F'$)
+          \Else
+              \If {$v == F.$first()}
+                 \comment{$v$ is the first $l$-mer of $F$, so $F$ is moved to the back of $Q$}
+                 \State $Q$.requeue($F$)
+              \ElsIf {sameOffSet($F.$first(), $v$)}
+                 \State $F.$setLastSeen($v$)
+              \EndIf
+           \EndIf                             
+       \EndIf
+       \EndFor
+       \State
+       \comment{Final break up of families as needed; filter families with frequency $\leq f$.}
+       \State tieLooseEnds()
+  \EndFunction
+\end{algorithmic}
+\addtocounter{algorithm}{-1}
+\end{algorithm}
 
 
-
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                                          %%
-%% Backmatter begins here                   %%
-%%                                          %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{backmatter}
-
-\section*{Competing interests}
-  The authors declare that they have no competing interests.
-
-\section*{Author's contributions}
-    Text for this section \ldots
-
-\section*{Acknowledgements}
-  Text for this section \ldots
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                  The Bibliography                       %%
-%%                                                         %%
-%%  Bmc_mathpys.bst  will be used to                       %%
-%%  create a .BBL file for submission.                     %%
-%%  After submission of the .TEX file,                     %%
-%%  you will be prompted to submit your .BBL file.         %%
-%%                                                         %%
-%%                                                         %%
-%%  Note that the displayed Bibliography will not          %%
-%%  necessarily be rendered by Latex exactly as specified  %%
-%%  in the online Instructions for Authors.                %%
-%%                                                         %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% if your bibliography is in bibtex format, use those commands:
 \bibliographystyle{bmc-mathphys} % Style BST file (bmc-mathphys, vancouver, spbasic).
 \bibliography{bmc}      % Bibliography file (usually '*.bib' )
-% for author-year bibliography (bmc-mathphys or spbasic)
-% a) write to bib file (bmc-mathphys only)
-% @settings{label, options="nameyear"}
-% b) uncomment next line
-%\nocite{label}
-
-% or include bibliography directly:
-% \begin{thebibliography}
-% \bibitem{b1}
-% \end{thebibliography}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                               %%
-%% Figures                       %%
-%%                               %%
-%% NB: this is for captions and  %%
-%% Titles. All graphics must be  %%
-%% submitted separately and NOT  %%
-%% included in the Tex document  %%
-%%                               %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%
-%% Do not use \listoffigures as most will included as separate files
-
-%% \section*{Figures}
-%%   \begin{figure}[h!]
-%%   \caption{\csentence{Sample figure title.}
-%%       A short description of the figure content
-%%       should go here.}
-%%       \end{figure}
-
-%% \begin{figure}[h!]
-%%   \caption{\csentence{Sample figure title.}
-%%       Figure legend text.}
-%%       \end{figure}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                               %%
-%% Tables                        %%
-%%                               %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% Use of \listoftables is discouraged.
-%%
-%% \section*{Tables}
-%% \begin{table}[h!]
-%% \caption{Sample table title. This is where the description of the table should go.}
-%%       \begin{tabular}{cccc}
-%%         \hline
-%%            & B1  &B2   & B3\\ \hline
-%%         A1 & 0.1 & 0.2 & 0.3\\
-%%         A2 & ... & ..  & .\\
-%%         A3 & ..  & .   & .\\ \hline
-%%       \end{tabular}
-%% \end{table}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                               %%
-%% Additional Files              %%
-%%                               %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% \section*{Additional Files}
-%%   \subsection*{Additional file 1 --- Sample additional file title}
-%%     Additional file descriptions text (including details of how to
-%%     view the file, if it is in a non-standard format or the file extension).  This might
-%%     refer to a multi-page table or a figure.
-
-%%   \subsection*{Additional file 2 --- Sample additional file title}
-%%     Additional file descriptions text.
 
 
-\end{backmatter}
+
 \end{document}
-
-%%  LocalWords:  de addressref aff neteref Schaeffer noteref Xiaolin
-%%  LocalWords:  Liu corref JE Karro Initio phRAIDER genomic TEs Ns
-%%  LocalWords:  JIANG RepeatMasker nHMMER BLASTing homology ALU ReAS
-%%  LocalWords:  LINEs Jiang PILER RepeatScout mer RepeatGluer Saha
-%%  LocalWords:  infeasible DeBrujin et al Zheng Lonardi pre Huo mers
-%%  LocalWords:  PatternHunter decompositions subsequence minimality
-%%  LocalWords:  maximality RIADER ers substring AACACA AAGACA TACACA
-%%  LocalWords:  TTAACTCA TTTTT TTT substrings AAATTT AAATT TT AAAAA
-%%  LocalWords:  FIGUREOA AAAAAGTTTTT AAAAGTTTT AAAA TTTT AAAAT novo
-%%  LocalWords:  Acknowledgements transposable tranposable runtime
-%%  LocalWords:  unassembled RepBase AAGATA

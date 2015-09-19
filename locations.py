@@ -17,7 +17,8 @@ MacLocations = {'build_lmer_table':'/usr/local/RepeatScout/build_lmer_table',
                 'basic_arch_type' : None,
                 'high_mem_arch' : None, 
                 'blast' : 'blastn',
-                'blast_modules' : []}
+                'blast_modules' : [],
+                'time_cmd' : "/usr/bin/time -f \"User: %U\\nM: %M\\nK: %K\""}
 RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'RptScout':'./RepeatScout',
                     'filter_stage-1':'./filter-stage-1.prl',
@@ -35,7 +36,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'basic_arch_type' : ["n09","bigmem"],
                     'high_mem_arch' : 'redhawk',
                     'blast' : 'blastn',
-                    'blast_modules' : ['blast+']}
+                    'blast_modules' : ['blast+'],
+                    'time_cmd' : "/usr/bin/time -f \"User: %U\\nM: %M\\nK: %K\""}
 OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RptScout':'./RepeatScout',
                    'filter_stage-1':'./filter-stage-1.prl',
@@ -53,7 +55,9 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'basic_arch_type' : None,
                    'high_mem_arch' : 'oakley',
                    'blast' : 'blastn',
-                   'blast_modules' : None}
+                   'blast_modules' : None,
+                   'time_cmd' : 'usr/bin/time'}
+
 
 
 try:
