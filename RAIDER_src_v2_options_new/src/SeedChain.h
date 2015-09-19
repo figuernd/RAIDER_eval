@@ -289,7 +289,15 @@ Family* exciseRepeatsByLmer(Family* fam, LmerVector *v, uint L, AppOptions optio
   
 }
 
+int debug = 0;
 Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOptions options) {
+  debug++;
+  cout << debug << endl;
+  if (debug == 7) {
+    cout << fam->size() << " " << fam->vectors.size() << endl;
+    cout << "HERE" << endl;
+  }
+
   if(options.verbosity > 2) prettyPrintMethodState(1, "Split Repeats by Lmer", v, fam, false, false);
   
   assert(fam == v->getFamily());
@@ -321,6 +329,10 @@ Family* splitRepeatsByLmer(Family* fam, LmerVector *v, bool keepV, uint L, AppOp
   fam->setLast(fam->getSuffix());
   fam->setExpectedEnd(fam->getSuffix()->back() + L);
   
+  if (debug == 7) {
+    cout << "HERE" << endl;
+  }
+
   // Reset last and expected end of new family if it will contain v (as prefix)
   if (!keepV) {
     newFam->setLast(v);
