@@ -37,7 +37,8 @@ RedhawkLocations = {'build_lmer_table':'./build_lmer_table',
                     'high_mem_arch' : 'redhawk',
                     'blast' : 'blastn',
                     'blast_modules' : ['blast+'],
-                    'time_cmd' : "/usr/bin/time -f \"User: %U\\nM: %M\\nK: %K\""}
+                    'time_cmd' : '/usr/bin/time -v'}
+                    #'time_cmd' : "/usr/bin/time -f \"User: %U\\nM: %M\\nK: %K\""}
 OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'RptScout':'./RepeatScout',
                    'filter_stage-1':'./filter-stage-1.prl',
