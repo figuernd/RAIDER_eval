@@ -107,3 +107,69 @@ fixed_plots <- function() {
   plot.sen.by.ratio("ce10.chrV", stats6)
   plot.sen.by.ratio("ce10.chrV", stats7)
 }
+
+############################################
+plot.runtimes <- function() {
+  RT <- read.table("runtime.txt", header=TRUE)
+  RT$size = RT$size / 1000000
+  RT <- RT[RT$size > 0,]
+  plot(c(), c(), xlim = range(RT$size), ylim = range(RT$time, na.rm = TRUE), main="Runtime",
+       xlab = "Genome size (Mb)", ylab = "Tool runtime (seconds)")
+
+  #LMER = RT[RT$tool=="LMER",]
+  #points(LMER$size, LMER$time, col = 'green')  
+  
+  RS = RT[RT$tool=="RepeatScout",]
+  points(RS$size, RS$time, col='red')
+    
+  PHRA = RT[RT$tool=="phRAIDER" & RT$seed==1,]
+  points(PHRA$size, PHRA$time, col='blue')
+  
+  RA = RT[RT$tool=="RAIDER" & RT$seed==1,]
+  points(RA$size, RA$time, col='purple')
+  
+  PRE = RT[RT$tool=="pre-phRAIDER" & RT$seed==1,]
+  points(PRE$size, PRE$time, col='black')  
+  
+}
+
+
+plot.mem <- function() {
+  RT <- read.table("runtime.txt", header=TRUE)
+  RT$size = RT$size / 1000000
+  RT$mem = RT$mem / 1000000
+  RT <- RT[RT$size > 0,]
+  plot(c(), c(), xlim = range(RT$size), ylim = range(RT$mem, na.rm = TRUE), main="Memory",
+       xlab = "Genome size (Mb)", ylab = "Tool memory (GB)")
+  
+  #LMER = RT[RT$tool=="LMER",]
+  #points(LMER$size, LMER$mem, col = 'green')  
+  
+  RS = RT[RT$tool=="RepeatScout",]
+  points(RS$size, RS$mem, col='red')
+
+  PHRA = RT[RT$tool=="phRAIDER" & RT$seed==1,]
+  points(PHRA$size, PHRA$mem, col='blue')
+  
+  RA = RT[RT$tool=="RAIDER" & RT$seed==1,]
+  points(RA$size, RA$mem, col='purple')
+  
+  PRE = RT[RT$tool=="pre-phRAIDER" & RT$seed==1,]
+  points(PRE$size, PRE$mem, col='black')  
+  
+}
+
+plot.by_seed <- function(tool, column = "time") {
+  RT <- read.table("runtime.txt", header=TRUE)
+  RT$size = RT$size / 1000000
+  RT$mem = RT$mem / 1000000
+  RT <- RT[RT$size > 0,]
+  
+  RT <- RT[RT$tool == tool,]
+  plot(c(), c(), xlim = range(RT$size), ylim = range(RT[[column]]))
+  R1 <- RT[RT$seed == 0,]
+  points(R1$size, R1[[column]], col = 'blue')
+  R2 <- RT[RT$seed == 1,]
+  points(R2$size, R2[[column]], col = 'red')
+  return(list(RT, R1, R2))
+}

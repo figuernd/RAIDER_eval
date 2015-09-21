@@ -21,7 +21,7 @@ R = {}
 for file in glob.glob("*/*/*.stderr"):
    if "add_files" in file:
       continue
-   r = re.search("(\w+)\.(\w+)\.(chr\w+)\.s(\d+)\.f(\d+)\.stderr$", file);
+   r = re.search("(\w+(?:\.\w+))\.(\w+)\.(chr\w+)\.s(\d+)\.f(\d+)\.stderr$", file);
    if not r:
       continue
    tool, build, chr, seed, f = r.group(1,2,3,4,5)
