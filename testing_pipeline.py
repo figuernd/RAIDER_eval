@@ -23,7 +23,7 @@ seed_list = None      # Sorted list of seeds
 
 #######################
 # Defaults 
-walltime_default = "4:00:00"
+walltime_default = "2:00:00"
 blast_walltime_default = "10:00:00"
 rs_walltime_default = "10:00:00"
 rm_walltime_default = "10:00:00"
@@ -212,7 +212,7 @@ def launch_job(cmd, title, base_dir, walltime = walltime_default, ppn = 1, bigme
                       stdout_file = stdout_file, stderr_file = stderr_file, res_file = res_file,
                       walltime = walltime, depends = depend,
                       mem = Locations['high_mem_arch'] if bigmem else False,
-                      RHmodules = modules, ppn = ppn)
+                      RHmodules = modules, ppn = ppn, mail = "ae")
 
 
     if attrs:
@@ -302,7 +302,8 @@ repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PB
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
 blast_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {blast} -out {TMPDIR}/{blast_file} -outfmt \"{blast_format}\" -query $PBS_O_WORKDIR/{consensus_file} -db $PBS_O_WORKDIR/{db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}; " + \
             "bzip2 {TMPDIR}/{blast_file}; " + "cp {TMPDIR}/{blast_file}.bz2 $PBS_O_WORKDIR/{blast_dir}/; rm -r -f {TMPDIR}"
-composite_cmd = "mkdir {TMPDIR}; {composite_discover} {elements_file} {seq_file} {TMPDIR}/{output_file}; mv {TMPDIR}/{output_file} {output_dir}/; rm -r -f {TMPDIR}"
+
+composite_cmd = "mkdir {TMPDIR}; {time} {composite_discover} {elements_file} {seq_file} {TMPDIR}/{output_file}; mv {TMPDIR}/{output_file} {consensus_file}; rm -r -f {TMPDIR}"
 
 def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
@@ -347,7 +348,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
                                 consensus_txt=elements_dir + "/" + consensus_txt,
                                 consensus_fa=elements_dir + "/" + consensus_fa)
     else:
-        cmd2 = composite_cmd.format(TMPDIR = tmp_dir(), composite_discover = Locations['CompositeDiscover'], elements_file = elements_dir + "/elements", seq_file = input_file, output_dir = elements_dir, output_file = consensus_fa, bigmem = args.mem, ppn = Locations['proc_per_node'] if args.max_nodes else 1 )
+        cmd2 = composite_cmd.format(time = Locations['time'], TMPDIR = tmp_dir(), composite_discover = Locations['CompositeDiscover'], elements_file = elements_dir + "/elements", seq_file = input_file, output_dir = elements_dir, output_file = consensus_fa, bigmem = args.mem, ppn = Locations['proc_per_node'] if args.max_nodes else 1 )
 
     title2 = "cd." + title;
     p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
