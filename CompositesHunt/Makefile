@@ -3,10 +3,10 @@ OPTS = -O3
 CXXFLAGS+=-Wall -DNDEBUG $(OPTS)
 
 
-../CompositeDiscover: CompositeDiscover ../CompositeDiscover
+../CompositeDiscover: CompositeDiscover
 	cp CompositeDiscover ../
 
-CompositeDiscover: CompositesDiscover.cpp CompositeFind.cpp Composite.cpp Family.cpp libseq.a libseq.a Composite.h CompositeFind.h FamilyPath.h 
+CompositeDiscover: CompositesDiscover.cpp CompositeFind.cpp Composite.cpp Family.cpp libseq.a libsequence.a Composite.h CompositeFind.h FamilyPath.h 
 	${CC} ${CXXFLAGS} CompositesDiscover.cpp CompositeFind.cpp Composite.cpp Family.cpp -o CompositeDiscover -L . -lseq -lsequence
 
 libseq.a: seq.c nib.c util.c charvec.c

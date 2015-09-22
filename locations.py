@@ -58,7 +58,7 @@ OakleyLocations = {'build_lmer_table':'./build_lmer_table',
                    'high_mem_arch' : 'oakley',
                    'blast' : 'blastn',
                    'blast_modules' : None,
-                   'time_cmd' : 'usr/bin/time',
+                   'time_cmd' : '/usr/bin/time',
                    'CompositeDiscover' : './CompositeDiscover'}
 
 
