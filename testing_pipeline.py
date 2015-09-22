@@ -113,7 +113,9 @@ def parse_params():
     raider_argument.add_argument('--pre', '--pre_scan', action = 'store_true', help = "Use pre-scan version of raider", default = False)
     raider_argument.add_argument('--mem', action = 'store_true', help = "Use large memory-nodes", default = False);
     raider_argument.add_argument("--mn", '--max_nodes', dest = "max_nodes", action="store_true", help="Reserve all nodes of a processor for each tool (disabled by default).", default=False)
-    raider_argument.add_argument("--SC", "--suppress_consensus", dest = "suppress_consensus", action="store_true", help="Suppress consensus generation", default = False)
+    consensus_group = raider_argument.add_mutually_exclusive_group(required = False)
+    consensus_group.add_argument('--sc', '--standard_consensus', dest = "consensus_type", action = 'store_const', const = 1, help = "Run standard consensus tool", default = 0)
+    consensus_group.add_argument('--cd', '--composite_discover', dest = "consensus_type", action = 'store_const', const = 2, help = "Run composite discover tool")
     seed_group = raider_argument.add_mutually_exclusive_group(required = False)     
     seed_group.add_argument('-s', '--seed', dest = "seed", help = "Spaced seed string", default = "111111111111111111111111111111")    
     seed_group.add_argument('--sf', '--seed_file', dest = 'seed_file', help = 'File containing raider seeds', default = None)
@@ -139,14 +141,14 @@ def parse_params():
     
     # REPEAT MASKER ARGUMENTS
     repeatmasker_arguments = parser.add_argument_group("RepeatMasker parameters")
-    repeatmasker_arguments.add_argument('--RM', '--suppress_rm', dest = 'run_rm', action="store_false", help = "suppress RepeatMasker run", default = True)
+    repeatmasker_arguments.add_argument('--rm', '--run_rm', dest = 'run_rm', action="store_true", help = "run RepeatMasker", default = False)
     repeatmasker_arguments.add_argument('--masker_dir', help = "Repeat masker output directory", default = None)
     repeatmasker_arguments.add_argument('-p', '--pa', type = int, help = "Number of processors will be using", default = 1)    
     repeatmasker_arguments.add_argument('--rwt', '--rm_walltime', dest = "rm_walltime", help = "Wall time limit for repeat masker", default = rm_walltime_default)
 
     # BLAST ARGUMENTS
     blast_arguments = parser.add_argument_group("BLAST parameters")
-    blast_arguments.add_argument('--BL', '--suppress_blast', dest = 'run_blast', action = "store_false", help = "suppress BLAST run", default = True)
+    blast_arguments.add_argument('--bl', '--run_blast', dest = 'run_blast', action = "store_true", help = "run BLAST", default = False)
     blast_arguments.add_argument('--evalue', dest = 'evalue', help = "BLASE evalue", default = "0.000001");
     blast_arguments.add_argument('--short', dest = 'short', action = 'store_false', help = "Turn off blast-short on blast run", default = True)
     blast_arguments.add_argument('--max_target', dest = 'max_target', action = 'store', help = "BLAST --max_target option", default = '999999999') # HACK!!!  Need to fix this
@@ -300,6 +302,7 @@ repeat_masker_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {RepeatMasker} -nolow -lib $PB
 blast_format = "6 qseqid sseqid qstart qend qlen sstart send slen"
 blast_cmd = "mkdir {TMPDIR}; cd {TMPDIR}; {blast} -out {TMPDIR}/{blast_file} -outfmt \"{blast_format}\" -query $PBS_O_WORKDIR/{consensus_file} -db $PBS_O_WORKDIR/{db_file} -evalue {evalue} {short} -max_target_seqs {max_target} -num_threads {num_threads}; " + \
             "bzip2 {TMPDIR}/{blast_file}; " + "cp {TMPDIR}/{blast_file}.bz2 $PBS_O_WORKDIR/{blast_dir}/; rm -r -f {TMPDIR}"
+composite_cmd = "mkdir {TMPDIR}; {composite_discover} {elements_file} {seq_file} {TMPDIR}/{output_file}; mv {TMPDIR}/{output_file} {consensus_file}; rm -r -f {TMPDIR}"
 
 def raider_pipeline(raider_exe, input_file, seed, f):
     ##########################
@@ -334,34 +337,38 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     title1 = title;
     p1 = launch_job(cmd=cmd1, title=title1, base_dir=elements_dir, ppn = Locations['proc_per_node'] if args.max_nodes else 1, bigmem = args.mem, attrs = {'elements':'elements_dir/elements'})
 
-    
+    if args.consensus_type == 0:
+        return None
 
-    # Step 2: Generate consensus sequence
-    if not args.suppress_consensus:
+
+    if args.consensus_type == 1:
         cmd2 = consensus_cmd.format(python=Locations['python'], data_file=input_file,
-                                    elements_file=elements_dir + "/elements",
-                                    consensus_txt=consensus_txt,
-                                    consensus_fa=consensus_fa)
-        title2 = "con." + title
-        p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
+                                elements_file=elements_dir + "/elements",
+                                consensus_txt=consensus_txt,
+                                consensus_fa=consensus_fa)
+    else:
+        cmd2 = composite_cmd.format(TMPDIR = tmp_dir(), composite_discover = Locations['CompositeDiscover'], elements_file = elements_dir + "/elements", seq_file = input_file, output_file = consensus_fa)
 
-        # Step 3: Apply repeat masker consensus output
-        if args.run_rm:
-            cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
-                                            library_file = consensus_fa, pa = args.pa,
-                                            output_dir = rm_dir,
-                                            seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
-            title3 = "rm." + title
-            p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
-                            modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
+    title2 = "cd." + title;
+    p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
 
-        # Step 4: Apply blast to consensus sequences:
-        if args.run_blast:
-            cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
-                                    db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
-                                    num_threads = args.num_threads, TMPDIR = tmp_dir())
-            title4 = "bl." + title
-            p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads, walltime = blast_walltime_default)
+    # Step 3: Apply repeat masker consensus output
+    if args.run_rm:
+        cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
+                                        library_file = consensus_fa, pa = args.pa,
+                                        output_dir = rm_dir,
+                                        seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
+        title3 = "rm." + title
+        p3 = launch_job(cmd=cmd3, title=title3, base_dir=rm_dir, walltime = args.rm_walltime, ppn = args.pa, bigmem = False, 
+                        modules = Locations['rm_modules'], depend=[p2], attrs={'rm_output':rm_dir + '/' + input_base + ".fa.out"})
+
+    # Step 4: Apply blast to consensus sequences:
+    if args.run_blast:
+        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
+                                db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
+                                num_threads = args.num_threads, TMPDIR = tmp_dir())
+        title4 = "bl." + title
+        p4 = launch_job(cmd=cmd4, title=title4, base_dir=elements_dir, modules=Locations['blast_modules'], depend=[p2], ppn = args.num_threads, walltime = blast_walltime_default)
 
 
 
