@@ -173,3 +173,53 @@ plot.by_seed <- function(tool, column = "time") {
   points(R2$size, R2[[column]], col = 'red')
   return(list(RT, R1, R2))
 }
+
+
+
+fig1Plot <- function() {
+  RT <- read.table("runtime.txt", header=TRUE)
+  RT <- subset(RT, size > 20000)
+  RT$size <- RT$size / 1000000
+  RT$mem <- RT$mem / 1000000
+  #quartz()
+  par(mfrow=c(2,2))
+  
+  # Make RS table.  (Need to add lmer and RS times/mem.)
+  RS = subset(RT, tool == "RepeatScout")
+  LM = subset(RT, tool == "LMER")
+  RSLM = merge(RS, LM, by = c("label","size","seed","f"), suffixes = c(".RS", ".LM"))  
+  
+  PH0 <- subset(RT, tool == "phRAIDER" & seed == 0)
+  PH1 <- subset(RT, tool == "phRAIDER" & seed == 1)
+  PPH1 <- subset(RT, tool == 'pre-phRAIDER' & seed == 1)
+  
+  # First: runtimes for phRAIDER and RptScout
+  plot(c(), c(), xlim = range(c(RS$size, PH1$size)), ylim = range(c(RSLM$time.RS, RSLM$timeLM, PH1$time)), xlab = "Genome size (Mb)", ylab = "Runtime (seconds)", main = "Runtime: phRAIDER v. RptScout")
+  with(RSLM, points(size, time.RS + time.LM, col = 'red'))
+  with(PH1, points(size, time, col = 'blue', pch = 2))
+  with(PPH1, points(size, time, col = 'green', pch = 3))
+  legend("topleft", c("RepeatScout", "phRAIDER", "pre-phRAIDER"), col = c('red', 'blue', 'green'), pch = c(1,2,3))
+  
+  # Second: memory usage for phRAIDER and RptScout
+  plot(c(), c(), xlim = range(c(RS$size, PH1$size)), ylim = range(c(RSLM$mem.RS, RSLM$mem.LM, PH1$mem)), xlab = "Genome size (Mb)", ylab = "Memory required (Gb)", main = "Memory: phRAIDER v. RptScout")
+  with(RSLM, points(size, mem.RS + mem.LM, col = 'red'))
+  with(PH1, points(size, mem, col = 'blue', pch = 2))
+  with(PPH1, points(size, mem, col = 'green', pch = 3))
+  legend("topleft", c("RepeatScout", "phRAIDER", "pre-phRAIDER"), col = c('red', 'blue', 'green'), pch = c(1,2,3))
+  
+  # Third: runtime for phRAIDER on different seeds
+  plot(c(), c(), xlim = range(RT$size), ylim = range(c(PH0$time, PH1$time), na.rm = TRUE), xlab = "Genome size (Mb)", ylab = "Runtime (seconds)", main = "Runtime for phRAIDER on different seeds")
+  colors = c('blue', 'black')
+  for (s in c(0,1)) {
+    with(subset(RT, tool=='phRAIDER' & seed==s), points(size, time, col = colors[[s+1]], pch = s))
+  }
+  legend("topleft", c("phRAIDER seed 1", "phRAIDER seed 2"), col = c('blue', 'black'), pch = c(1,2))
+  
+  plot(c(), c(), xlim = range(RT$size), ylim = range(c(PH0$mem, PH1$mem), na.rm = TRUE), xlab = "Genome size Mb)", ylab = "Runtime (seconds)", main = "Memory Usage for phRAIDER on different seeds")
+  colors = c('blue', 'black')
+  for (s in c(0,1)) {
+    with(subset(RT, tool=='phRAIDER' & seed==s), points(size, mem, col = colors[[s+1]], pch = s+1))
+  }
+  legend("topleft", c("phRAIDER seed 1", "phRAIDER seed 2"), col = c('blue', 'black'), pch = c(1,2))
+}
+  
