@@ -348,7 +348,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
                                 consensus_txt=elements_dir + "/" + consensus_txt,
                                 consensus_fa=elements_dir + "/" + consensus_fa)
     else:
-        cmd2 = composite_cmd.format(time = Locations['time'], TMPDIR = tmp_dir(), composite_discover = Locations['CompositeDiscover'], elements_file = elements_dir + "/elements", seq_file = input_file, output_dir = elements_dir, output_file = consensus_fa, bigmem = args.mem, ppn = Locations['proc_per_node'] if args.max_nodes else 1 )
+        cmd2 = composite_cmd.format(time = Locations['time_cmd'], TMPDIR = tmp_dir(), composite_discover = Locations['CompositeDiscover'], elements_file = elements_dir + "/elements", seq_file = input_file, output_dir = elements_dir, output_file = consensus_fa, bigmem = args.mem, ppn = Locations['proc_per_node'] if args.max_nodes else 1, consensus_file = elements_dir + "/" + consensus_fa)
 
     title2 = "cd." + title;
     p2 = launch_job(cmd=cmd2, title=title2, base_dir=elements_dir, depend=[p1], attrs = {'consensus':consensus_fa})
