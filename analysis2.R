@@ -182,7 +182,7 @@ fig1Plot <- function() {
   RT$size <- RT$size / 1000000
   RT$mem <- RT$mem / 1000000
   #quartz()
-  par(mfrow=c(2,2))
+  par(mfrow=c(4,2))
   
   # Make RS table.  (Need to add lmer and RS times/mem.)
   RS = subset(RT, tool == "RepeatScout")
@@ -207,6 +207,7 @@ fig1Plot <- function() {
   with(PPH1, points(size, mem, col = 'green', pch = 3))
   legend("topleft", c("RepeatScout", "phRAIDER", "pre-phRAIDER"), col = c('red', 'blue', 'green'), pch = c(1,2,3))
   
+  
   # Third: runtime for phRAIDER on different seeds
   plot(c(), c(), xlim = range(RT$size), ylim = range(c(PH0$time, PH1$time), na.rm = TRUE), xlab = "Genome size (Mb)", ylab = "Runtime (seconds)", main = "Runtime for phRAIDER on different seeds")
   colors = c('blue', 'black')
@@ -215,11 +216,25 @@ fig1Plot <- function() {
   }
   legend("topleft", c("phRAIDER seed 1", "phRAIDER seed 2"), col = c('blue', 'black'), pch = c(1,2))
   
-  plot(c(), c(), xlim = range(RT$size), ylim = range(c(PH0$mem, PH1$mem), na.rm = TRUE), xlab = "Genome size Mb)", ylab = "Runtime (seconds)", main = "Memory Usage for phRAIDER on different seeds")
+  plot(c(), c(), xlim = range(RT$size), ylim = range(c(PH0$mem, PH1$mem), na.rm = TRUE), xlab = "Genome size Mb)", ylab = "Runtime (seconds)", main = "Memory usage for phRAIDER on different seeds")
   colors = c('blue', 'black')
   for (s in c(0,1)) {
     with(subset(RT, tool=='phRAIDER' & seed==s), points(size, mem, col = colors[[s+1]], pch = s+1))
   }
   legend("topleft", c("phRAIDER seed 1", "phRAIDER seed 2"), col = c('blue', 'black'), pch = c(1,2))
+  
+  RT <- read.table("runtime2.txt", header=TRUE)
+  T1 <- subset(RT, w==l)
+  with(T1, plot(l, time, xlim = range(l), ylim = range(time), xlab = "Seed length (w/l = 1)", ylab = "Runtime (seconds)", main = "Runtime for phRAIDER as a function of seed length (ungapped)"))
+  with(T1, plot(l, mem, xlim = range(l), ylim = range(mem), xlab = "Seed length (w/l = 1)", ylab = "Memory (Gb)", main = "Memory usage for phRAIDER as a function of seed length (ungapped)"))
+
+  RT <- read.table("runtime2.txt", header=TRUE)
+  T1 <- subset(RT, w==40)
+  with(T1, plot(w/l, time, xlim = range(w/l), ylim = range(time), xlab = "w/l (w = 40)", ylab = "Runtime (seconds)", main = "Runtime for phRAIDER as a function of seed width/length ratio"))
+  with(T1, plot(w/l, mem, xlim = range(w/l), ylim = range(mem), xlab = "w/l (w = 40)", ylab = "Memory (Gb)", main = "Memory usage for phRAIDER as a function of seed width/length ratio"))
+  
+  return(T1);
 }
+    
+  
   
