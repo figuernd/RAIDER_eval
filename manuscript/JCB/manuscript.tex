@@ -1,10 +1,10 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,letterpaper]{amsart}
 \usepackage{longtable}
 \usepackage{ulem}
 \usepackage{authblk}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
-\usepackage{algorithmicx}
+%\usepackage{algorithmicx}
 \usepackage{color}
 \def\includegraphic{}
 \def\includegraphics{}
@@ -18,7 +18,10 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
 
-\usepackage[paper=letterpaper,margin=1in]{geometry}
+\usepackage[paper=letterpaper,margin=1.0in]{geometry}
+
+\usepackage[english]{babel}
+\usepackage[protrusion=true,expansion=true,final,babel]{microtype}
 
 \title{phRAIDER: Pattern-Hunter based Rapid Ad Initio \\ Identification of Elemenrary Repeats}
 \author[1]{Carly E. Schaeffer}
@@ -47,7 +50,7 @@
 
 \section*{Introduction}
 
-Transposable Elements (TEs) are genomic sequences thathad the capacity
+Transposable Elements (TEs) are genomic sequences that had (or have) the capacity
 to insert copies of themselves into other genomic locations, resulting
 in homologous families of sequences spread across the genome.  Present
 in almost every higher order genome (covering as much as 45\% of the
@@ -63,20 +66,18 @@ huge numbers of false positives in automated gene finding tool
 \cite{Jiang:2013jt}, as well as inflate tool runtime.
 
 The best tools for repeat identification are RepeatMasker and nHMMER
-\cite{RepeatMaskerOpen:XkNxXSd7,Wheeler:2013gj}, but both employ 
-library-based search strategies using a pre-compiled
-description of sequences in the family (e.g. a ancestral sequence for
-BLASTing, or a profile HMM).  But, much like we ask how
-the snow plow driver gets to work \cite{Pratchett:uw}, we must ask how
-these libraries are compiled.  Library-based tools
-are useless for the discovery of new families, and this are
-challanging to use on newly sequenced genomes.
-
-Within mammalian species we can largely rely on homology relationships
-to port libraries across species.  This does not hold
-so well in plants: in many cases TE composition of a given plant
-organism is species-specific.  For example, a rice-based TE library
-will only identify 25\% of the TEs in the maize genome
+\cite{RepeatMaskerOpen:XkNxXSd7,Wheeler:2013gj}, but both employ
+library-based search strategies using a pre-compiled description of
+sequences in the family (e.g. an ancestral sequence for BLASTing, or a
+profile HMM).  But, much like we ask how the snow plow driver gets to
+work \cite{Pratchett:uw}, we must ask how these libraries are
+compiled.  Library-based tools are useless for the discovery of new
+families, making them difficult to use on newly sequenced or
+unannotated genomes. Within mammalian species we can largely rely on
+homology relationships to port libraries across species.  This does
+not hold so well in plants: in many cases TE composition of a given
+plant organism is species-specific.  For example, a rice-based TE
+library will only identify 25\% of the TEs in the maize genome
 \cite{Jiang:2013jt}.
 
 To solve this problem we turn to {\it de novo} TE identification
@@ -86,13 +87,13 @@ WU-BLAST and PILER using LASTZ to compute self-alignments
 \cite{Bao:2002,Edgar:2005p2365,Lopez:2003td,Harris:2007uf}.  RECON
 show good sensitivity but is computationally intensive and infeasible
 for use on whole genomes (requiring 60 hours for 18Mb rice genome in a
-2013 study), while PILER achieves a good runtime with very low
-sensitivity .  ReAS and RepeatScout \cite{Price:2005p1247} are based
+2013 study \cite{Saha:2008dm}), while PILER achieves a good runtime with very low
+sensitivity.  ReAS and RepeatScout \cite{Price:2005p1247} are based
 on $k$-mer searches, with the earlier showing less sensitivity than
 RECON \cite{Li:2005he, Price:2005p1247,Jiang:2013jt}.  RepeatGluer
 \cite{Pevzner:2004p3157,Zhi:2006p3199} is based on a variation of
 DeBrujin graphs, which allows for a decomposition of TE families into
-domains, but is very, very computationally expensive.  In Saha {\it et
+domains, but is computationally expensive.  In Saha {\it et
   al.} the authors perform an extensive comparison of the tools, and
 conclude that RepeatScout is the best tool overall for assembled
 genomes, while ReAS the best when dealing with unassembled sequence
@@ -112,7 +113,7 @@ While it is notoriously difficult to mathematically model transposable
 elements \cite{Bao:2002}, elementary repeats are more conducive to a
 formal description.  For a given genome, a nucleotide sequence $r$ is
 an elementary repeat if: (1) It is of at least length $l$ (the length
-requirement); (2) there are at least $f$ copies of $r$ appear (the
+requirement); (2) at least $f$ copies of $r$ appear  n the genome (the
 frequency requirement) (3) there is no proper substring of $r$ of
 length $\leq l$ that appears in the genome independently of $r$ (the
 minimality requirement); (4) $r$ is a maximal string w.r.t (1-3) (the
@@ -131,15 +132,15 @@ significant limitation.
 \label{RAIDERSec}
 It was with the objective of creating a linear time identification
 algorithm that could handle variation through use of
-PatternHunter-like spaced seeds that we developed the prototype RIADER
+PatternHunter-like spaced seeds that we developed the prototype RAIDER
 \cite{Li:2004wl}.  A rough implementation was first presented in
-Figueroa {\it et al.}, with more details in the Figueroa masters
-thesis \cite{Figueroa:2014uk,Figueroa:2013cz}.  RAIDER was built along
+Figueroa {\it et al.} \cite{Figueroa:2014uk}, with more details in the Figueroa masters
+thesis \cite{Figueroa:2013cz}.  RAIDER was built along
 an alternate, but equivalent definition of elementary repeats based on
 $l$-mers (sequences of length $l$).  Specifically, it was observed
-that the minimality condition could be rewritten as: There is no
+that the minimality condition could be rewritten as: {\it There is no
 $l$-mer contained within elementary repeat $r$ that appears in the
-genome more times than $r$.  From there we make four core observations
+genome more times than $r$}.  From there four core observations
 that form the basis for the RAIDER algorithm: (1) An $l$-mer cannot
 belong to two different elementary repeats; (2) Any $l$-mer in the
 genome that occurs $f$ or more times is either an elementary repeat or
@@ -149,7 +150,7 @@ sequences in the genome that are {\it maximally identical} (that is,
 cannot be extended in either direction and still be identical), these
 sequences cannot belong to a larger elementary repeat.  (By ``belong''
 we mean ``is a substring of'' -- a definition we will be generalizing
-shortly.)  For discussion and proof, see the Figueroa Thesis
+shortly.)  For discussion and proof, see the Figueroa thesis
 \cite{Figueroa:2013cz}.
 
 Based on these observations, we discover we can find all elementary
@@ -158,17 +159,15 @@ left to right, we track $l$-mer occurrences and identify multiple
 copies of the same $l$-mer.  When we find the same sequence of $l$-mers
 occurring multiple times in a row, we can mark it as a tentative family,
 then break it down later if we discover violations of the minimality
-condition.  The algorithm is summarized in Figueroa {\it et al.}, and
-discussed in detail in the Figueroa Thesis \cite{Figueroa:2014uk,Figueroa:2013cz}.
+condition.  
 
 Results of the preliminary implementation were promising. On human
 chromosome 22 we saw a $12\times$ speedup over RepeatScout to RAIDER
 (2344 seconds to 192 seconds), while coverage of the RepBase
-\cite{Jurka:2005bl} ancestral sequence improved (77\% to 84\%), while
-on mouse chromosome 19 we saw the same speedup with a significant drop
-in coverage (53\% to 30\%).  On the full human genome RAIDER ran in
-$6.3$ hours, while RepeatScout was unable to complete it run.  For
-details, see Figueroa {\it et al.} \cite{Figueroa:2014uk}.
+\cite{Jurka:2005bl} ancestral sequence improved (77\% to 84\%).  On
+mouse chromosome 19 we saw the same speedup with a significant drop in
+coverage (53\% to 30\%).  On the full human genome RAIDER ran in $6.3$
+hours, while RepeatScout was unable to complete it run.  
 
 \subsection*{Spaced Seeds}
  
@@ -182,7 +181,7 @@ which may or may not match (represented by the {\it seed pattern}
 11111101111111), or perhaps three consecutive four-character exact
 matches sperated by two bases each (1111001111001111). It has been
 demonstrated that certain seed patterns can indunce significant
-imporvements in BLAST sensitivity with out time penalty, though what
+imporvements in BLAST sensitivity without time penalty, though what
 makes a good pattern is not well understood.
 
 
@@ -198,26 +197,12 @@ other establihsed tools. Code is free available under the Gnu GPL
 lisence (v. 3) and  may be obtained [NEED WEB ADDRESS].  
 
 
-In the following we will present a new theoretical model for {\it
-  seeded elementary repeats}, followed by an algorithm for identifying
-them.  In the results section we will show the result of using that
-algorithm for masking transp
-
-In our Methods section
-we present the new model that allows us to extend RAIDER to correctly
-use spaced seeds, and briefly outline the algorithm (with more details
-provided in the supplementary materials), with a analysis of phRAIDER
-performance in our Results.
-
-
 \section*{Model}
 
 Our goal is to redefine the concept of transposbile elements to
-accomodate a spaced seed strategy.  In the next section we will describe our
-identification algorithm, and then quantified its success in 
-masking transposable elements. But we will start here with a brief
+accomodate a spaced seed strategy.   We will start here with a brief
 outline of our theoretical model (with a more detailed description in
-the appendix).
+the appendix), then present the algorithm and results.
 
 We first need to redfine out terminimology regarding elementary
 repeats.  Under the Z\&L definition, all instances of one elementary
@@ -237,8 +222,8 @@ respect to $s$ by taking every length $|s|$ substring of $r$ that is consistant
 with $s$, replacing all letters of $r$ that match to a 0 in $s$ with a
 $*$, and creating a set from the results.  (Hence for $s = 11011$ and
 $r=AA*CCGTT$, the decomposition would be $\{AA*CC, CC*TT\}$.)  We say
-$s$ {\it covers} $r$ is every base in $r$ is contained in at least on
-string in the decompositio.  (Hence the previous $s$ does not cover $AAA*CC$, as
+$s$ {\it covers} $r$ if every base in $r$ is contained in at least on
+string in the decomposition.  (Hence the previous $s$ does not cover $AAA*CC$, as
 the first base in not in any of the strings of the decomposition.)
 
 
@@ -253,10 +238,10 @@ follows:
   substrings of $G$ that match $r$.
 \item \underline{Minimality requirement:} For every string $t$ in the
   decomposition of $r$ w.r.t $s$, the number of occurences of $t$ in
-  $G$ is equal to the number of occurneces of $r$ in the genome.
+  $G$ is equal to the number of occureneces of $r$ in the genome.
 \item \underline{Maximality requirement:} There is no sequence
   descriptor $r'$ of $r$ that contains $r$ as a proper substring and
-  satisfies conditions 1-1.
+  satisfies conditions the previous thre conditions.
 \end{itemize}
 \end{definition}
 
@@ -265,20 +250,41 @@ follows:
     definition.
 \end{theorem}
 
+We have written out a proof of this in the appendix.
+
 \subsection*{phRAIDER Algorithm}
 
-We see in the attached table the pseudocode for the phRAIDER
-algorithm, used to find a sequence descriptor for each set of
-sequences that comprise an elementary repeat family with respoect to
-some fixed seed $s$ and minimum frequency threshold $f$.  We see see
-the core components of this algorithm as:
-\begin{itemize}
-\item 
+We see in Algorithm Pseudocode on the next page a description of the
+phRAIDER algorithm, used to find a sequence descriptor for each set of
+sequences that comprise an elementary repeat family with respect to
+some fixed seed $s$ and minimum frequency threshold $f$. The core idea
+behind the algorothm is to find sets of $l$-mers that match w.r.t. the
+seed, and whose instances are fixed at a specific spacing internval
+between them.  The $H$ dictionary maps each encountered {\it seeded}
+$l$-mer (that is, the $l$-mer after removing all characters
+corresponding to a 0 in the seed) to a list of genomic locations.
+Thus the {\bf sameOffset($v_1$, $v_2$)} can, in constant time, tell us
+whterh instances of seed $l$-mers $v_1$ and $v_2$ have the same
+distance between their offsets. The loop at line
+\algref{phRaider}{mainLoop} takes us through the genome, looking at
+each $l$-mer to identify whether it should be grouped with a
+recently-seen seen $l$-mer set.  The $Q$ structure holds the candidate
+families that $v$ might belong to (any family that we have seen in the
+last $s$ bases).  When we look at the seeded $l$-mer $v$ we need to
+decide if (1) this is the second occurance of $v$, and hence is the
+start of a family, (2) this is the next $l$-mer belonging to a family
+we have recently see (seen in the last $|s$ bases, (3) this is the
+first $l$-mer of a family not recently seen, or (4) this is an
+out-of-place $l$-mer in the midle of the family, implying that family
+needs to be broken up.
+
+
 
 \begin{algorithm}
 \renewcommand\thealgorithm{}
 \caption{phRAIDER}
-\begin{algorithmic}
+\label{phRaider}
+\begin{algorithmic}[1]
   \Function{sameOffset}{$l$-mer $v_1$, $l$-mer $v_2$}
     \comment{Is the distance between the first two occurences of $v$ equal to the}
     \comment{the distance betwen the most recent two occurences?}
@@ -288,12 +294,13 @@ the core components of this algorithm as:
   \Function{phRAIDER}{Genome $G$, Seed $s$, MinFrequence $f$}
     \comment{We are going to maintain a $Q$ of up to $|s|$ families, representing the families}
     \comment{of the last $|L|$ $l$-mers seen, sorted by the position of those last $l$-mers.}
-    \State Queue$<$Family$>$ $Q$;
+    \State Queue$<$Family$>$ $Q$; \label{Queue}
     \State
     \comment{Iterate over all $l$-mer positions in $G$}
-    \For {$i \leftarrow 1 \to |G|-|s|$}
+    \For {$i \leftarrow 1 \to |G|-|s|$}  \label{mainLoop}
 
        \comment{Remove any families whose last $l$-mer did not occur in the last $i$ bases.}
+       \comment{I {\it think} this will never remove more than one element.}
        \While{$i - $location($Q$, finish, last, end)$ > |s|$}
          \State $Q.$dequeue()
        \EndWhile
@@ -306,7 +313,8 @@ the core components of this algorithm as:
        \State
        \If {$|H|(v)| == 2$}
           \comment{$v$ either is the beginning of a family, or should be combined with a}
-          \comment{previous $l$-mer to form a family.}
+          \comment{previous $l$-mer to form a family.  (I think we can
+            set this up to work in $O(1)$ time.}
           \State $F = \mbox{arg\_find}_{F \in Q}\{\mbox{sameOffset}(F.\mbox{start}(), v)\}$
           \If {$F$}
              \State $Q.$requeue($F$)
