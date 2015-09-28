@@ -356,7 +356,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
     # Step 3: Apply repeat masker consensus output
     if args.run_rm:
         cmd3 = repeat_masker_cmd.format(RepeatMasker = Locations['RepeatMasker'],
-                                        library_file = consensus_fa, pa = args.pa,
+                                        library_file = elements_dir + "/" + consensus_fa, pa = args.pa,
                                         output_dir = rm_dir,
                                         seq_file = input_file, seq_file_base = file_base(input_file), TMPDIR = tmp_dir())
         title3 = "rm." + title
@@ -365,7 +365,7 @@ def raider_pipeline(raider_exe, input_file, seed, f):
 
     # Step 4: Apply blast to consensus sequences:
     if args.run_blast:
-        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = consensus_fa,
+        cmd4 = blast_cmd.format(blast = Locations['blast'], blast_format = blast_format, blast_dir = blast_dir, blast_file = blast_file, consensus_file = elements_dir + "/" + consensus_fa,
                                 db_file = database_file, evalue = args.evalue, short = "-task blastn-short" if args.short else "", max_target = args.max_target,
                                 num_threads = args.num_threads, TMPDIR = tmp_dir())
         title4 = "bl." + title
