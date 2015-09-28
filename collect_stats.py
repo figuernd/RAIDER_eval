@@ -78,6 +78,7 @@ def collectRaider(DIR, tool):
     for org in data_map.keys():
         for seed_num in seed_map.keys():
             for f in f_list:
+                print("File: " + org + " " + str(seed_num) + " " + str(f) + "\n")
                 RAIDER_job_file = DIR + "/../job_log/{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)        
                 RM_job_file = DIR + "/../job_log/rm.{prefix}.{org}.s{seed_num}.f{f}".format(prefix = tool_prefix[tool], org=org, seed_num=seed_num, f=f)
                 RM_dir = DIR + "/" + ("{org}.s{seed}.f{f}".format(org=org, seed=seed_num, f=f)).upper()
@@ -133,8 +134,10 @@ def collectRaider(DIR, tool):
 
                 
                 if os.path.exists(blast_file):
-                    cmd = "bzcat {blast_output} | ./pra_analysis2 {output}".format(blast_output=blast_file, output=pra_output)
-                    subprocess.call(cmd, shell=True)
+                    if not os.path.exists(pra_output):
+                        cmd = "bzcat {blast_output} | ./pra_analysis2 {output}".format(blast_output=blast_file, output=pra_output)
+                        print("cmd: " + cmd)
+                        #subprocess.call(cmd, shell=True)
                     query_cover, target_cover, Used = parse_pra_output.parse_pra_output(pra_output, "exclude.txt")
                     H['ConCoverage'], H['QuCoverage'] = query_cover, target_cover
 
