@@ -247,7 +247,10 @@ def setup():
     if not os.path.exists(job_log_dir):
         os.makedirs(job_log_dir)
 
-    open(args.results_dir + "/f.txt", "w").write("\t".join([str(x) for x in args.f]) + "\n")
+    if os.path.exists(args.results_dir + "/f.txt"):
+        S = {int(f.rstrip()) for f in open(args.results_dir + "/f.txt")}
+        args.f = list(S | set(args.f))
+    open(args.results_dir + "/f.txt", "w").write("\n".join([str(x) for x in args.f]) + "\n")
 
     global progress_fp
     progress_fp = open(debug_file, "w")
